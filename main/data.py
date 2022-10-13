@@ -2,7 +2,6 @@ import wget
 import os
 import gzip
 import shutil
-import pandas as pd
 import links
 
 for link in links.links:
@@ -15,5 +14,8 @@ for link in links.links:
         with gzip.open(f'{file_location}.gz', 'rb') as f_in:
             with open(file_location, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
-        os.remove(f'{file_location}.gz')
-        os.remove('data/*.tmp')
+        try:
+            os.remove(f'{file_location}.gz')
+            os.remove('data/*.tmp')
+        except:
+            pass
