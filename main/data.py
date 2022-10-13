@@ -17,7 +17,7 @@ for link in links.links:
         with open(f'data/temp_{file_name}', 'r') as inp:
             with open(file_location, 'w') as outp:
                 for line in inp:
-                    line=bytes(line, 'cp1252').decode('utf-8','ignore')
+                    line=bytes(line, 'cp1252', 'ignore').decode('utf-8','ignore')
                     outp.write(line)
 
         try:
