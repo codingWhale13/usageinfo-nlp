@@ -18,6 +18,7 @@ for link in links.links:
             with open(file_location, 'w') as outp:
                 for line in inp:
                     line=bytes(line, 'cp1252', 'ignore').decode('utf-8','ignore')
+                    line=line.replace('\"', '')
                     outp.write(line)
 
         try:
