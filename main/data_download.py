@@ -38,7 +38,7 @@ for link in dataset.links:
     try:
         os.remove(zipped_file_path)
         os.remove(temp_file_path)
-        os.remove('data/*.tmp')
+        os.remove(os.path.join(data_dir, '*.tmp'))
     except:
         print('Error removing files')
         pass
