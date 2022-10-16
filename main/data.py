@@ -4,27 +4,41 @@ import gzip
 import shutil
 import links
 
+
+current_dir = os.getcwd()
+data_dir = os.path.join(current_dir, 'data')
+
 for link in links.links:
-    file_name=link.split('/')[-1][:-3]
-    file_location=f'data/{file_name}'
-    if not os.path.exists(file_location):
-        file = wget.download(link, f'{file_location}.gz')
+    file_name = os.path.split(link)[-1][:-3]  # without the '.gz' at the end
+    
+    file_path = os.path.join(data_dir, file_name)
+    
+    # skip download if file already exists
+    if os.path.exists(file_path):
+        continue
 
-        with gzip.open(f'{file_location}.gz', 'rb') as f_in:
-            with open(f'data/temp_{file_name}', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
+    # download zipped file
+    zipped_file_path = os.path.join(data_dir, f'{file_path}.gz')
+    file = wget.download(link, zipped_file_path)
 
-        with open(f'data/temp_{file_name}', 'r') as inp:
-            with open(file_location, 'w') as outp:
-                for line in inp:
-                    line=bytes(line, 'cp1252', 'ignore').decode('utf-8','ignore')
-                    line=line.replace('\"', '')
-                    outp.write(line)
+    # unzip file
+    temp_file_path = os.path.join(data_dir, f'temp_{file_name}')
+    with gzip.open(zipped_file_path, 'rb') as f_in:
+        with open(temp_file_path, 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    
+    with open(temp_file_path, 'r') as inp:
+        with open(file_path, 'w') as outp:
+            for line in inp:
+                line = bytes(line, 'cp1252', 'ignore').decode('utf-8', 'ignore')
+                line = line.replace('\"', '')
+                outp.write(line)
 
-        try:
-            os.remove(f'{file_location}.gz')
-            os.remove(f'data/temp_{file_name}')
-            os.remove('data/*.tmp')
-        except:
-            print('Error removing files')
-            pass
+    # clean up
+    try:
+        os.remove(zipped_file_path)
+        os.remove(temp_file_path)
+        os.remove('data/*.tmp')
+    except:
+        print('Error removing files')
+        pass
