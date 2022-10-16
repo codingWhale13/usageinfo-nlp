@@ -2,13 +2,13 @@ import wget
 import os
 import gzip
 import shutil
-import links
+import main.dataset as dataset
 
 
 current_dir = os.getcwd()
 data_dir = os.path.join(current_dir, 'data')
 
-for link in links.links:
+for link in dataset.links:
     file_name = os.path.split(link)[-1][:-3]  # without the '.gz' at the end
     
     file_path = os.path.join(data_dir, file_name)
