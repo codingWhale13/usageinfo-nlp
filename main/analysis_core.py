@@ -33,13 +33,22 @@ def apply(df, apply_function, label=None, exception_value=None, skip_on_exceptio
     else:
         a = a0
     
-    results = df.apply(a, axis=1)
+    if type(df) == pd.Series:
+        results = df.apply(a)
+    else:
+        results = df.apply(a, axis=1)
 
     if skip_on_exception:
         return results[results.notna()]
     else:
         return results
 
+
+def filter_dataframe(df, apply_function, label=None, skip_on_exception = False):
+    if skip_on_exception:
+        return df[apply(df, apply_function, label=label, exception_value=False)]
+    else:
+        return df[apply(df, apply_function, label=label)]
 
 def load_reviews_from_folder(path, nrows=None):
     dfs = []
