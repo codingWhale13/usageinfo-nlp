@@ -5,19 +5,36 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 sentence_count = np.array([])
+word_count = np.array([]) 
+text_complexity = np.array([])
+poly_syllabcount = np.array([]) 
+
+def saveplot(array, name):
+    fig, ax = plt.subplots()
+    ax.hist(array, bins=100, linewidth=0.5, edgecolor="white")
+    ax.set_yscale('log', base=10)
+    plt.savefig(name)
+
 
 
 def analyse_data(df):
     global sentence_count
+    global text_complexity
+    global poly_syllabcount
     for row in df.itertuples():
         text = row.review_body
         try:
-            count = textstat.sentence_count(text)
-            if count > 100:
-                print(text)
+            sentencecount = textstat.sentence_count(text)
+            textcomplexity = textstat.flesch_reading_ease(text)
+            polysyllabcount = textstat.polysyllabcount(text)
         except:
-            count = 0
-        sentence_count = np.append(sentence_count, count)
+            sentencecount = 0
+            textcomplexity = 0
+            polysyllabcount = 0
+        sentence_count = np.append(sentence_count, sentencecount)
+        text_complexity = np.append(text_complexity, textcomplexity)
+        poly_syllabcount = np.append(poly_syllabcount, polysyllabcount)
+
   
 r_folder = "./data"
 w_folder = "./data_cleaned"
@@ -32,9 +49,7 @@ for filename in os.listdir(r_folder):
     else:
         continue
 
-print(sentence_count[:20])
-fig, ax = plt.subplots()
 
-ax.hist(sentence_count, bins=100, linewidth=0.5, edgecolor="white")
-ax.set_yscale('log', base=10)
-plt.savefig('sentence2')
+saveplot(sentence_count, "sentences")
+saveplot(text_complexity, "complexity" )
+saveplot(poly_syllabcount, "syllabcount")
