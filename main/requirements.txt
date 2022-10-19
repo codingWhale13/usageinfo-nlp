@@ -1,2 +1,5 @@
 wget
 pandas
+numpy
+matplotlib
+textstat

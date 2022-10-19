@@ -8,6 +8,7 @@ for link in links.links:
     file_name=link.split('/')[-1][:-3]
     file_location=f'data/{file_name}'
     if not os.path.exists(file_location):
+        os.mkdir('data')
         file = wget.download(link, f'{file_location}.gz')
 
         with gzip.open(f'{file_location}.gz', 'rb') as f_in:
