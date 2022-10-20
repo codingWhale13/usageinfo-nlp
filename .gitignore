@@ -119,3 +119,7 @@ data/
 
 # JetBrains IDE
 .idea/
+
+# Slurm
+.slurm
+.err
