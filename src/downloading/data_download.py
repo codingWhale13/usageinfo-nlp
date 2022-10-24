@@ -2,7 +2,7 @@ import wget
 import os
 import gzip
 import shutil
-import main.dataset as dataset
+import downloading.dataset as dataset
 
 
 current_dir = os.getcwd()
