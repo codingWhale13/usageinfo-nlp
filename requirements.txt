@@ -1,5 +1,0 @@
-wget
-pandas
-dask==2022.10.0
-dask-sql==2022.8.0
-python-dotenv==0.21.0
