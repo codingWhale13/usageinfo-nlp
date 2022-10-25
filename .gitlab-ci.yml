@@ -1,17 +1,21 @@
-image: node:18
+
+stages:
+  - build
+  - deploy
 
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH
-     
-cache:
-  paths:
-    - node_modules/
-    - labellingTool/node_modules
-
-pages:
-  rules:
     - if: $CI_COMMIT_BRANCH == "deployment/labelling_tool"
+     
+build:
+  image: node:18
+  stage: build
+  cache:
+    paths:
+      - labellingTool/node_modules
+  variables: 
+    # Replace this with your site URL
+    PUBLIC_URL: https://ais.gitlab.hpi.de/bsc2022-usageinfo/
   script:
     - cd labellingTool/
     - npm install
@@ -19,4 +23,17 @@ pages:
   artifacts:
     paths:
       - labellingTool/build
+
+pages:
+  image: alpine:latest
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none        # Do not clone git repo
+  script:
+    # Rename the CRA `build` folder to `public`
+    - mv labellingTool/build public         
+  artifacts:
+    paths:
+      - public
+
 
