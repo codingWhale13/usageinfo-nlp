@@ -1,0 +1,21 @@
+image: node:18
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH
+     
+cache:
+  paths:
+    - node_modules/
+
+pages:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "deployment/labellingTool"
+  script:
+    - cd labellingTool/
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - build
+
