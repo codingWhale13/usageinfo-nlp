@@ -1,6 +1,6 @@
 # BSc2022-usageinfo
 
-Gitlab of the 2022/2023 BSc project on Usage Information for Real-Life Products
+Gitlab of the 2022/2023 BSc project on Usage Information for Real-Life Products 
 
 ## Getting started
 
