@@ -10,7 +10,7 @@ cache:
 
 pages:
   rules:
-    - if: $CI_COMMIT_BRANCH == "deployment/labellingTool"
+    - if: $CI_COMMIT_BRANCH == "deployment/labelling_tool"
   script:
     - cd labellingTool/
     - npm install
