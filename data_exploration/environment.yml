@@ -1,4 +1,4 @@
-name: bp-data-exploration 
+name: bp-rlp-data-exploration 
 channels:
   - conda-forge
   - defaults
