@@ -1,7 +1,0 @@
-name: usageInfo
-channels:
-  - defaults
-dependencies:
-  - python-dotenv
-  - dask-sql
-  - wget

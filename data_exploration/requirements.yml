@@ -1,4 +1,4 @@
-name: usageInfo
+name: bp-data-exploration 
 channels:
   - conda-forge
   - defaults
