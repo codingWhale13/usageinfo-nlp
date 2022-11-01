@@ -75,7 +75,7 @@ export class Labeller extends React.Component{
             
             {this.state.reviewIndex < this.state.reviews.length &&
                 <>  
-                   <Card spacing={2}>
+                   <Card spacing={2} mb={2}>
 
                    <Flex minWidth='max-content' alignItems='center' gap='2'>
                     <Box>
@@ -99,7 +99,7 @@ export class Labeller extends React.Component{
               
             <Progress value={(this.state.reviewIndex / this.state.reviews.length) * 100 } />
             </Card>
-            
+
                     <Review  review={this.state.reviews[this.state.reviewIndex]}
                         onSave={(labels) => {
                             this.saveReviewLabels(labels, this.state.reviewIndex)
