@@ -1,9 +1,15 @@
 import { ReviewLabel } from './ReviewLabel';
-import { Button } from '@chakra-ui/react'
+import { Button, Progress, Heading, Container,   Stat,
+    StatLabel,
+    StatNumber,
+    StatHelpText,
+    StatArrow,
+    StatGroup, Flex, Spacer, ButtonGroup, Box } from '@chakra-ui/react'
+import { Review } from './Review';
+import { Card } from './Elements';
 const React = require('react');
 const {CSVUpload} = require('./CSVUpload');
 const Papa = require('papaparse');
-
 export class Labeller extends React.Component{
     constructor(props){
         super(props);
@@ -54,7 +60,7 @@ export class Labeller extends React.Component{
 
     render(){
 
-        return (<>
+        return (<Container maxWidth='1300px'>
 
             {this.state.reviews.length === 0 &&
                 <>
@@ -69,15 +75,36 @@ export class Labeller extends React.Component{
             
             {this.state.reviewIndex < this.state.reviews.length &&
                 <>  
-                   
-                   <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
-            Export
-        </Button>
-                    <h5>{this.state.reviewIndex}</h5>
-                    <ReviewLabel
-                        review={this.state.reviews[this.state.reviewIndex]}
-                        onSave={(labels) => this.saveReviewLabels(labels, this.state.reviewIndex)}
-                        onFinished={() => this.setState({reviewIndex: this.state.reviewIndex + 1})}
+                   <Card spacing={2}>
+
+                   <Flex minWidth='max-content' alignItems='center' gap='2'>
+                    <Box>
+
+                    
+                   <Heading as='h2'>Label reviews</Heading>
+                   <Stat>
+                        <StatLabel>Labelled reviews</StatLabel>
+                        <StatNumber>{this.state.reviewIndex}/{this.state.reviews.length}</StatNumber>
+                        </Stat>
+                     </Box>
+                    <Spacer />
+                    <ButtonGroup gap='2'>
+                        <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
+                                    Export
+                        </Button>
+                    </ButtonGroup>
+                    </Flex>
+                        
+                        
+              
+            <Progress value={(this.state.reviewIndex / this.state.reviews.length) * 100 } />
+            </Card>
+            
+                    <Review  review={this.state.reviews[this.state.reviewIndex]}
+                        onSave={(labels) => {
+                            this.saveReviewLabels(labels, this.state.reviewIndex)
+                            this.setState({reviewIndex: this.state.reviewIndex + 1})
+                        }}
                     />
                 </>
             }
@@ -87,7 +114,7 @@ export class Labeller extends React.Component{
           </Button>
             }
             
-      </>);
+      </Container>);
     }
 
 

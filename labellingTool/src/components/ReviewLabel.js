@@ -1,6 +1,8 @@
 const React = require('react');
 const Highlighter = require('web-highlighter');
 const { Switch, Button, ButtonGroup } =  require('@chakra-ui/react');
+const { TokenAnnotator } = require('react-text-annotate');
+
 
 export class ReviewLabel extends React.Component{
     constructor(props){
@@ -184,6 +186,10 @@ export class ReviewLabel extends React.Component{
                 </>
                 :
                 <>
+                <TokenAnnotator
+  tokens={['My', 'text', 'needs', 'annotating', 'for', 'NLP', 'training']}
+  value={[{start: 5, end: 6, tag: 'TOPIC'}]}
+/>
                 <p ref={this.reviewRef}>{this.props.review.review_body}</p>
                 <ButtonGroup gap='4'>
                     <Button onClick={this.resetSelection}>
