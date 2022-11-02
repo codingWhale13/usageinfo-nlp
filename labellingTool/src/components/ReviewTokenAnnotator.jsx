@@ -77,7 +77,12 @@ export class ReviewTokenAnnotator extends React.Component{
         <form
             onSubmit={(e) => {
                 e.preventDefault();
-                this.props.onSave(this.annotationsToLabel(this.state.value));
+                if(this.state.value.length === 0){
+                    this.props.onSave('-');
+                }
+                else{
+                    this.props.onSave(this.annotationsToLabel(this.state.value));
+                }
             }}
         >   
         <ButtonGroup>
