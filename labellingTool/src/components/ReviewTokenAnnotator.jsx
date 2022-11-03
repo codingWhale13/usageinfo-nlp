@@ -1,11 +1,10 @@
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
 const { Select, ButtonGroup, Button, Divider, Container } =  require('@chakra-ui/react');
+const {StarIcon } = require('@chakra-ui/icons');
 
 const tokenizeString = require('../utils/tokenize');
-
-const POSITIVE_TAG = 'POSITIVE';
-const NEGATIVE_TAG = 'NEGATIVE';
+const {POSITIVE_TAG, NEGATIVE_TAG} = require('../utils/tags');
 
 const TAG_COLORS = {
     [POSITIVE_TAG] : '#8afd8a',
@@ -18,9 +17,7 @@ export class ReviewTokenAnnotator extends React.Component{
  
    constructor(props){
         super(props);
-
         this.state = {
-            value: [],
             tag: POSITIVE_TAG
         }
     }
@@ -61,14 +58,8 @@ export class ReviewTokenAnnotator extends React.Component{
         return mergedAnnotations;
     }
 
-    componentDidUpdate(prevProps) {
-        if(prevProps.review_body !== this.props.review_body){
-            this.resetAnnotation();
-        }
-    }
-
     resetAnnotation = () => {
-        this.setState({value: []});
+        this.props.onSaveAnnotations([]);
     }
 
     render(){
@@ -77,20 +68,29 @@ export class ReviewTokenAnnotator extends React.Component{
         <form
             onSubmit={(e) => {
                 e.preventDefault();
-                if(this.state.value.length === 0){
-                    this.props.onSave('-');
-                }
-                else{
-                    this.props.onSave(this.annotationsToLabel(this.state.value));
-                }
+                this.props.navigateToNext();
             }}
         >   
         <ButtonGroup>
+                <Button onClick={() => {
+                   this.props.navigateToPrevious();
+                }
+                }>
+                    Previous
+                </Button>
+                {this.props.isFlagged ? 
+                    <Button colorScheme='red' onClick={() => this.props.onSaveFlag(false)}>
+                    <StarIcon />
+                    Remove flag
+                </Button>
+               
+                : 
                 <Button colorScheme='red' onClick={() => {
-                    this.props.onSave('?');
+                    this.props.onSaveFlag(true);
                 }}>
                     Flag for follow up
                 </Button>
+                }
                 <Button onClick={this.resetAnnotation}>
                     Reset
                 </Button>
@@ -117,10 +117,10 @@ export class ReviewTokenAnnotator extends React.Component{
                     minHeight: '1000px'
                 }}
                 tokens={tokenizeString(this.props.review_body)}
-                value={this.state.value}
+                value={this.props.annotations}
                 onChange={value => {
                     const mergedValue = this.mergeAnnotations(value);
-                    this.setState({value: mergedValue});
+                    this.props.onSaveAnnotations(mergedValue);
                 }}
                 getSpan={span => ({
                     ...span,

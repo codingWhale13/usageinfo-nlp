@@ -27,7 +27,12 @@ export function Review(props){
             <GridItem pl='2'  area={'main'}>
                 <ReviewTokenAnnotator 
                     review_body={review.review_body}
-                    onSave={props.onSave}
+                    isFlagged={props.isFlagged}
+                    annotations={props.annotations}
+                    onSaveAnnotations={props.onSaveAnnotations}
+                    onSaveFlag={props.onSaveFlag}
+                    navigateToNext={props.navigateToNext}
+                    navigateToPrevious={props.navigateToPrevious}
                 />
             </GridItem>
         </Grid>
