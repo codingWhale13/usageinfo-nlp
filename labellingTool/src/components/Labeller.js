@@ -90,7 +90,7 @@ export class Labeller extends React.Component{
     
 
     render(){
-        const reviewLabel = this.state.reviews.length ? this.state.reviews[this.state.reviewIndex].label : {};
+        const reviewLabel = (this.state.reviews.length && this.state.reviewIndex < this.state.reviews.length)  ? this.state.reviews[this.state.reviewIndex].label : {};
         console.log(this.state, reviewLabel);
         return (<Container maxWidth='1300px'>
 
@@ -102,57 +102,64 @@ export class Labeller extends React.Component{
                     />
                  </>
             }
-           
-
+           {this.state.reviewIndex < this.state.reviews.length &&
             
-            {this.state.reviewIndex < this.state.reviews.length &&
-                <>  
-                   <Card spacing={2} mb={2}>
+            
+                   <><Card spacing={2} mb={2}>
 
-                   <Flex minWidth='max-content' alignItems='center' gap='2'>
-                    <Box>
+                        <Flex minWidth='max-content' alignItems='center' gap='2'>
+                            <Box>
 
-                    
-                   <Heading as='h2'>Label reviews</Heading>
-                   <Stat>
-                        <StatLabel>Labelled reviews</StatLabel>
-                        <StatNumber>{this.state.reviewIndex + 1}/{this.state.reviews.length}</StatNumber>
-                        </Stat>
-                     </Box>
-                    <Spacer />
-                    <ButtonGroup gap='2'>
-                        <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
+
+                                <Heading as='h2'>Label reviews</Heading>
+                                <Stat>
+                                    <StatLabel>Labelled reviews</StatLabel>
+                                    <StatNumber>{this.state.reviewIndex + 1}/{this.state.reviews.length}</StatNumber>
+                                </Stat>
+                            </Box>
+                            <Spacer />
+                            <ButtonGroup gap='2'>
+                                <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
                                     Export
-                        </Button>
-                    </ButtonGroup>
-                    </Flex>
-                        
-                        
-              
-            <Progress value={((this.state.reviewIndex + 1)/ this.state.reviews.length) * 100 } />
-            </Card>
+                                </Button>
+                            </ButtonGroup>
+                        </Flex>
 
-                    <Review  review={this.state.reviews[this.state.reviewIndex]}
+
+
+                        <Progress value={((this.state.reviewIndex + 1) / this.state.reviews.length) * 100} />
+                    </Card><Review review={this.state.reviews[this.state.reviewIndex]}
                         onSaveAnnotations={(annotations) => {
-                            this.saveReviewsAnnotations(annotations, this.state.reviewIndex)
-                        }}
+                            this.saveReviewsAnnotations(annotations, this.state.reviewIndex);
+                        } }
                         onSaveFlag={(isFlagged) => {
                             this.saveReviewFlag(isFlagged, this.state.reviewIndex);
-                        }}
+                        } }
                         navigateToNext={() => {
-                            this.setState({reviewIndex: this.state.reviewIndex + 1, maxReviewIndex: Math.max(this.state.reviewIndex + 1, this.state.maxReviewIndex)});
-                        }}
+                            this.setState({ reviewIndex: this.state.reviewIndex + 1, maxReviewIndex: Math.max(this.state.reviewIndex + 1, this.state.maxReviewIndex) });
+                        } }
                         navigateToPrevious={() => {
-                            if(this.state.reviewIndex > 0){
-                                this.setState({reviewIndex: this.state.reviewIndex - 1});
+                            if (this.state.reviewIndex > 0) {
+                                this.setState({ reviewIndex: this.state.reviewIndex - 1 });
                             }
-                        }}
+                        } }
 
                         isFlagged={reviewLabel ? reviewLabel.isFlagged : false}
-                        annotations={reviewLabel ? reviewLabel.annotations : []}
-                    />
-                </>
+                        annotations={reviewLabel ? reviewLabel.annotations : []} /></>
             }
+            {(this.state.reviewIndex !== 0 && this.state.reviewIndex >= this.state.reviews.length) &&
+            <ButtonGroup>
+
+           
+            <Button onClick={() => { this.setState({ reviewIndex: this.state.reviewIndex - 1 });}}>
+                Previous
+            </Button>
+              <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
+              Export
+          </Button>
+          </ButtonGroup>
+            }
+
       </Container>);
     }
 

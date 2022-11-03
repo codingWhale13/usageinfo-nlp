@@ -9,8 +9,6 @@ import {
 } from '@chakra-ui/react';
 import { ColorModeSwitcher } from './ColorModeSwitcher';
 import {Labeller} from './components/Labeller';
-import { ReviewTokenAnnotator } from './components/ReviewTokenAnnotator';
-import { Review} from './components/Review';
 
 function App() {
   return (
