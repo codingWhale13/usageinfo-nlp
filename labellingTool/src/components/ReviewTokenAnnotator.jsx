@@ -22,10 +22,6 @@ export class ReviewTokenAnnotator extends React.Component{
         }
     }
 
-    annotationsToLabel = (annotations) => {
-        return annotations.map((annotation) => [annotation.start, annotation.end, annotation.tag === POSITIVE_TAG ? 1 : 0]);
-    }
-
     mergeAnnotations = (annotations) => {
         if(annotations.length === 0){
             return annotations;

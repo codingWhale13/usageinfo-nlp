@@ -6,6 +6,8 @@ import { Review } from './Review';
 import { Card } from './Elements';
 const React = require('react');
 const {CSVUpload} = require('./CSVUpload');
+const {JSONUpload} = require('./JSONUpload');
+
 const Papa = require('papaparse');
 const { POSITIVE_TAG } = require('../utils/tags');
 const _ = require('lodash');
@@ -44,6 +46,16 @@ export class Labeller extends React.Component{
         });
     }
 
+    parseJSONReviews = async (e) => {
+        const file = e.target.files[0];
+        const jsonData = JSON.parse(await file.text());
+        this.setState({
+            reviews: jsonData.reviews,
+            reviewIndex: jsonData.maxReviewIndex,
+            maxReviewIndex: jsonData.maxReviewIndex
+        });
+    }
+
     saveReviewFlag = (isFlagged, i) => {
         const reviews = [...this.state.reviews];
         reviews[i].label.isFlagged = isFlagged;
@@ -54,6 +66,26 @@ export class Labeller extends React.Component{
         const reviews = [...this.state.reviews];
         reviews[i].label.annotations = annotations;
         this.setState({reviews: reviews});
+    }
+
+    exportReviewsToJSON = () => {
+        const reviewState = {
+            reviews: this.state.reviews,
+            maxReviewIndex: this.state.maxReviewIndex
+        };
+        const jsonBlob = new Blob([JSON.stringify(reviewState)], { type: "text/plain;charset=utf-8" });
+        this.downloadBlob(jsonBlob, 'my_data.json');
+
+    }
+
+    downloadBlob = (blob, fileName) => {
+        const encodedUri = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     exportLabelsToCSV = () => {
@@ -77,14 +109,8 @@ export class Labeller extends React.Component{
         }
         const csv = Papa.unparse(reviews, {delimiter:'\t'});
         console.log('csv:',csv);
-        var blob = new Blob([csv], { type: 'text/tsv;charset=utf-8;' });
-        let encodedUri = URL.createObjectURL(blob);
-        let link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "my_data2.tsv");
-        document.body.appendChild(link); // Required for FF
-
-        link.click();
+        const blob = new Blob([csv], { type: 'text/tsv;charset=utf-8;' });
+        this.downloadBlob(blob, 'my_data.tsv');   
     }
 
     
@@ -92,6 +118,16 @@ export class Labeller extends React.Component{
     render(){
         const reviewLabel = (this.state.reviews.length && this.state.reviewIndex < this.state.reviews.length)  ? this.state.reviews[this.state.reviewIndex].label : {};
         console.log(this.state, reviewLabel);
+
+        const exportButtons = <>
+             <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
+                Export to TSV
+            </Button>
+            <Button colorScheme='teal' size='lg' onClick={this.exportReviewsToJSON}>
+                Export to JSON
+            </Button>
+        </>;
+
         return (<Container maxWidth='1300px'>
 
             {this.state.reviews.length === 0 &&
@@ -99,6 +135,10 @@ export class Labeller extends React.Component{
                     <h1>Bitte ein .tsv Datei mit Reviews hochladen</h1>
                     <CSVUpload 
                         onUpload={this.parseReviews}
+                    />
+                    <h1>Oder eine bereits gelabelled JSON Datei hochladen</h1>
+                    <JSONUpload 
+                        onUpload={this.parseJSONReviews}
                     />
                  </>
             }
@@ -119,9 +159,7 @@ export class Labeller extends React.Component{
                             </Box>
                             <Spacer />
                             <ButtonGroup gap='2'>
-                                <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
-                                    Export
-                                </Button>
+                               {exportButtons}
                             </ButtonGroup>
                         </Flex>
 
@@ -154,9 +192,7 @@ export class Labeller extends React.Component{
             <Button onClick={() => { this.setState({ reviewIndex: this.state.reviewIndex - 1 });}}>
                 Previous
             </Button>
-              <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
-              Export
-          </Button>
+             {exportButtons}
           </ButtonGroup>
             }
 
