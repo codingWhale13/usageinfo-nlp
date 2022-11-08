@@ -34,7 +34,8 @@ export class Labeller extends React.Component{
                 for (const review of reviews) {
                         review.label = {
                             isFlagged: false,
-                            annotations: []
+                            annotations: [],
+                            customUsageOptions: []
                         }
                 }
                 this.setState({reviews: reviews});
@@ -65,6 +66,12 @@ export class Labeller extends React.Component{
     saveReviewsAnnotations = (annotations, i) => {
         const reviews = [...this.state.reviews];
         reviews[i].label.annotations = annotations;
+        this.setState({reviews: reviews});
+    }
+
+    saveCustomUsageOptions = (customUsageOptions, i) => {
+        const reviews = [...this.state.reviews];
+        reviews[i].label.customUsageOptions = customUsageOptions;
         this.setState({reviews: reviews});
     }
 
@@ -170,6 +177,11 @@ export class Labeller extends React.Component{
                         onSaveAnnotations={(annotations) => {
                             this.saveReviewsAnnotations(annotations, this.state.reviewIndex);
                         } }
+
+                        onSaveCustomUsageOptions={(customUsageOptions) => {
+                            this.saveCustomUsageOptions(customUsageOptions, this.state.reviewIndex);
+                        }} 
+
                         onSaveFlag={(isFlagged) => {
                             this.saveReviewFlag(isFlagged, this.state.reviewIndex);
                         } }
