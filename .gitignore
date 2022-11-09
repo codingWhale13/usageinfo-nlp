@@ -120,6 +120,10 @@ data/
 # JetBrains IDE
 .idea/
 
+# VSCode
+.vscode/
+
 # Slurm
 .slurm
 .err
+.out
