@@ -35,7 +35,8 @@ export class Labeller extends React.Component{
                         review.label = {
                             isFlagged: false,
                             annotations: [],
-                            customUsageOptions: []
+                            customUsageOptions: [],
+                            replacementClasses: new Map()
                         }
                 }
                 this.setState({reviews: reviews});
@@ -72,6 +73,12 @@ export class Labeller extends React.Component{
     saveCustomUsageOptions = (customUsageOptions, i) => {
         const reviews = [...this.state.reviews];
         reviews[i].label.customUsageOptions = customUsageOptions;
+        this.setState({reviews: reviews});
+    }
+
+    saveReplacementClasses = (replacementClasses, i) => {
+        const reviews = [...this.state.reviews];
+        reviews[i].label.replacementClasses = new Map(replacementClasses);
         this.setState({reviews: reviews});
     }
 
@@ -185,6 +192,11 @@ export class Labeller extends React.Component{
                         onSaveFlag={(isFlagged) => {
                             this.saveReviewFlag(isFlagged, this.state.reviewIndex);
                         } }
+
+                        onSaveReplacementClasses={(replacementClasses) => {
+                            this.saveReplacementClasses(replacementClasses, this.state.reviewIndex);
+                        }}
+
                         navigateToNext={() => {
                             this.setState({ reviewIndex: this.state.reviewIndex + 1, maxReviewIndex: Math.max(this.state.reviewIndex + 1, this.state.maxReviewIndex) });
                         } }

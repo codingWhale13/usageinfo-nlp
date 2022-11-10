@@ -1,13 +1,30 @@
-import { AnnotationUsageOptionTag, CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
+import {  CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 
 const React = require('react');
-const { Grid, GridItem, Heading, Tag, Divider, Wrap } =  require('@chakra-ui/react');
+const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button } =  require('@chakra-ui/react');
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');
 const { Card } = require('./Elements');
+const Suggestions = require('../utils/suggestions');
 
 export function Review(props){
 
         const { review } = props;
+
+
+        const deleteAnnotation = (annotation) => {
+            props.onSaveAnnotations(props.review.label.annotations.filter(annotationA => annotationA !== annotation));
+        };
+
+        const deleteCustomUsageOption = (customUsageOption) => {
+            props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.filter(usageOptionA => usageOptionA !== customUsageOption));
+        };
+
+        const deleteReplacementClassesMapping = (usageOption) => {
+            const newReplacementClasses = new Map(props.review.label.replacementClasses);
+            newReplacementClasses.delete(usageOption);
+            props.onSaveReplacementClasses(newReplacementClasses);
+        };
+
         if(!review){
             return 'No review';
         }
@@ -28,21 +45,49 @@ export function Review(props){
                 <Divider m={2}/>
                 <Heading as='h5' size='sm' padding={2}>Selected usage options</Heading>
                 <Wrap spacing={2}>
-                {props.review.label.annotations.map((annotation) => <AnnotationUsageOptionTag 
-                    annotation={annotation}
-                    onDelete = {() => {
-                        props.onSaveAnnotations(props.review.label.annotations.filter(annotationA => annotationA !== annotation))
-                    }}
-                    />
+                {props.review.label.annotations.map((annotation) => 
+                    <UsageOptionTag
+                        annotation={annotation}
+                        deleteAnnotation={deleteAnnotation}
+                        replacementClasses={review.label.replacementClasses}
+                        deleteReplacementClassesMapping={deleteReplacementClassesMapping}>
+
+
+                        </UsageOptionTag>
                 )}
-                {props.review.label.customUsageOptions.map(customUsageOption => <UsageOptionTag
-                    usageOption={customUsageOption}
-                    onDelete={() => {
-                        props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.filter(usageOptionA => usageOptionA !== customUsageOption));
-                    }} 
+                
+                
+
+                {props.review.label.customUsageOptions.map(customUsageOption => <UsageOptionTag 
+                
+                    customUsageOption={customUsageOption}
+                    replacementClasses={review.label.replacementClasses}
+                    deleteCustomUsageOption={deleteCustomUsageOption}
+                    deleteReplacementClassesMapping={deleteReplacementClassesMapping}
                 >
 
+
                 </UsageOptionTag>)}
+
+                <Button
+                    onClick={() => {
+                        const newReplacementClasses = new Map(review.label.replacementClasses);
+                        newReplacementClasses.set('test', 'fuck test ;)');
+                        props.onSaveReplacementClasses(newReplacementClasses);
+                    }}
+                >
+                    Tag smag
+                </Button>
+
+                <Button
+                    onClick={() => {
+                        const newReplacementClasses = new Map(review.label.replacementClasses);
+                        newReplacementClasses.set('Sanctioned', 'sanctioning');
+                        props.onSaveReplacementClasses(newReplacementClasses);
+                    }}
+                >
+                    Did you mean: sanctioning?
+                </Button>
                 <CustomUsageOptionFormTag 
                     onSave={(newCustomUsageOption) => props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption))}
                 />
