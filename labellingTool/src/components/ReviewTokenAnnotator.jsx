@@ -2,7 +2,7 @@ import { Feature } from 'flagged';
 
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
-const { Select,  Divider, Container } =  require('@chakra-ui/react');
+const { Select,  Divider, Container, Box } =  require('@chakra-ui/react');
 
 const tokenizeString = require('../utils/tokenize');
 const {POSITIVE_TAG, NEGATIVE_TAG} = require('../utils/tags');
@@ -58,7 +58,7 @@ export class ReviewTokenAnnotator extends React.Component{
     
 
     render(){
-        return (<Container>
+        return (<Box>
            
         <form
             onSubmit={(e) => {
@@ -99,6 +99,6 @@ export class ReviewTokenAnnotator extends React.Component{
            
             
       </form>
-        </Container>);
+    </Box>);
     }
 }

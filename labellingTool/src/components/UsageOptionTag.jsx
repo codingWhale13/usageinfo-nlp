@@ -1,5 +1,6 @@
 import React from 'react';
-const { Tag, TagLabel, TagRightIcon, Input, InputGroup, InputRightAddon, Button, TagCloseButton} = require('@chakra-ui/react');
+import { IconBase } from 'react-icons/lib';
+const { Tag, TagLabel, TagRightIcon, Input, InputGroup, InputRightAddon, Button, IconButton, TagCloseButton, InputRightElement} = require('@chakra-ui/react');
 const { CloseIcon, AddIcon, ArrowBackIcon } = require('@chakra-ui/icons');
 export function RawUsageOptionTag({usageOption, deleteUsageOption, deleteReplacementClassesMapping, replacementClasses}){   
     const hasReplacementTag = replacementClasses.has(usageOption);
@@ -61,14 +62,13 @@ export function CustomUsageOptionFormTag({onSave}){
     return <Tag p={0}>
         <form onSubmit={saveNewCustomUsageOption} ref={formRef}>
             <InputGroup size='md'>
-            <Input
-                name='custom_usage_option'
-                placeholder='Add new usage option'
-            />
-            <InputRightAddon  p={0} children={
-                   <Button type='submit' > < AddIcon /></Button>
-            }/>
-             
+                <Input
+                    name='custom_usage_option'
+                    placeholder='Add new usage option'
+                />
+                <InputRightElement  p={0} children={
+                    <IconButton type='submit' h='2rem' size='sm' icon={<AddIcon />} ></IconButton>
+                }/>
             </InputGroup>
             
         </form>

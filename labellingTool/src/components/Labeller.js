@@ -1,7 +1,7 @@
 import { Button, Progress, Heading, Container,   Stat,
     StatLabel,
     StatNumber,
-    Flex, Spacer, ButtonGroup, Box } from '@chakra-ui/react'
+    VStack, Spacer, ButtonGroup, Box } from '@chakra-ui/react'
 import { Review } from './Review';
 import { Card } from './Elements';
 import { Feature } from 'flagged';
@@ -145,7 +145,7 @@ export class Labeller extends React.Component{
         </>;
 
         return (<Container maxWidth='1300px'>
-
+            
             {this.state.reviews.length === 0 &&
                 <>
                     <h1>Bitte ein .tsv Datei mit Reviews hochladen</h1>
@@ -156,20 +156,16 @@ export class Labeller extends React.Component{
                     <JSONUpload 
                         onUpload={this.parseJSONReviews}
                     />
-                 </>
+                </>
             }
            {this.state.reviewIndex < this.state.reviews.length &&
-            
-            
-                   <><Card spacing={2} mb={2}>
-
-                        <Flex minWidth='max-content' alignItems='center' gap='2'>
+                <>
+                   <Card spacing={2} mb={2}>
+                        <VStack spacing='1px' align='left'>
+                        
                             <Box>
-
-
-                                <Heading as='h2'>Label reviews</Heading>
+                                <Heading as='h5' size='md'>Label reviews</Heading>
                                 <Stat>
-                                    <StatLabel>Labelled reviews</StatLabel>
                                     <StatNumber>{this.state.reviewIndex + 1}/{this.state.reviews.length}</StatNumber>
                                 </Stat>
                             </Box>
@@ -180,15 +176,16 @@ export class Labeller extends React.Component{
                                 </ButtonGroup>
                             </Feature>
                             
-                        </Flex>
-
-
+                        </VStack>
 
                         <Progress value={((this.state.reviewIndex + 1) / this.state.reviews.length) * 100} />
-                    </Card><Review review={this.state.reviews[this.state.reviewIndex]}
+                    </Card>
+                    
+                    <Review review={this.state.reviews[this.state.reviewIndex]}
                         onSaveAnnotations={(annotations) => {
                             this.saveReviewsAnnotations(annotations, this.state.reviewIndex);
                         } }
+
 
                         onSaveCustomUsageOptions={(customUsageOptions) => {
                             this.saveCustomUsageOptions(customUsageOptions, this.state.reviewIndex);
@@ -212,19 +209,19 @@ export class Labeller extends React.Component{
                         } }
 
                         isFlagged={reviewLabel ? reviewLabel.isFlagged : false}
-                        annotations={reviewLabel ? reviewLabel.annotations : []} /></>
+                        annotations={reviewLabel ? reviewLabel.annotations : []} />
+                </>
             }
             {(this.state.reviewIndex !== 0 && this.state.reviewIndex >= this.state.reviews.length) &&
-            <ButtonGroup>
 
-           
-            <Button onClick={() => { this.setState({ reviewIndex: this.state.reviewIndex - 1 });}}>
-                Previous
-            </Button>
-            
-            <Feature name="localLabelling">
-                {exportButtons}
-             </Feature>
+            <ButtonGroup>
+                <Button onClick={() => { this.setState({ reviewIndex: this.state.reviewIndex - 1 });}}>
+                    Previous
+                </Button>
+                
+                <Feature name="localLabelling">
+                    {exportButtons}
+                </Feature>
             </ButtonGroup>
             }
 
