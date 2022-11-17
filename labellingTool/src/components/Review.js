@@ -2,7 +2,9 @@ import {  CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
 
 const React = require('react');
-const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button } =  require('@chakra-ui/react');
+const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup } =  require('@chakra-ui/react');
+const {StarIcon } = require('@chakra-ui/icons');
+
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');
 const { Card } = require('./Elements');
 
@@ -24,6 +26,10 @@ export function Review(props){
             props.onSaveReplacementClasses(newReplacementClasses);
         };
 
+        const resetAnnotation = () => {
+            props.onSaveAnnotations([]);
+            props.onSaveCustomUsageOptions([]);
+        }
         if(!review){
             return 'No review';
         }
@@ -79,14 +85,43 @@ export function Review(props){
                
             </GridItem>
             <GridItem pl='2'  area={'main'}>
+                <ButtonGroup>
+                    <Button onClick={() => {
+                        props.navigateToPrevious();
+                    }
+                    }>
+                        Previous
+                    </Button>
+                    <Feature name="localLabelling">
+                        {props.isFlagged ? 
+                            <Button colorScheme='red' onClick={() => props.onSaveFlag(false)}>
+                            <StarIcon />
+                            Remove flag
+                        </Button>
+                    
+                        : 
+                        <Button colorScheme='red' onClick={() => {
+                            props.onSaveFlag(true);
+                        }}>
+                            Flag for follow up
+                        </Button>
+                        }
+                    </Feature>
+                    <Button onClick={resetAnnotation}>
+                        Reset
+                    </Button>
+                    
+                    <Button type='submit' colorScheme='green' onClick={props.navigateToNext}>
+                        Next
+                    </Button>
+                </ButtonGroup>
+
+                <Divider m={2}/>
+
                 <ReviewTokenAnnotator 
                     review_body={review.review_body}
-                    isFlagged={props.isFlagged}
                     annotations={props.annotations}
                     onSaveAnnotations={props.onSaveAnnotations}
-                    onSaveFlag={props.onSaveFlag}
-                    navigateToNext={props.navigateToNext}
-                    navigateToPrevious={props.navigateToPrevious}
                 />
             </GridItem>
         </Grid>

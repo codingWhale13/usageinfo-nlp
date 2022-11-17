@@ -2,8 +2,7 @@ import { Feature } from 'flagged';
 
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
-const { Select, ButtonGroup, Button, Divider, Container } =  require('@chakra-ui/react');
-const {StarIcon } = require('@chakra-ui/icons');
+const { Select,  Divider, Container } =  require('@chakra-ui/react');
 
 const tokenizeString = require('../utils/tokenize');
 const {POSITIVE_TAG, NEGATIVE_TAG} = require('../utils/tags');
@@ -56,9 +55,7 @@ export class ReviewTokenAnnotator extends React.Component{
         return mergedAnnotations;
     }
 
-    resetAnnotation = () => {
-        this.props.onSaveAnnotations([]);
-    }
+    
 
     render(){
         return (<Container>
@@ -66,41 +63,9 @@ export class ReviewTokenAnnotator extends React.Component{
         <form
             onSubmit={(e) => {
                 e.preventDefault();
-                this.props.navigateToNext();
             }}
         >   
-        <ButtonGroup>
-                <Button onClick={() => {
-                   this.props.navigateToPrevious();
-                }
-                }>
-                    Previous
-                </Button>
-                <Feature name="localLabelling">
-                    {this.props.isFlagged ? 
-                        <Button colorScheme='red' onClick={() => this.props.onSaveFlag(false)}>
-                        <StarIcon />
-                        Remove flag
-                    </Button>
-                
-                    : 
-                    <Button colorScheme='red' onClick={() => {
-                        this.props.onSaveFlag(true);
-                    }}>
-                        Flag for follow up
-                    </Button>
-                    }
-                </Feature>
-                <Button onClick={this.resetAnnotation}>
-                    Reset
-                </Button>
-                
-                <Button type='submit' colorScheme='green'>
-                    Next
-                </Button>
-            </ButtonGroup>
-
-            <Divider m={2}/>
+        
             <Feature name="negativeUseCases">
                 <Select
                     onChange={e => this.setState({ tag: e.target.value })}
