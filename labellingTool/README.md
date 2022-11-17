@@ -3,9 +3,10 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 - Requriements: node 18 & npm 8
 ## Development workflow
 ```bash
-npm install
+npm install --legacy-peer-deps
 npm start
 ```
+
 ## Available Scripts
 
 In the project directory, you can run:
@@ -72,3 +73,8 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `npm run build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+
+
+### This and that
+- make b a shallow copy of a: `b = [...a]`
+- check if a is a string: `if (a) {}`
