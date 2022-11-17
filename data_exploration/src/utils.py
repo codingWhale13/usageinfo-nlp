@@ -19,9 +19,9 @@ def get_slurm_client(
     queue="magic",
     nodes: int = 1,
     extra_args=["--output=/dev/null", "--exclude nvram-[01-06]"],
-    logging=False,
+    suppress_output=True,
 ):
-    if logging:
+    if not suppress_output:
         logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
     cluster = SLURMCluster(
