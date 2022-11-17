@@ -69,7 +69,11 @@ export function Review(props){
                 </UsageOptionTag>)}
 
                 <CustomUsageOptionFormTag 
-                    onSave={(newCustomUsageOption) => props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption))}
+                    onSave={(newCustomUsageOption) => {
+                        if(!props.review.label.customUsageOptions.includes(newCustomUsageOption)){
+                            props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption));
+                        }
+                    }}
                 />
                 </Wrap>
                
