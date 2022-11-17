@@ -1,15 +1,14 @@
 import {  CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
+import { Feature } from 'flagged';
 
 const React = require('react');
 const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button } =  require('@chakra-ui/react');
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');
 const { Card } = require('./Elements');
-const Suggestions = require('../utils/suggestions');
 
 export function Review(props){
 
         const { review } = props;
-
 
         const deleteAnnotation = (annotation) => {
             props.onSaveAnnotations(props.review.label.annotations.filter(annotationA => annotationA !== annotation));
@@ -69,25 +68,6 @@ export function Review(props){
 
                 </UsageOptionTag>)}
 
-                <Button
-                    onClick={() => {
-                        const newReplacementClasses = new Map(review.label.replacementClasses);
-                        newReplacementClasses.set('test', 'fuck test ;)');
-                        props.onSaveReplacementClasses(newReplacementClasses);
-                    }}
-                >
-                    Tag smag
-                </Button>
-
-                <Button
-                    onClick={() => {
-                        const newReplacementClasses = new Map(review.label.replacementClasses);
-                        newReplacementClasses.set('Sanctioned', 'sanctioning');
-                        props.onSaveReplacementClasses(newReplacementClasses);
-                    }}
-                >
-                    Did you mean: sanctioning?
-                </Button>
                 <CustomUsageOptionFormTag 
                     onSave={(newCustomUsageOption) => props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption))}
                 />

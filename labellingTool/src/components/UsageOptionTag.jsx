@@ -1,20 +1,21 @@
 import React from 'react';
-const { Tag, TagLabel, TagRightIcon, Input, InputGroup, InputRightAddon, Button} = require('@chakra-ui/react');
-const { CloseIcon, AddIcon } = require('@chakra-ui/icons');
-export function RawUsageOptionTag({usageOption, deleteUsageOption, deleteReplacementClassesMapping, replacementClasses}){    
+const { Tag, TagLabel, TagRightIcon, Input, InputGroup, InputRightAddon, Button, TagCloseButton} = require('@chakra-ui/react');
+const { CloseIcon, AddIcon, ArrowBackIcon } = require('@chakra-ui/icons');
+export function RawUsageOptionTag({usageOption, deleteUsageOption, deleteReplacementClassesMapping, replacementClasses}){   
+    const hasReplacementTag = replacementClasses.has(usageOption);
+    
     return  (<Tag 
                 colorScheme='green'
                 variant='solid'
                 size='md'
             >
-        <TagLabel> {replacementClasses.has(usageOption) ? replacementClasses.get(usageOption) : usageOption}</TagLabel>
-        <TagRightIcon 
-            as={CloseIcon}
-            onClick={() => {
-                deleteUsageOption();
-                deleteReplacementClassesMapping(usageOption);
-            }}
-        />
+        <TagLabel> {hasReplacementTag ? replacementClasses.get(usageOption) : usageOption}</TagLabel>
+        {
+            hasReplacementTag ?
+            <TagRightIcon as={ArrowBackIcon} onClick={() => deleteReplacementClassesMapping(usageOption)}/> :
+            <TagCloseButton size={"lg"} as={CloseIcon} onClick={() => deleteUsageOption(usageOption)} />
+        }
+        
     
     </Tag>);
 }

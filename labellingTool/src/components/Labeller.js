@@ -4,6 +4,8 @@ import { Button, Progress, Heading, Container,   Stat,
     Flex, Spacer, ButtonGroup, Box } from '@chakra-ui/react'
 import { Review } from './Review';
 import { Card } from './Elements';
+import { Feature } from 'flagged';
+
 const React = require('react');
 const {CSVUpload} = require('./CSVUpload');
 const {JSONUpload} = require('./JSONUpload');
@@ -39,8 +41,7 @@ export class Labeller extends React.Component{
                             replacementClasses: new Map()
                         }
                 }
-                this.setState({reviews: reviews});
-            
+                this.setState({reviews: reviews});            
             },
             error : (error) => {
                 console.error(error)
@@ -133,6 +134,7 @@ export class Labeller extends React.Component{
         const reviewLabel = (this.state.reviews.length && this.state.reviewIndex < this.state.reviews.length)  ? this.state.reviews[this.state.reviewIndex].label : {};
         console.log(this.state, reviewLabel);
 
+    
         const exportButtons = <>
              <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
                 Export to TSV
@@ -172,9 +174,12 @@ export class Labeller extends React.Component{
                                 </Stat>
                             </Box>
                             <Spacer />
-                            <ButtonGroup gap='2'>
-                               {exportButtons}
-                            </ButtonGroup>
+                            <Feature name="localLabelling">
+                                <ButtonGroup gap='2'>
+                                {exportButtons}
+                                </ButtonGroup>
+                            </Feature>
+                            
                         </Flex>
 
 
@@ -216,8 +221,11 @@ export class Labeller extends React.Component{
             <Button onClick={() => { this.setState({ reviewIndex: this.state.reviewIndex - 1 });}}>
                 Previous
             </Button>
-             {exportButtons}
-          </ButtonGroup>
+            
+            <Feature name="localLabelling">
+                {exportButtons}
+             </Feature>
+            </ButtonGroup>
             }
 
       </Container>);

@@ -12,6 +12,7 @@
     "@testing-library/user-event": "^14.4.3",
     "basichtml": "^2.4.9",
     "core-js": "^3.26.0",
+    "flagged": "^2.0.6",
     "framer-motion": "^6.5.1",
     "jsdom": "^20.0.2",
     "jsdom-polyfill": "^0.1.0",

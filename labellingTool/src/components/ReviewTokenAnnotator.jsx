@@ -1,3 +1,5 @@
+import { Feature } from 'flagged';
+
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
 const { Select, ButtonGroup, Button, Divider, Container } =  require('@chakra-ui/react');
@@ -74,19 +76,21 @@ export class ReviewTokenAnnotator extends React.Component{
                 }>
                     Previous
                 </Button>
-                {this.props.isFlagged ? 
-                    <Button colorScheme='red' onClick={() => this.props.onSaveFlag(false)}>
-                    <StarIcon />
-                    Remove flag
-                </Button>
-               
-                : 
-                <Button colorScheme='red' onClick={() => {
-                    this.props.onSaveFlag(true);
-                }}>
-                    Flag for follow up
-                </Button>
-                }
+                <Feature name="localLabelling">
+                    {this.props.isFlagged ? 
+                        <Button colorScheme='red' onClick={() => this.props.onSaveFlag(false)}>
+                        <StarIcon />
+                        Remove flag
+                    </Button>
+                
+                    : 
+                    <Button colorScheme='red' onClick={() => {
+                        this.props.onSaveFlag(true);
+                    }}>
+                        Flag for follow up
+                    </Button>
+                    }
+                </Feature>
                 <Button onClick={this.resetAnnotation}>
                     Reset
                 </Button>
@@ -97,15 +101,18 @@ export class ReviewTokenAnnotator extends React.Component{
             </ButtonGroup>
 
             <Divider m={2}/>
-            <Select
-                onChange={e => this.setState({ tag: e.target.value })}
-                value={this.state.tag}
-                spacing={20}
-            >
-                <option value={POSITIVE_TAG}>POSITIVE</option>
-                <option value={NEGATIVE_TAG}>NEGATIVE</option>
-            </Select>  
-            <Divider m={2}/>
+            <Feature name="negativeUseCases">
+                <Select
+                    onChange={e => this.setState({ tag: e.target.value })}
+                    value={this.state.tag}
+                    spacing={20}
+                >
+                    <option value={POSITIVE_TAG}>POSITIVE</option>
+                    <option value={NEGATIVE_TAG}>NEGATIVE</option>
+                </Select>
+                <Divider m={2}/>
+            </Feature>
+              
             <TokenAnnotator
                 style={{
                     lineHeight: 1.5,
