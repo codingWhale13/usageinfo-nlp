@@ -13,12 +13,13 @@ def apply_to_files_with_multithreading(map_function, num_processes: int, files: 
 def get_slurm_client(
     walltime="02:00:00",
     cores=128,
-    processes=32,
-    memory="256GB",
+    processes=8,
+    memory="512GB",
     account="demelo-student",
     queue="magic",
-    nodes: int = 1,
-    extra_args=["--output=/dev/null", "--exclude nvram-[01-06]"],
+    nodes: int = 3,
+    slurm_output_file="/dev/null",
+    extra_args=[],
     suppress_output=True,
 ):
     if not suppress_output:
@@ -32,8 +33,12 @@ def get_slurm_client(
         account=account,
         shebang="#!/usr/bin/env bash",
         queue=queue,
-        job_extra_directives=extra_args,
-        local_directory="~/.tmp/dask-worker-space",
+        job_extra_directives=[
+            "--exclude nvram-[01-06]",
+            f"--output={slurm_output_file}",
+        ]
+        + extra_args,
+        local_directory="/tmp/$USER",
         # worker_extra_args=["--lifetime", "55m", "--lifetime-stagger", "4m"]
     )
 
