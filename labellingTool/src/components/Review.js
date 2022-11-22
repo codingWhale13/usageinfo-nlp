@@ -12,8 +12,18 @@ export function Review(props){
 
         const { review } = props;
 
+        const annotationsToUsageOptions = (annotations) => {
+            return annotations.map( (annotation) => annotation.tokens.join(' ')).flat();
+        }
+
+        const saveUniqueAnnonations = (annotations) => {
+            const usageOptions = annotationsToUsageOptions(annotations);
+            props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.filter(usageOptionA => !usageOptions.includes(usageOptionA)));
+            props.onSaveAnnotations(annotations);
+        };
+
         const deleteAnnotation = (annotation) => {
-            props.onSaveAnnotations(props.review.label.annotations.filter(annotationA => annotationA !== annotation));
+            saveUniqueAnnonations(props.review.label.annotations.filter(annotationA => annotationA !== annotation));
         };
 
         const deleteCustomUsageOption = (customUsageOption) => {
@@ -27,7 +37,7 @@ export function Review(props){
         };
 
         const resetAnnotation = () => {
-            props.onSaveAnnotations([]);
+            saveUniqueAnnonations([]);
             props.onSaveCustomUsageOptions([]);
         }
         if(!review){
@@ -58,7 +68,7 @@ export function Review(props){
             <ReviewTokenAnnotator 
                         review_body={review.review_body}
                         annotations={props.annotations}
-                        onSaveAnnotations={props.onSaveAnnotations}
+                        onSaveAnnotations={saveUniqueAnnonations}
             />
         </GridItem>
         <GridItem pt='2' pl='2' area={'nav'}>
@@ -95,7 +105,7 @@ export function Review(props){
             <Heading as='h5' size='sm' paddingY={2}>Selected usage options</Heading>
             <CustomUsageOptionFormTag 
                 onSave={(newCustomUsageOption) => {
-                    if(!props.review.label.customUsageOptions.includes(newCustomUsageOption)){
+                    if(!props.review.label.customUsageOptions.includes(newCustomUsageOption) && !annotationsToUsageOptions(props.review.label.annotations).includes(newCustomUsageOption)){
                         props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption));
                     }
                 }}
@@ -208,7 +218,7 @@ export function Review(props){
                 <ReviewTokenAnnotator 
                     review_body={review.review_body}
                     annotations={props.annotations}
-                    onSaveAnnotations={props.onSaveAnnotations}
+                    onSaveAnnotations={saveUniqueAnnonations}
                 />
             </GridItem>
         </Grid> */}
