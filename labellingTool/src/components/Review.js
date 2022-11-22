@@ -2,7 +2,7 @@ import {  CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
 
 const React = require('react');
-const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup, Stack, Center, Flex, Box, Spacer} =  require('@chakra-ui/react');
+const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup, Stack, Center, Flex, Box, Spacer, Text} =  require('@chakra-ui/react');
 const {StarIcon, ArrowRightIcon, ArrowLeftIcon, RepeatClockIcon } = require('@chakra-ui/icons');
 
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');
@@ -46,22 +46,20 @@ export function Review(props){
         return <Card>
 
         <Grid
-        templateAreas={`"header category"
+        templateAreas={`"header nav"
                         "main nav"`}
-        gridTemplateRows={'60px 1fr'}
+        gridTemplateRows={'110px 1fr'}
         gridTemplateColumns={'1fr 350px'}
         gap='3'
         fontSize={'lg'}
         >
-        <GridItem pl='2' pt='1'  area={'header'} overflow={'hidden'}>
+        <GridItem pl='0' pt='1' area={'header'}>
             <Card>
-                <Heading as='h3' size='md' textAlign='left'>{review.product_title} </Heading>
+            <Text fontWeight={'bold'} fontSize={'20px'}  as='h3' size='md' textAlign='left' noOfLines={1}>{review.product_title} </Text>    
+            <Divider m={2}/>
+            <Tag size='lg'>{review.product_category}</Tag>
             </Card>
-                
-            </GridItem>
-            <GridItem pr='2' pt='2'  area={'category'} align={'right'}>
-                <Tag size='lg'>{review.product_category}</Tag>
-                <Divider m={2}/>
+            
             </GridItem>
 
         <GridItem pl='2' pt='2' pr='2' area={'main'} borderRight='1px' borderColor='gray.100'>
@@ -136,92 +134,6 @@ export function Review(props){
                 </Wrap>
         </GridItem>
         </Grid>
-
-        
-            
-                {/* <Grid
-                templateAreas={`
-                                "nav main"
-                                "nav footer"`}
-                gridTemplateRows={'200px 600px'}
-                gridTemplateColumns={'300px 800px'}
-                gap='4'
-            >
-        
-            <GridItem pl='2' area={'nav'}>
-                <Heading as='h5' textAlign='left'>{review.product_title}</Heading>
-                <Divider m={2}/>
-                <Tag >{review.product_category}</Tag>
-                <Divider m={2}/>
-                <Heading as='h5' size='sm' paddingY={2}>Selected usage options</Heading>
-                <Wrap spacing={2}>
-                {props.review.label.annotations.map((annotation) => 
-                    <UsageOptionTag
-                        annotation={annotation}
-                        deleteAnnotation={deleteAnnotation}
-                        replacementClasses={review.label.replacementClasses}
-                        deleteReplacementClassesMapping={deleteReplacementClassesMapping}>
-                    </UsageOptionTag>
-                )}
-                
-
-                {props.review.label.customUsageOptions.map(customUsageOption => 
-                <UsageOptionTag 
-                    customUsageOption={customUsageOption}
-                    replacementClasses={review.label.replacementClasses}
-                    deleteCustomUsageOption={deleteCustomUsageOption}
-                    deleteReplacementClassesMapping={deleteReplacementClassesMapping}
-                >
-                </UsageOptionTag>
-                )}
-
-                <CustomUsageOptionFormTag 
-                    onSave={(newCustomUsageOption) => {
-                        if(!props.review.label.customUsageOptions.includes(newCustomUsageOption)){
-                            props.onSaveCustomUsageOptions(props.review.label.customUsageOptions.concat(newCustomUsageOption));
-                        }
-                    }}
-                />
-                </Wrap>
-               
-            </GridItem>
-            <GridItem pl='2'  area={'main'}>
-                <ButtonGroup>
-                    <Button onClick={() => {
-                        props.navigateToPrevious();
-                    }
-                    } leftIcon={<ArrowLeftIcon/>}>
-                        Previous
-                    </Button>
-                    <Feature name="localLabelling">
-                        {props.isFlagged ? 
-                            <Button colorScheme='red' onClick={() => props.onSaveFlag(false)}>
-                                <StarIcon />
-                                Remove flag
-                            </Button>: 
-                        <Button colorScheme='pink' onClick={() => props.onSaveFlag(true)}>
-                            Flag for follow up
-                        </Button>
-                        }
-                    </Feature>
-                    <Button onClick={resetAnnotation} colorScheme='pink' leftIcon={<RepeatClockIcon/>}>
-                        Reset
-                    </Button>
-                    
-                    <Button type='submit' onClick={props.navigateToNext} rightIcon={<ArrowRightIcon/>}>
-                        Next
-                    </Button>
-                </ButtonGroup>
-
-                <Divider m={2}/>
-
-                <ReviewTokenAnnotator 
-                    review_body={review.review_body}
-                    annotations={props.annotations}
-                    onSaveAnnotations={saveUniqueAnnonations}
-                />
-            </GridItem>
-        </Grid> */}
       </Card>
 }
 
