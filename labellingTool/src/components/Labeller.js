@@ -1,7 +1,7 @@
 import { Button, Progress, Heading, Container,   Stat,
     StatLabel,
     StatNumber,
-    VStack, Spacer, ButtonGroup, Box } from '@chakra-ui/react'
+    VStack, Spacer, ButtonGroup, Box, Flex } from '@chakra-ui/react'
 import { Review } from './Review';
 import { Card } from './Elements';
 import { Feature } from 'flagged';
@@ -161,7 +161,7 @@ export class Labeller extends React.Component{
            {this.state.reviewIndex < this.state.reviews.length &&
                 <>
                    <Card spacing={2} mb={2}>
-                        <VStack spacing='1px' align='left'>
+                        <Flex>
                         
                             <Box>
                                 <Heading as='h5' size='md'>Label reviews</Heading>
@@ -176,9 +176,9 @@ export class Labeller extends React.Component{
                                 </ButtonGroup>
                             </Feature>
                             
-                        </VStack>
+                        </Flex>
 
-                        <Progress value={((this.state.reviewIndex + 1) / this.state.reviews.length) * 100} />
+                        <Progress mt={1} value={((this.state.reviewIndex + 1) / this.state.reviews.length) * 100}  />
                     </Card>
                     
                     <Review review={this.state.reviews[this.state.reviewIndex]}

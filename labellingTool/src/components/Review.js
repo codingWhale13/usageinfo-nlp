@@ -3,7 +3,7 @@ import { Feature } from 'flagged';
 
 const React = require('react');
 const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup, Stack, Center, Flex, Box, Spacer, Text} =  require('@chakra-ui/react');
-const {StarIcon, ArrowRightIcon, ArrowLeftIcon, RepeatClockIcon } = require('@chakra-ui/icons');
+const {StarIcon, ArrowRightIcon, ArrowLeftIcon, RepeatClockIcon, WarningIcon } = require('@chakra-ui/icons');
 
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');
 const { Card } = require('./Elements');
@@ -70,34 +70,38 @@ export function Review(props){
             />
         </GridItem>
         <GridItem pt='2' pl='2' area={'nav'}>
-            <Center> 
-                <ButtonGroup>
-                    <Button onClick={() => {
-                        props.navigateToPrevious();
-                    }
-                    } leftIcon={<ArrowLeftIcon/>} size='md'>
-                        Previous
-                    </Button>
-                    <Feature name="localLabelling">
+        <Stack > <Feature name="localLabelling">
                         {props.isFlagged ? 
-                            <Button colorScheme='red' onClick={() => props.onSaveFlag(false)} size='md'>
-                                <StarIcon />
+                            <Button leftIcon={<StarIcon />} colorScheme='red' onClick={() => props.onSaveFlag(false)} size='md'>
+                                
                                 Remove flag
                             </Button>: 
-                        <Button colorScheme='pink' onClick={() => props.onSaveFlag(true)} size='md'>
+                        <Button leftIcon={<WarningIcon />} colorScheme='red' onClick={() => props.onSaveFlag(true)} size='md'>
+                            
                             Flag for follow up
                         </Button>
                         }
-                    </Feature>
+            </Feature></Stack>
+        
+            <Flex  alignItems={'center'} minWidth='max-content'  direction='row' mt={2} gap='2'> 
+            <ButtonGroup gap='2'>
+            <Button onClick={() => {
+                        props.navigateToPrevious();
+                    }
+                    } leftIcon={<ArrowLeftIcon/>} size='md' colorScheme='gray'>
+                        Previous
+                    </Button>
+                    
                     <Button onClick={resetAnnotation} colorScheme='pink' leftIcon={<RepeatClockIcon/>} size='md'>
                         Reset
                     </Button>
                     
                     <Button type='submit' onClick={props.navigateToNext} rightIcon={<ArrowRightIcon/>} size='md'>
                         Next
-                    </Button>
-                </ButtonGroup>                    
-            </Center>
+                    </Button>        
+  </ButtonGroup>
+                    
+            </Flex>
 
             <Divider m={2}/>
             <Heading as='h5' size='sm' paddingY={2}>Selected usage options</Heading>
