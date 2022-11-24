@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from typing import Union
 
+import pandas as pd
+import json
 import wget
 import dask.dataframe as dd
 
@@ -71,3 +73,28 @@ def read_data(path: Union[Path, str], file_type: str = "parquet") -> dd.DataFram
     if file_type == "tsv":
         return read_data_from_tsv(path)
     raise ValueError(f"File type {file_type} not supported")
+
+
+def extract_labelled_reviews_from_json(
+    path: Union[Path, str],
+    extraction_func: callable,
+    label_coloumn_name: string = "label",
+) -> pd.DataFrame:
+    with open(path, "r") as file:
+        data = json.load(file)
+        df = pd.DataFrame(data["reviews"])
+        df[label_coloumn_name] = df["label"].apply(extraction_func)
+        if label_coloumn_name != "label":
+            df.drop("label", axis=1, inplace=True)
+    return df
+
+
+def extract_reviews_with_usage_options_from_json(
+    path: Union[Path, str]
+) -> pd.DataFrame:
+    extract_usage_options_list = lambda x: x["customUsageOptions"] + [
+        " ".join(annotation["tokens"]) for annotation in x["annotations"]
+    ]
+    return extract_labelled_reviews_from_json(
+        path, extract_usage_options_list, "usage_options"
+    )
