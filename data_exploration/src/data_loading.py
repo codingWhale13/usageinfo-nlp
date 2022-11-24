@@ -78,7 +78,7 @@ def read_data(path: Union[Path, str], file_type: str = "parquet") -> dd.DataFram
 def extract_labelled_reviews_from_json(
     path: Union[Path, str],
     extraction_func: callable,
-    label_coloumn_name: string = "label",
+    label_coloumn_name: str = "label",
 ) -> pd.DataFrame:
     with open(path, "r") as file:
         data = json.load(file)
