@@ -1,7 +1,7 @@
 import { Button, Progress, Heading, Container,   Stat,
     StatLabel,
     StatNumber,
-    VStack, Spacer, ButtonGroup, Box, Flex } from '@chakra-ui/react'
+    VStack, Spacer, ButtonGroup, Box, Flex, Center, Grid, GridItem} from '@chakra-ui/react'
 import { Review } from './Review';
 import { Card } from './Elements';
 import { Feature } from 'flagged';
@@ -145,18 +145,25 @@ export class Labeller extends React.Component{
         </>;
 
         return (<Container maxWidth='1300px'>
-            
             {this.state.reviews.length === 0 &&
-                <>
-                    <h1>Bitte ein .tsv Datei mit Reviews hochladen</h1>
-                    <CSVUpload 
-                        onUpload={this.parseReviews}
-                    />
-                    <h1>Oder eine bereits gelabelled JSON Datei hochladen</h1>
-                    <JSONUpload 
-                        onUpload={this.parseJSONReviews}
-                    />
-                </>
+                <Center h='100%'>
+                    <Grid templateColumns='repeat(2, 1fr)'>
+                        <GridItem>
+                            <h1>Please upload a .tsv file:</h1>
+                            <CSVUpload 
+                                onUpload={this.parseReviews}
+                            />
+                        </GridItem>
+                        <GridItem>
+                            <h1>Or upload an already labelled .json file:</h1>
+                            <JSONUpload
+                                onUpload={this.parseJSONReviews}
+                            />
+                        </GridItem>
+                    </Grid>
+                    
+                    
+                </Center>
             }
            {this.state.reviewIndex < this.state.reviews.length &&
                 <>

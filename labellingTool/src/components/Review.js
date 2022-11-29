@@ -99,11 +99,11 @@ export function Review(props){
                     <Button type='submit' onClick={props.navigateToNext} rightIcon={<ArrowRightIcon/>} size='md'>
                         Next
                     </Button>        
-  </ButtonGroup>
+            </ButtonGroup>
                     
             </Flex>
 
-            <Divider m={2}/>
+            <Divider my={4}/>
             <Heading as='h5' size='sm' paddingY={2}>Selected usage options</Heading>
             <CustomUsageOptionFormTag 
                 onSave={(newCustomUsageOption) => {
