@@ -2,7 +2,7 @@ import {  CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
 
 const React = require('react');
-const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup, Stack, Center, Flex, Box, Spacer, Text} =  require('@chakra-ui/react');
+const { Grid, GridItem, Heading, Tag, Divider, Wrap, Button, ButtonGroup, Stack, Flex, Text} =  require('@chakra-ui/react');
 const {StarIcon, ArrowRightIcon, ArrowLeftIcon, RepeatClockIcon, WarningIcon } = require('@chakra-ui/icons');
 
 const {ReviewTokenAnnotator} = require('./ReviewTokenAnnotator');

@@ -1,7 +1,6 @@
 import { Button, Progress, Heading, Container,   Stat,
-    StatLabel,
     StatNumber,
-    VStack, Spacer, ButtonGroup, Box, Flex, Center, Grid, GridItem} from '@chakra-ui/react'
+    Spacer, ButtonGroup, Box, Flex, Center, Grid, GridItem} from '@chakra-ui/react'
 import { Review } from './Review';
 import { Card } from './Elements';
 import { Feature } from 'flagged';

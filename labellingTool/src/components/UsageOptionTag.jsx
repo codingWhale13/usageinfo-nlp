@@ -1,6 +1,5 @@
 import React from 'react';
-import { IconBase } from 'react-icons/lib';
-const { Tag, TagLabel, TagRightIcon, Input, InputGroup, InputRightAddon, Button, IconButton, TagCloseButton, InputRightElement} = require('@chakra-ui/react');
+const { Tag, TagLabel, TagRightIcon, Input, InputGroup, IconButton, TagCloseButton, InputRightElement} = require('@chakra-ui/react');
 const { CloseIcon, AddIcon, ArrowBackIcon } = require('@chakra-ui/icons');
 export function RawUsageOptionTag({usageOption, deleteUsageOption, deleteReplacementClassesMapping, replacementClasses}){   
     const hasReplacementTag = replacementClasses.has(usageOption);

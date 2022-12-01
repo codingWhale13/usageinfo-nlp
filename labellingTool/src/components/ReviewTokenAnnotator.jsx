@@ -2,7 +2,7 @@ import { Feature } from 'flagged';
 
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
-const { Select,  Divider, Container, Box } =  require('@chakra-ui/react');
+const { Select,  Divider, Box } =  require('@chakra-ui/react');
 
 const tokenizeString = require('../utils/tokenize');
 const {POSITIVE_TAG, NEGATIVE_TAG} = require('../utils/tags');

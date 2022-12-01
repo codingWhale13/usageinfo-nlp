@@ -2,13 +2,11 @@ import "core-js/actual/string/pad-end";
 import React from 'react';
 import {
   ChakraProvider,
-  Box,
   Grid,
 } from '@chakra-ui/react';
 import {Labeller} from './components/Labeller';
 import { FlagsProvider } from 'flagged';
 import { getFeatureFlags } from './featureFlags';
-import { Review } from "./components/Review";
 import MTurkReview from "./components/MTurkReview";
 
 function App() {
