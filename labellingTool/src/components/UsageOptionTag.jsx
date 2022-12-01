@@ -10,34 +10,53 @@ const {
   InputRightElement,
 } = require('@chakra-ui/react');
 const { CloseIcon, AddIcon, ArrowBackIcon } = require('@chakra-ui/icons');
+
 export function RawUsageOptionTag({
   usageOption,
   deleteUsageOption,
   deleteReplacementClassesMapping,
   replacementClasses,
+  updateUsageOption,
 }) {
   const hasReplacementTag = replacementClasses.has(usageOption);
 
   return (
-    <Tag colorScheme="green" variant="solid" size="md">
-      <TagLabel>
-        {' '}
-        {hasReplacementTag ? replacementClasses.get(usageOption) : usageOption}
-      </TagLabel>
-      {hasReplacementTag ? (
-        <TagRightIcon
-          as={ArrowBackIcon}
-          onClick={() => deleteReplacementClassesMapping(usageOption)}
-        />
-      ) : (
-        <TagCloseButton
-          size={'lg'}
-          as={CloseIcon}
-          onClick={() => deleteUsageOption(usageOption)}
-        />
-      )}
-    </Tag>
-  );
+    <InputGroup>
+        <Input type='text'
+            placeholder={usageOption}
+            value={usageOption} 
+            onChange={(e) => {
+                const newUsageOption = e.target.value;
+                updateUsageOption(newUsageOption);
+                console.log(newUsageOption);
+            }}
+            />
+        <InputRightElement>
+            <IconButton
+                aria-label='Delete usage option'
+                icon={<CloseIcon />}
+                onClick={() => deleteUsageOption(usageOption)}
+            />
+        </InputRightElement>
+    </InputGroup>);
+//     <Tag colorScheme="green" variant="solid" size="md">
+//       <TagLabel>
+//         {hasReplacementTag ? replacementClasses.get(usageOption) : usageOption}
+//       </TagLabel>
+//       {hasReplacementTag ? (
+//         <TagRightIcon
+//           as={ArrowBackIcon}
+//           onClick={() => deleteReplacementClassesMapping(usageOption)}
+//         />
+//       ) : (
+//         <TagCloseButton
+//           size={'lg'}
+//           as={CloseIcon}
+//           onClick={() => deleteUsageOption(usageOption)}
+//         />
+//       )}
+//     </Tag>
+//   );
 }
 
 export function UsageOptionTag({
@@ -47,18 +66,26 @@ export function UsageOptionTag({
   deleteAnnotation,
   deleteCustomUsageOption,
   deleteReplacementClassesMapping,
+  updateCustomUsageOption,
+  saveNewCustomUsageOption
 }) {
-  let deleteUsageOption, usageOption;
+  let deleteUsageOption, usageOption, updateUsageOption;
 
   if (customUsageOption) {
     usageOption = customUsageOption;
     deleteUsageOption = () => {
       deleteCustomUsageOption(customUsageOption);
     };
+    updateUsageOption = updateCustomUsageOption;
+    
   } else if (annotation) {
     usageOption = annotation.tokens.join(' ');
     deleteUsageOption = () => {
       deleteAnnotation(annotation);
+    };
+    updateUsageOption = (newUsageOption) => {
+        deleteAnnotation(annotation);
+        saveNewCustomUsageOption(newUsageOption);
     };
   }
 
@@ -68,6 +95,7 @@ export function UsageOptionTag({
       deleteUsageOption={deleteUsageOption}
       deleteReplacementClassesMapping={deleteReplacementClassesMapping}
       replacementClasses={replacementClasses}
+      updateUsageOption={updateUsageOption}
     ></RawUsageOptionTag>
   );
 }

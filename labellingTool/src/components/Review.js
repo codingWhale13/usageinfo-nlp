@@ -71,6 +71,22 @@ export function Review(props) {
     saveUniqueAnnonations([]);
     props.onSaveCustomUsageOptions([]);
   };
+
+  const saveNewCustomUsageOption =  (newCustomUsageOption) => {
+        if (!review.label.customUsageOptions.includes(
+            newCustomUsageOption
+        ) &&
+            !annotationsToUsageOptions(
+                review.label.annotations
+            ).includes(newCustomUsageOption)) {
+            props.onSaveCustomUsageOptions(
+                review.label.customUsageOptions.concat(
+                    newCustomUsageOption
+                )
+            );
+        }
+    };
+
   if (!review) {
     return 'No review';
   }
@@ -184,22 +200,7 @@ export function Review(props) {
             Selected usage options
           </Heading>
           <CustomUsageOptionFormTag
-            onSave={newCustomUsageOption => {
-              if (
-                !review.label.customUsageOptions.includes(
-                  newCustomUsageOption
-                ) &&
-                !annotationsToUsageOptions(
-                  review.label.annotations
-                ).includes(newCustomUsageOption)
-              ) {
-                props.onSaveCustomUsageOptions(
-                  review.label.customUsageOptions.concat(
-                    newCustomUsageOption
-                  )
-                );
-              }
-            }}
+            onSave={saveNewCustomUsageOption}
           />
 
           <Wrap spacing={2} pt="5">
@@ -211,17 +212,30 @@ export function Review(props) {
                 deleteReplacementClassesMapping={
                   deleteReplacementClassesMapping
                 }
+                key={annotation.tokens.join(' ')}
+                saveNewCustomUsageOption={saveNewCustomUsageOption}
               ></UsageOptionTag>
             ))}
 
             {review.label.customUsageOptions.map(customUsageOption => (
               <UsageOptionTag
                 customUsageOption={customUsageOption}
+                key={customUsageOption}
                 replacementClasses={review.label.replacementClasses}
                 deleteCustomUsageOption={deleteCustomUsageOption}
                 deleteReplacementClassesMapping={
                   deleteReplacementClassesMapping
                 }
+                updateCustomUsageOption={newCustomUsageOption => {
+                    props.onSaveCustomUsageOptions(
+                        review.label.customUsageOptions.map(
+                            usageOptionA =>
+                                usageOptionA === customUsageOption
+                                    ? newCustomUsageOption
+                                    : usageOptionA
+                        )
+                    );
+                }}
               ></UsageOptionTag>
             ))}
           </Wrap>
@@ -229,4 +243,5 @@ export function Review(props) {
       </Grid>
     </Card>
   );
+
 }
