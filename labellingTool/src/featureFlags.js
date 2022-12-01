@@ -1,6 +1,8 @@
 export function getFeatureFlags() {
+    const mTurk = process.env.REACT_APP_MTURK === '1';
     return {
         negativeUseCases: false,
-        localLabelling: false
+        localLabelling: !mTurk,
+        mTurk: mTurk
     };
 }

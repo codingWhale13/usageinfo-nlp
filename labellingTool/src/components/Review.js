@@ -65,7 +65,7 @@ export function Review(props){
         <GridItem pl='2' pt='2' pr='2' area={'main'} borderRight='1px' borderColor='gray.100'>
             <ReviewTokenAnnotator 
                         review_body={review.review_body}
-                        annotations={props.annotations}
+                        annotations={review.label.annotations}
                         onSaveAnnotations={saveUniqueAnnonations}
             />
         </GridItem>
