@@ -35,44 +35,49 @@ import {
         maxReviewIndex: 0,
       };
     }
-  
-    parseReviews = e => {
-      Papa.parse(e.target.files[0], {
-        header: true,
-        skipEmptyLines: true,
-        delimiter: '\t',
-        complete: csv => {
-          const reviews = csv.data;
-  
-          for (const review of reviews) {
-            review.label = {
-              isFlagged: false,
-              annotations: [],
-              customUsageOptions: [],
-              replacementClasses: new Map(),
-            };
-            review.inspectionTime = 0;
-          }
-          this.setState({ reviews: reviews });
-        },
-        error: error => {
-          console.error(error);
-        },
-      });
-      timer.start();
-    };
-  
-    parseJSONReviews = async e => {
-      const file = e.target.files[0];
-      const jsonData = JSON.parse(await file.text());
-      this.setState({
-        reviews: jsonData.reviews,
-        reviewIndex: jsonData.maxReviewIndex,
-        maxReviewIndex: jsonData.maxReviewIndex,
-      });
-      timer.start();
-    };
-  
+
+    parseReviews = (e) => {
+        Papa.parse(e.target.files[0], {
+            header: true,
+            skipEmptyLines: true,
+            delimiter: '\t',
+            complete: (csv) => {
+                const reviews = csv.data;
+
+                for (const review of reviews) {
+                        review.label = {
+                            isFlagged: false,
+                            annotations: [],
+                            customUsageOptions: [],
+                            replacementClasses: new Map()
+                        };
+                    review.inspectionTime = 0;
+                }
+                this.setState( {reviews: reviews });            
+            },
+            error : (error) => {
+                console.error(error)
+            }
+        });
+    }
+
+    parseJSONReviews = async (e) => {
+        const file = e.target.files[0];
+        const jsonData = JSON.parse(await file.text());
+
+        //Set replacetClasses map new because it does not get stringified to json correctly
+        jsonData.reviews.forEach(review => {
+          review.label.replacementClasses = new Map();
+        });
+
+        this.setState({
+            reviews: jsonData.reviews,
+            reviewIndex: jsonData.maxReviewIndex,
+            maxReviewIndex: jsonData.maxReviewIndex
+        });
+        timer.start();
+    }
+
     saveReviewFlag = (isFlagged, i) => {
       const reviews = [...this.state.reviews];
       reviews[i].label.isFlagged = isFlagged;
