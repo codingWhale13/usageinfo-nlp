@@ -26,6 +26,7 @@
     "react-icons": "^3.11.0",
     "react-scripts": "5.0.1",
     "react-text-annotate": "^0.3.0",
+    "timer-node": "^5.0.6",
     "util": "^0.12.5",
     "web-highlighter": "^0.7.4",
     "web-vitals": "^2.1.4"
