@@ -55,7 +55,7 @@ import {
                 }
                 this.setState( {reviews: reviews });            
             },
-            error : (error) => {
+            error: (error) => {
                 console.error(error)
             }
         });
