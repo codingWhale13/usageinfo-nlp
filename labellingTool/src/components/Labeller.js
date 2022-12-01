@@ -52,6 +52,12 @@ export class Labeller extends React.Component{
     parseJSONReviews = async (e) => {
         const file = e.target.files[0];
         const jsonData = JSON.parse(await file.text());
+
+        //Set replacetClasses map new because it does not get stringified to json correctly
+        jsonData.reviews.forEach(review => {
+            review.label.replacementClasses = new Map();
+        });
+
         this.setState({
             reviews: jsonData.reviews,
             reviewIndex: jsonData.maxReviewIndex,
