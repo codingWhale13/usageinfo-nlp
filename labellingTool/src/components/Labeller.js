@@ -53,12 +53,13 @@ import {
                         };
                     review.inspectionTime = 0;
                 }
-                this.setState( {reviews: reviews });            
+                this.setState( {reviews: reviews });
             },
             error: (error) => {
                 console.error(error)
             }
         });
+        timer.start();
     }
 
     parseJSONReviews = async (e) => {
