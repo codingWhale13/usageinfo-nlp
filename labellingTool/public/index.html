@@ -27,53 +27,40 @@
     <title>React App</title>
   </head>
   <body>
-    <noscript>
-      You need to enable JavaScript to run this app.
-      </noscript>
-      
-      <% if (process.env.REACT_APP_MTURK === '1') { %>
-        <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
-      
-        <div id='document-text' style="display: none;">
-          {{ task.input.text }}
-        </div>
-        <div id='encodedImage' style="display: none;">
-          {{ task.input.textObject }}
-        </div>
-        <div id="metadata" style="display: none;">
-          {{ task.input.metadata }}
-        </div>
-        
-        <crowd-form>
-            <input name="annotations" id="annotations" type="hidden">
-      
-           
-             <!-- Prevent crowd-form from creating its own button -->
-             <div id="root"></div>
-            <crowd-button form-action="submit" style="display: none;"></crowd-button>
-        </crowd-form>
-      
-        
-        <!-- Custom annotation user interface is rendered here -->
-        
-        
-        <script>
-            document.querySelector('crowd-form').onsubmit = function() {
-                document.getElementById('annotations').value = JSON.stringify(JSON.parse(document.querySelector('pre').innerText));
-            };
-        
-            document.getElementById('submitButton').onclick = function() {
-                document.querySelector('crowd-form').submit();
-            };
-        </script>  
-        <% } else { %>
-          <div id="root"></div>
-        <% } %>
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+
+    <% if (process.env.REACT_APP_MTURK === '1') { %>
+    <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+
+    <div id="document-text" style="display: none">{{ task.input.text }}</div>
+    <div id="encodedImage" style="display: none">
+      {{ task.input.textObject }}
+    </div>
+    <div id="metadata" style="display: none">{{ task.input.metadata }}</div>
+
+    <crowd-form>
+      <input name="annotations" id="annotations" type="hidden" />
+
+      <!-- Prevent crowd-form from creating its own button -->
+      <div id="root"></div>
+      <crowd-button form-action="submit" style="display: none"></crowd-button>
+    </crowd-form>
+
+    <!-- Custom annotation user interface is rendered here -->
+
+    <script>
+      document.querySelector('crowd-form').onsubmit = function () {
+        document.getElementById('annotations').value = JSON.stringify(
+          JSON.parse(document.querySelector('pre').innerText)
+        );
+      };
+
+      document.getElementById('submitButton').onclick = function () {
+        document.querySelector('crowd-form').submit();
+      };
+    </script>
+    <% } else { %>
+    <div id="root"></div>
+    <% } %>
   </body>
 </html>
-
-
-
-
-
-  

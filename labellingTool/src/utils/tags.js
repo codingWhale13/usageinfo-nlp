@@ -1,4 +1,4 @@
 module.exports = {
-    POSITIVE_TAG: '',
-    NEGATIVE_TAG: 'NEGATIVE'
-}
+  POSITIVE_TAG: '',
+  NEGATIVE_TAG: 'NEGATIVE',
+};
