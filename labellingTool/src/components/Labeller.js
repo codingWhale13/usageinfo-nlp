@@ -10,8 +10,6 @@ const {CSVUpload} = require('./CSVUpload');
 const {JSONUpload} = require('./JSONUpload');
 
 const Papa = require('papaparse');
-const { POSITIVE_TAG } = require('../utils/tags');
-const _ = require('lodash');
 
 export class Labeller extends React.Component{
     constructor(props){
