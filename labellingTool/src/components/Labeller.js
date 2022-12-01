@@ -100,44 +100,14 @@ export class Labeller extends React.Component{
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
-
-    exportLabelsToCSV = () => {
-        function annotationsToLabel(annotations){
-            if(annotations.length === 0){
-                return '-';
-            }
-            return annotations.map((annotation) => [annotation.start, annotation.end, annotation.tag === POSITIVE_TAG ? 1 : 0]);
-        }
-        const reviews = _.cloneDeep(this.state.reviews);
-        
-        for(let i =0; i < reviews.length; i++){
-            const review = reviews[i];
-            review.is_flagged = review.label.isFlagged;
-            if(i <= this.state.maxReviewIndex){
-                review.label = annotationsToLabel(review.label.annotations);
-            }
-            else{
-                review.label = null;
-            }
-        }
-        const csv = Papa.unparse(reviews, {delimiter:'\t'});
-        console.log('csv:',csv);
-        const blob = new Blob([csv], { type: 'text/tsv;charset=utf-8;' });
-        this.downloadBlob(blob, 'my_data.tsv');   
-    }
-
-    
+    }   
 
     render(){
         const reviewLabel = (this.state.reviews.length && this.state.reviewIndex < this.state.reviews.length)  ? this.state.reviews[this.state.reviewIndex].label : {};
         console.log(this.state, reviewLabel);
 
     
-        const exportButtons = <>
-             <Button colorScheme='teal' size='lg' onClick={this.exportLabelsToCSV}>
-                Export to TSV
-            </Button>
+        const exportButton = <>
             <Button colorScheme='teal' size='lg' onClick={this.exportReviewsToJSON}>
                 Export to JSON
             </Button>
@@ -178,7 +148,7 @@ export class Labeller extends React.Component{
                             <Spacer />
                             <Feature name="localLabelling">
                                 <ButtonGroup gap='2'>
-                                {exportButtons}
+                                {exportButton}
                                 </ButtonGroup>
                             </Feature>
                             
@@ -214,8 +184,7 @@ export class Labeller extends React.Component{
                             }
                         } }
 
-                        isFlagged={reviewLabel ? reviewLabel.isFlagged : false}
-                        annotations={reviewLabel ? reviewLabel.annotations : []} />
+                        isFlagged={reviewLabel ? reviewLabel.isFlagged : false} />
                 </>
             }
             {(this.state.reviewIndex !== 0 && this.state.reviewIndex >= this.state.reviews.length) &&
@@ -226,7 +195,7 @@ export class Labeller extends React.Component{
                 </Button>
                 
                 <Feature name="localLabelling">
-                    {exportButtons}
+                    {exportButton}
                 </Feature>
             </ButtonGroup>
             }
