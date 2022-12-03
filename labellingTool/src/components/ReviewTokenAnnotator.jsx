@@ -20,39 +20,6 @@ export class ReviewTokenAnnotator extends React.Component {
     };
   }
 
-  mergeAnnotations = annotations => {
-    if (annotations.length === 0) {
-      return annotations;
-    }
-    annotations.sort((a, b) => a.start - b.start);
-    const mergedAnnotations = [annotations[0]];
-    let i = 0;
-    let mergedIndex = 0;
-    while (i < annotations.length - 1) {
-      const currentSelection = mergedAnnotations[mergedIndex];
-      const nextSelection = annotations[i + 1];
-      if (
-        currentSelection.end === nextSelection.start &&
-        currentSelection.tag === nextSelection.tag
-      ) {
-        const mergedSelection = {
-          start: currentSelection.start,
-          end: nextSelection.end,
-          tokens: currentSelection.tokens.concat(nextSelection.tokens),
-          tag: currentSelection.tag,
-          color: currentSelection.color,
-        };
-        mergedAnnotations[mergedIndex] = mergedSelection;
-        i++;
-      } else {
-        mergedAnnotations.push(nextSelection);
-        mergedIndex++;
-        i++;
-      }
-    }
-    return mergedAnnotations;
-  };
-
   render() {
     return (
       <Box>
@@ -82,8 +49,7 @@ export class ReviewTokenAnnotator extends React.Component {
             tokens={tokenizeString(this.props.review_body)}
             value={this.props.annotations}
             onChange={value => {
-              const mergedValue = this.mergeAnnotations(value);
-              this.props.onSaveAnnotations(mergedValue);
+              this.props.onSaveAnnotations(value);
             }}
             getSpan={span => ({
               ...span,

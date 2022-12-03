@@ -1,107 +1,62 @@
 import React from 'react';
 const {
   Tag,
-  TagLabel,
-  TagRightIcon,
   Input,
   InputGroup,
   IconButton,
-  TagCloseButton,
   InputRightElement,
 } = require('@chakra-ui/react');
-const { CloseIcon, AddIcon, ArrowBackIcon } = require('@chakra-ui/icons');
-
-export function RawUsageOptionTag({
-  usageOption,
-  deleteUsageOption,
-  deleteReplacementClassesMapping,
-  replacementClasses,
-  updateUsageOption,
-}) {
-  const hasReplacementTag = replacementClasses.has(usageOption);
-
-  return (
-    <InputGroup>
-        <Input type='text'
-            placeholder={usageOption}
-            value={usageOption} 
-            onChange={(e) => {
-                const newUsageOption = e.target.value;
-                updateUsageOption(newUsageOption);
-                console.log(newUsageOption);
-            }}
-            />
-        <InputRightElement>
-            <IconButton
-                aria-label='Delete usage option'
-                icon={<CloseIcon />}
-                onClick={() => deleteUsageOption(usageOption)}
-            />
-        </InputRightElement>
-    </InputGroup>);
-//     <Tag colorScheme="green" variant="solid" size="md">
-//       <TagLabel>
-//         {hasReplacementTag ? replacementClasses.get(usageOption) : usageOption}
-//       </TagLabel>
-//       {hasReplacementTag ? (
-//         <TagRightIcon
-//           as={ArrowBackIcon}
-//           onClick={() => deleteReplacementClassesMapping(usageOption)}
-//         />
-//       ) : (
-//         <TagCloseButton
-//           size={'lg'}
-//           as={CloseIcon}
-//           onClick={() => deleteUsageOption(usageOption)}
-//         />
-//       )}
-//     </Tag>
-//   );
-}
+const { CloseIcon, AddIcon } = require('@chakra-ui/icons');
 
 export function UsageOptionTag({
-  annotation,
-  customUsageOption,
-  replacementClasses,
-  deleteAnnotation,
-  deleteCustomUsageOption,
-  deleteReplacementClassesMapping,
-  updateCustomUsageOption,
-  saveNewCustomUsageOption
+  usageOption,
+  deleteUsageOption,
+  updateUsageOption,
 }) {
-  let deleteUsageOption, usageOption, updateUsageOption;
 
-  if (customUsageOption) {
-    usageOption = customUsageOption;
-    deleteUsageOption = () => {
-      deleteCustomUsageOption(customUsageOption);
-    };
-    updateUsageOption = updateCustomUsageOption;
-    
-  } else if (annotation) {
-    usageOption = annotation.tokens.join(' ');
-    deleteUsageOption = () => {
-      deleteAnnotation(annotation);
-    };
-    updateUsageOption = (newUsageOption) => {
-        deleteAnnotation(annotation);
-        saveNewCustomUsageOption(newUsageOption);
-    };
-  }
+    const formRef = React.createRef();
+    const [value, setValue] = React.useState(usageOption)
+    const handleChange = (event) => setValue(event.target.value)
 
+    const updateUsageOptionSubmission = (e) => {
+        e.preventDefault();
+        const newCustomUsageOption = e.target.custom_usage_option.value;
+        if (newCustomUsageOption !== usageOption) {
+            updateUsageOption(newCustomUsageOption);
+        }
+      };
+  
   return (
-    <RawUsageOptionTag
-      usageOption={usageOption}
-      deleteUsageOption={deleteUsageOption}
-      deleteReplacementClassesMapping={deleteReplacementClassesMapping}
-      replacementClasses={replacementClasses}
-      updateUsageOption={updateUsageOption}
-    ></RawUsageOptionTag>
-  );
+    <form onSubmit={updateUsageOptionSubmission} ref={formRef}>
+    <Tag colorScheme="green" variant='solid' size="sm" p={0}>
+    <InputGroup size="sm">
+        <Input type='text'
+            name="custom_usage_option"
+            fontWeight={500}
+            value={value}
+            onChange={handleChange}
+            onBlur={(e) => setValue(usageOption)}
+            />
+        <InputRightElement
+            children={
+              <IconButton
+              m={0}
+              colorScheme={'green'}
+                color="black"
+                h="1.5rem"
+                size="xs"
+                icon={<CloseIcon />}
+                onClick={() => deleteUsageOption(usageOption)}
+              ></IconButton>
+            }
+          />
+    </InputGroup>
+    </Tag>
+    </form>);
 }
 
 export function CustomUsageOptionFormTag({ onSave }) {
-  const saveNewCustomUsageOption = e => {
+  const saveNewCustomUsageOption = (e) => {
     e.preventDefault();
     const newCustomUsageOption = e.target.custom_usage_option.value;
     if (newCustomUsageOption) {

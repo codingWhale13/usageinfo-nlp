@@ -2,6 +2,7 @@ import { CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
 
 const React = require('react');
+
 const {
   Grid,
   GridItem,
@@ -33,7 +34,13 @@ export function Review(props) {
     return annotations.map(annotation => annotation.tokens.join(' ')).flat();
   };
 
-  const saveUniqueAnnonations = annotations => {
+  const uniqueAnnotations = annotations => {
+    return annotations.filter(
+        (annotation, index) => annotations.map(annotation => annotation.tokens.join(' ')).indexOf(annotation.tokens.join(' ')) === index
+    );
+    };
+
+  const saveAnnotations = annotations => {
     const usageOptions = annotationsToUsageOptions(annotations);
     props.onSaveCustomUsageOptions(
       review.label.customUsageOptions.filter(
@@ -44,9 +51,9 @@ export function Review(props) {
   };
 
   const deleteAnnotation = annotation => {
-    saveUniqueAnnonations(
+    props.onSaveAnnotations(
       review.label.annotations.filter(
-        annotationA => annotationA !== annotation
+        annotationA => annotationA.tokens.join(' ') !== annotation
       )
     );
   };
@@ -59,20 +66,12 @@ export function Review(props) {
     );
   };
 
-  const deleteReplacementClassesMapping = usageOption => {
-    const newReplacementClasses = new Map(
-      review.label.replacementClasses
-    );
-    newReplacementClasses.delete(usageOption);
-    props.onSaveReplacementClasses(newReplacementClasses);
-  };
-
   const resetAnnotation = () => {
-    saveUniqueAnnonations([]);
+    props.onSaveAnnotations([]);
     props.onSaveCustomUsageOptions([]);
   };
 
-  const saveNewCustomUsageOption =  (newCustomUsageOption) => {
+  const saveCustomUsageOption =  (newCustomUsageOption) => {
         if (!review.label.customUsageOptions.includes(
             newCustomUsageOption
         ) &&
@@ -86,6 +85,21 @@ export function Review(props) {
             );
         }
     };
+
+
+    const updateCustomUsageOption= (customUsageOption) => {
+        return updatedCustomUsageOption => {
+            if (annotationsToUsageOptions(review.label.annotations).includes(updatedCustomUsageOption)) {
+                deleteCustomUsageOption(customUsageOption);
+            } else {
+                props.onSaveCustomUsageOptions(
+                    review.label.customUsageOptions.map(
+                        usageOptionA => usageOptionA === customUsageOption ? updatedCustomUsageOption : usageOptionA
+                    ).filter((usageOptionA, index, self) => self.indexOf(usageOptionA) === index)
+                );
+            }
+        };
+    }
 
   if (!review) {
     return 'No review';
@@ -128,7 +142,7 @@ export function Review(props) {
           <ReviewTokenAnnotator
             review_body={review.review_body}
             annotations={review.label.annotations}
-            onSaveAnnotations={saveUniqueAnnonations}
+            onSaveAnnotations={saveAnnotations}
           />
         </GridItem>
         <GridItem pt="2" pl="2" area={'nav'}>
@@ -197,51 +211,42 @@ export function Review(props) {
 
           <Divider my={4} />
           <Heading as="h5" size="sm" paddingY={2}>
-            Selected usage options
+            Annotated usage options
           </Heading>
-          <CustomUsageOptionFormTag
-            onSave={saveNewCustomUsageOption}
-          />
-
-          <Wrap spacing={2} pt="5">
-            {review.label.annotations.map(annotation => (
+          <Wrap spacing={2} pt="2">
+            
+            {uniqueAnnotations(review.label.annotations).map(annotation => (
               <UsageOptionTag
-                annotation={annotation}
-                deleteAnnotation={deleteAnnotation}
-                replacementClasses={review.label.replacementClasses}
-                deleteReplacementClassesMapping={
-                  deleteReplacementClassesMapping
-                }
+                usageOption={annotation.tokens.join(' ')}
                 key={annotation.tokens.join(' ')}
-                saveNewCustomUsageOption={saveNewCustomUsageOption}
+                deleteUsageOption={deleteAnnotation}
+                updateUsageOption={saveCustomUsageOption}
               ></UsageOptionTag>
             ))}
 
+            </Wrap>
+            <Divider my={4} />
+
+            <Heading as="h5" size="sm" paddingY={2}>
+                Custom usage options
+            </Heading>
+
+            
+          <CustomUsageOptionFormTag
+            onSave={saveCustomUsageOption}
+          />
+            <Wrap spacing={2} pt="5">
             {review.label.customUsageOptions.map(customUsageOption => (
               <UsageOptionTag
-                customUsageOption={customUsageOption}
+                usageOption={customUsageOption}
                 key={customUsageOption}
-                replacementClasses={review.label.replacementClasses}
-                deleteCustomUsageOption={deleteCustomUsageOption}
-                deleteReplacementClassesMapping={
-                  deleteReplacementClassesMapping
-                }
-                updateCustomUsageOption={newCustomUsageOption => {
-                    props.onSaveCustomUsageOptions(
-                        review.label.customUsageOptions.map(
-                            usageOptionA =>
-                                usageOptionA === customUsageOption
-                                    ? newCustomUsageOption
-                                    : usageOptionA
-                        )
-                    );
-                }}
+                deleteUsageOption={deleteCustomUsageOption}
+                updateUsageOption={updateCustomUsageOption(customUsageOption)}
               ></UsageOptionTag>
             ))}
-          </Wrap>
+            </Wrap>
         </GridItem>
       </Grid>
     </Card>
   );
-
 }

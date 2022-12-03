@@ -7,6 +7,7 @@ function tokenizeString(string) {
       return ' ' + $1 + ' ';
     })
     .replaceAll(/[ ]+/g, ' ') // replace multiple spaces with single space
+    .trim()
     .split(' ');
 }
 

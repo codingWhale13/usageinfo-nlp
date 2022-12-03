@@ -49,7 +49,6 @@ import {
                             isFlagged: false,
                             annotations: [],
                             customUsageOptions: [],
-                            replacementClasses: new Map()
                         };
                     review.inspectionTime = 0;
                 }
@@ -66,11 +65,6 @@ import {
         const file = e.target.files[0];
         const jsonData = JSON.parse(await file.text());
 
-        //Set replacetClasses map new because it does not get stringified to json correctly
-        jsonData.reviews.forEach(review => {
-          review.label.replacementClasses = new Map();
-        });
-
         this.setState({
             reviews: jsonData.reviews,
             reviewIndex: jsonData.maxReviewIndex,
@@ -84,23 +78,18 @@ import {
       reviews[i].label.isFlagged = isFlagged;
       this.setState({ reviews: reviews });
     };
-    saveReviewsAnnotations = (annotations, i) => {
+
+    saveAnnotations = (annotations, i) => {
       const reviews = [...this.state.reviews];
       reviews[i].label.annotations = annotations;
       this.setState({ reviews: reviews });
     };
-  
+
     saveCustomUsageOptions = (customUsageOptions, i) => {
-      const reviews = [...this.state.reviews];
-      reviews[i].label.customUsageOptions = customUsageOptions;
-      this.setState({ reviews: reviews });
-    };
-  
-    saveReplacementClasses = (replacementClasses, i) => {
-      const reviews = [...this.state.reviews];
-      reviews[i].label.replacementClasses = new Map(replacementClasses);
-      this.setState({ reviews: reviews });
-    };
+        const reviews = [...this.state.reviews];
+        reviews[i].label.customUsageOptions = customUsageOptions;
+        this.setState({ reviews: reviews });
+      };
   
     exportReviewsToJSON = () => {
       const reviewState = {
@@ -186,27 +175,25 @@ import {
   
               <Review
                 review={this.state.reviews[this.state.reviewIndex]}
+
                 onSaveAnnotations={annotations => {
-                  this.saveReviewsAnnotations(
+                  this.saveAnnotations(
                     annotations,
                     this.state.reviewIndex
                   );
                 }}
+
                 onSaveCustomUsageOptions={customUsageOptions => {
                   this.saveCustomUsageOptions(
                     customUsageOptions,
                     this.state.reviewIndex
                   );
                 }}
+
                 onSaveFlag={isFlagged => {
                   this.saveReviewFlag(isFlagged, this.state.reviewIndex);
                 }}
-                onSaveReplacementClasses={replacementClasses => {
-                  this.saveReplacementClasses(
-                    replacementClasses,
-                    this.state.reviewIndex
-                  );
-                }}
+                
                 navigateToNext={() => {
                   this.updateInspectionTime();
 
