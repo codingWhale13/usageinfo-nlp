@@ -34,13 +34,13 @@ export function Review(props) {
     return annotations.map(annotation => annotation.tokens.join(' ')).flat();
   };
 
-  const uniqueAnnotations = annotations => {
+  const uniqueAnnotations = (annotations) => {
     return annotations.filter(
         (annotation, index) => annotations.map(annotation => annotation.tokens.join(' ')).indexOf(annotation.tokens.join(' ')) === index
     );
     };
 
-  const saveAnnotations = annotations => {
+  const saveAnnotations = (annotations) => {
     const usageOptions = annotationsToUsageOptions(annotations);
     props.onSaveCustomUsageOptions(
       review.label.customUsageOptions.filter(
@@ -50,15 +50,16 @@ export function Review(props) {
     props.onSaveAnnotations(annotations);
   };
 
-  const deleteAnnotation = annotation => {
+  const deleteAnnotation = (annotation) => {
     props.onSaveAnnotations(
       review.label.annotations.filter(
-        annotationA => annotationA.tokens.join(' ') !== annotation
+        annotationA => annotationA.tokens.join(' ') !== annotation.tokens.join(' ')
       )
     );
   };
+  
 
-  const deleteCustomUsageOption = customUsageOption => {
+  const deleteCustomUsageOption = (customUsageOption) => {
     props.onSaveCustomUsageOptions(
       review.label.customUsageOptions.filter(
         usageOptionA => usageOptionA !== customUsageOption
@@ -77,7 +78,7 @@ export function Review(props) {
         ) &&
             !annotationsToUsageOptions(
                 review.label.annotations
-            ).includes(newCustomUsageOption)) {
+            ).includes(newCustomUsageOption) && newCustomUsageOption !== "") {
             props.onSaveCustomUsageOptions(
                 review.label.customUsageOptions.concat(
                     newCustomUsageOption
@@ -86,17 +87,46 @@ export function Review(props) {
         }
     };
 
+    // const onUpdateAnnotationToCustomUsage = (annotation, newCustomUsageOption) => {
+    //   const key = annotation.tokens.join(' ');
+    //   console.log(review.label.updatedUsageOptions)
+    //   let replacements = review.label.updatedUsageOptions.get(key);
+    //   console.log(replacements)
+    //   if (replacements === undefined) {
+    //     replacements = [];
+    //   }
+    //   if (!replacements.includes(newCustomUsageOption)) {
+    //     replacements.push(newCustomUsageOption);
+    //   }
+    //   review.label.updatedUsageOptions.set(key, replacements);
+    //   props.onUpdateUsageOption(review.label.updatedUsageOptions);
+    // };
 
-    const updateCustomUsageOption= (customUsageOption) => {
+
+
+
+    const updateAnnotation = (annotation) => {
+      return (newCustomUsageOption) => {
+        if (newCustomUsageOption === "") {
+          deleteAnnotation(annotation);
+        } else {
+          saveCustomUsageOption(newCustomUsageOption);
+          // onUpdateAnnotationToCustomUsage(annotation, newCustomUsageOption);
+          deleteAnnotation(annotation);
+        }
+      };
+    }
+
+    const updateCustomUsageOption = (customUsageOption) => {
         return updatedCustomUsageOption => {
-            if (annotationsToUsageOptions(review.label.annotations).includes(updatedCustomUsageOption)) {
+            if (annotationsToUsageOptions(review.label.annotations).includes(updatedCustomUsageOption) || updatedCustomUsageOption === "") {
                 deleteCustomUsageOption(customUsageOption);
             } else {
                 props.onSaveCustomUsageOptions(
                     review.label.customUsageOptions.map(
                         usageOptionA => usageOptionA === customUsageOption ? updatedCustomUsageOption : usageOptionA
                     ).filter((usageOptionA, index, self) => self.indexOf(usageOptionA) === index)
-                );
+                ); // different from saveCustomUsageOption because we do not append to list
             }
         };
     }
@@ -219,8 +249,8 @@ export function Review(props) {
               <UsageOptionTag
                 usageOption={annotation.tokens.join(' ')}
                 key={annotation.tokens.join(' ')}
-                deleteUsageOption={deleteAnnotation}
-                updateUsageOption={saveCustomUsageOption}
+                onDeleteUsageOption={() => deleteAnnotation(annotation)}
+                onUpdateUsageOption={updateAnnotation(annotation)}
               ></UsageOptionTag>
             ))}
 
@@ -240,8 +270,8 @@ export function Review(props) {
               <UsageOptionTag
                 usageOption={customUsageOption}
                 key={customUsageOption}
-                deleteUsageOption={deleteCustomUsageOption}
-                updateUsageOption={updateCustomUsageOption(customUsageOption)}
+                onDeleteUsageOption={() => deleteCustomUsageOption(customUsageOption)}
+                onUpdateUsageOption={updateCustomUsageOption(customUsageOption)}
               ></UsageOptionTag>
             ))}
             </Wrap>
@@ -249,4 +279,6 @@ export function Review(props) {
       </Grid>
     </Card>
   );
+
+  
 }

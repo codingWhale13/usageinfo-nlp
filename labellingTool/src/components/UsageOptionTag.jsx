@@ -10,8 +10,8 @@ const { CloseIcon, AddIcon } = require('@chakra-ui/icons');
 
 export function UsageOptionTag({
   usageOption,
-  deleteUsageOption,
-  updateUsageOption,
+  onDeleteUsageOption,
+  onUpdateUsageOption,
 }) {
 
     const formRef = React.createRef();
@@ -22,7 +22,7 @@ export function UsageOptionTag({
         e.preventDefault();
         const newCustomUsageOption = e.target.custom_usage_option.value;
         if (newCustomUsageOption !== usageOption) {
-            updateUsageOption(newCustomUsageOption);
+            onUpdateUsageOption(newCustomUsageOption);
         }
       };
   
@@ -46,7 +46,7 @@ export function UsageOptionTag({
                 h="1.5rem"
                 size="xs"
                 icon={<CloseIcon />}
-                onClick={() => deleteUsageOption(usageOption)}
+                onClick={onDeleteUsageOption}
               ></IconButton>
             }
           />

@@ -90,6 +90,12 @@ import {
         reviews[i].label.customUsageOptions = customUsageOptions;
         this.setState({ reviews: reviews });
       };
+
+    updateAnnotationToCustomUsage = (updatedUsageOptions, i) => {
+        const reviews = [...this.state.reviews];
+        reviews[i].label.updatedUsageOptions = updatedUsageOptions;
+        this.setState({ reviews: reviews });
+    }
   
     exportReviewsToJSON = () => {
       const reviewState = {
@@ -111,6 +117,14 @@ import {
       link.click();
       document.body.removeChild(link);
     };
+
+    updateInspectionTime = () => {
+      const time = timer.ms();
+      const reviews = [...this.state.reviews];
+      reviews[this.state.reviewIndex].inspectionTime = reviews[this.state.reviewIndex].inspectionTime + time;
+      this.setState({ reviews });
+      timer.clear().start();
+  }
   
     render() {
       const reviewLabel =
@@ -176,21 +190,21 @@ import {
               <Review
                 review={this.state.reviews[this.state.reviewIndex]}
 
-                onSaveAnnotations={annotations => {
+                onSaveAnnotations={ (annotations) => {
                   this.saveAnnotations(
                     annotations,
                     this.state.reviewIndex
                   );
                 }}
 
-                onSaveCustomUsageOptions={customUsageOptions => {
+                onSaveCustomUsageOptions={ (customUsageOptions) => {
                   this.saveCustomUsageOptions(
                     customUsageOptions,
                     this.state.reviewIndex
                   );
                 }}
 
-                onSaveFlag={isFlagged => {
+                onSaveFlag={ (isFlagged) => {
                   this.saveReviewFlag(isFlagged, this.state.reviewIndex);
                 }}
                 
@@ -205,12 +219,19 @@ import {
                     )
                   });
                 }}
+
                 navigateToPrevious={() => {
                   if (this.state.reviewIndex > 0) {
                         this.updateInspectionTime();
                         this.setState({ reviewIndex: this.state.reviewIndex - 1});
                   }
                 }}
+
+                // onUpdateAnnotationToCustomUsage={
+                //   (updatedUsageOptions) => {
+                //     this.updateAnnotationToCustomUsage(updatedUsageOptions, this.state.reviewIndex);
+                //   }
+                // }
               />
             </>
           )}
@@ -231,13 +252,5 @@ import {
         </Container>
       );
     }
-
-      updateInspectionTime() {
-          const time = timer.ms();
-          const reviews = [...this.state.reviews];
-          reviews[this.state.reviewIndex].inspectionTime = reviews[this.state.reviewIndex].inspectionTime + time;
-          this.setState({ reviews });
-          timer.clear().start();
-      }
   }
   
