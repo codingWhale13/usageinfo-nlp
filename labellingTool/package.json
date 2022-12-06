@@ -35,7 +35,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy_to_s3": "aws s3 sync build/ s3://bsc2022-usageinfo-labelling-tool --acl public-read",
+    "build_mturk": "PUBLIC_URL=https://bsc2022-usageinfo-labelling-tool.s3.eu-central-1.amazonaws.com/ REACT_APP_MTURK=1 npm run build",
+    "deploy_mturk": "npm run build_mturk && npm run deploy_to_s3"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -3,18 +3,23 @@ import { Review } from './Review';
 
 const REVIEW =
   process.env.NODE_ENV === 'production'
-    ? {}
+    ? {
+      metadata: JSON.parse(document.getElementById('metadata').innerHTML),
+      review_body: document.getElementById('source').innerHTML
+    }
     : {
+      metadata: {
         product_title: 'hello World',
-        product_category: 'Test',
-        review_body: 'Hello world wow 2',
+        product_category: 'Test'
+      },
+      review_body: 'Hello world wow 2',
       };
 class MTurkReview extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      review: REVIEW,
+      review: {review_body: REVIEW.review_body, ...REVIEW.metadata},
       annotations: [],
       customUsageOptions: [],
     };

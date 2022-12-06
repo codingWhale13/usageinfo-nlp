@@ -32,11 +32,8 @@
     <% if (process.env.REACT_APP_MTURK === '1') { %>
     <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
 
-    <div id="document-text" style="display: none">{{ task.input.text }}</div>
-    <div id="encodedImage" style="display: none">
-      {{ task.input.textObject }}
-    </div>
-    <div id="metadata" style="display: none">{{ task.input.metadata }}</div>
+    <div id="source" style="display: none">{{ task.input.source }}</div>
+    <div id="metadata" style="display: none">{{ task.input.metadata | to_json }}</div>
 
     <crowd-form>
       <input name="annotations" id="annotations" type="hidden" />
