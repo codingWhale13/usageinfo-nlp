@@ -5,6 +5,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--file', '-f', required=True, help="Sample file without .tsv extension")
+parser.add_argument('--number_of_reviews', '-n', help="The number of reviews in the output manifest. Shuffled randomly")
 
 args = parser.parse_args()
 tsv_file = args.file
@@ -13,17 +14,30 @@ df = pd.read_csv(f'{tsv_file}.tsv', sep='\t')
 json_df = json.loads(df.to_json(orient='records'))
 json_df
 
+# %%
+import random
+
+total_output_reviews = len(json_df)
+
+if args.number_of_reviews is not None:
+    number_of_reviews = int(args.number_of_reviews)
+    if number_of_reviews < total_output_reviews:
+        total_output_reviews = number_of_reviews
+    random.shuffle(json_df)
 # %%%
 
 manifest = []
 SOURCE_COLUMN = 'review_body'
 METADATA_COLUMNS = ['review_id', 'product_id', 'product_title', 'review_date', 'product_category']
-for review in json_df:
+for i, review in enumerate(json_df[:total_output_reviews]):
     metadata = review.copy()
     del metadata['review_body']
     datapoint = {
         "source" : review[SOURCE_COLUMN],
-        "metadata" : {}
+        "metadata" : {
+            'total_reviews' : total_output_reviews,
+            'current_review_index' : i
+        }
     }
     for column in METADATA_COLUMNS:
         datapoint['metadata'][column] = review[column]
