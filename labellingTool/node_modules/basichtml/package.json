@@ -1,0 +1,41 @@
+{
+  "name": "basichtml",
+  "type": "commonjs",
+  "version": "2.4.9",
+  "description": "A NodeJS based, standard oriented, HTML implementation.",
+  "main": "basichtml.js",
+  "unpkg": "web.js",
+  "scripts": {
+    "build": "npm test && npm run web",
+    "test": "nyc node test/all.js",
+    "coveralls": "nyc report --reporter=text-lcov | coveralls",
+    "web": "echo \"$(cat basichtml.js)global.basicHTML=module.exports;\" | browserify - | uglifyjs --comments=/^!/ --compress --mangle -o web.js && npm run less-ag-licenses",
+    "less-ag-licenses": "node -e 'var fs=require(\"fs\");fs.writeFile(\"web.js\",fs.readFileSync(\"web.js\").toString().replace(/\\s*Permission[\\S\\s]+?SOFTWARE\\.\\s*/,\"\"),Object)'"
+  },
+  "author": "Andrea Giammarchi",
+  "license": "ISC",
+  "dependencies": {
+    "@webreflection/interface": "^0.1.1",
+    "broadcast": "^3.0.0",
+    "html-escaper": "^3.0.0",
+    "htmlparser2": "^4.1.0"
+  },
+  "devDependencies": {
+    "browserify": "^16.5.2",
+    "canvas": "^2.6.1",
+    "coveralls": "^3.1.0",
+    "hyperhtml": "^2.33.0",
+    "nyc": "^15.1.0",
+    "sizzle": "^2.3.5",
+    "tressa": "^0.3.1",
+    "uglify-es": "^3.3.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WebReflection/basicHTML.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WebReflection/basicHTML/issues"
+  },
+  "homepage": "https://github.com/WebReflection/basicHTML#readme"
+}

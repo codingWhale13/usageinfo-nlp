@@ -1,0 +1,5 @@
+aws mturk create-hit-type --assignment-duration-in-seconds 500 --reward "0.01" --title "Usage Option Labelling" --description "You need to label the usage options in the given reviews. You can either annotate the reviews by quick selection or type in custom usage options. Usage options can be edited by clicking on the tag, making changes and pressing ENTER afterwards."
+
+
+
+
