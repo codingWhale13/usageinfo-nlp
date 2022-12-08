@@ -29,7 +29,8 @@ const { Card } = require('./Elements');
 
 export function Review(props) {
   const { review } = props;
-
+  const { isPreviousDisabled, isNextDisabled } = props;
+  
   const annotationsToUsageOptions = annotations => {
     return annotations.map(annotation => annotation.tokens.join(' ')).flat();
   };
@@ -215,6 +216,7 @@ export function Review(props) {
                 leftIcon={<ArrowLeftIcon />}
                 size="md"
                 colorScheme="gray"
+                disabled={isPreviousDisabled}
               >
                 Previous
               </Button>
@@ -224,15 +226,19 @@ export function Review(props) {
                 colorScheme="pink"
                 leftIcon={<RepeatClockIcon />}
                 size="md"
+                disabled={
+                  review.label.annotations.length === 0 && review.label.customUsageOptions.length === 0
+                }
               >
                 Reset
-              </Button>
-
+              </Button>                
+        
               <Button
                 type="submit"
                 onClick={props.navigateToNext}
                 rightIcon={<ArrowRightIcon />}
                 size="md"
+                disabled={isNextDisabled}
               >
                 Next
               </Button>

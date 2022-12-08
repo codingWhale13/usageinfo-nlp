@@ -39,9 +39,11 @@
       <input name="annotations" id="annotations" type="hidden" />
 
       <!-- Prevent crowd-form from creating its own button -->
-      <div id="root"></div>
       <crowd-button form-action="submit" style="display: none"></crowd-button>
     </crowd-form>
+    <div id="root">
+
+    </div>
 
     <!-- Custom annotation user interface is rendered here -->
 
@@ -50,10 +52,6 @@
         document.getElementById('annotations').value = JSON.stringify(
           JSON.parse(document.querySelector('pre').innerText)
         );
-      };
-
-      document.getElementById('submitButton').onclick = function () {
-        document.querySelector('crowd-form').submit();
       };
     </script>
     <% } else { %>

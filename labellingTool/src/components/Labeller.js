@@ -16,6 +16,7 @@ import {
   import { Review } from './Review';
   import { Card } from './Elements';
   import { Feature } from 'flagged';
+import { ProgressBar } from './ProgressBar';
   
   const React = require('react');
   const { CSVUpload } = require('./CSVUpload');
@@ -90,12 +91,6 @@ import {
         reviews[i].label.customUsageOptions = customUsageOptions;
         this.setState({ reviews: reviews });
       };
-
-    updateAnnotationToCustomUsage = (updatedUsageOptions, i) => {
-        const reviews = [...this.state.reviews];
-        reviews[i].label.updatedUsageOptions = updatedUsageOptions;
-        this.setState({ reviews: reviews });
-    }
   
     exportReviewsToJSON = () => {
       const reviewState = {
@@ -160,32 +155,16 @@ import {
           )}
           {this.state.reviewIndex < this.state.reviews.length && (
             <>
-              <Card spacing={2} mb={2}>
-                <Flex>
-                  <Box>
-                    <Heading as="h5" size="md">
-                      Label reviews
-                    </Heading>
-                    <Stat>
-                      <StatNumber>
-                        {this.state.reviewIndex + 1}/{this.state.reviews.length}
-                      </StatNumber>
-                    </Stat>
-                  </Box>
-                  <Spacer />
+              
+              <ProgressBar 
+                currentReviewIndex={this.state.reviewIndex}
+                numberOfReviews={this.state.reviews.length}
+                extra={
                   <Feature name="localLabelling">
                     <ButtonGroup gap="2">{exportButton}</ButtonGroup>
                   </Feature>
-                </Flex>
-  
-                <Progress
-                  mt={1}
-                  value={
-                    ((this.state.reviewIndex + 1) / this.state.reviews.length) *
-                    100
-                  }
-                />
-              </Card>
+                }
+              />
   
               <Review
                 review={this.state.reviews[this.state.reviewIndex]}
@@ -226,12 +205,6 @@ import {
                         this.setState({ reviewIndex: this.state.reviewIndex - 1});
                   }
                 }}
-
-                // onUpdateAnnotationToCustomUsage={
-                //   (updatedUsageOptions) => {
-                //     this.updateAnnotationToCustomUsage(updatedUsageOptions, this.state.reviewIndex);
-                //   }
-                // }
               />
             </>
           )}
@@ -245,7 +218,7 @@ import {
                 >
                   Previous
                 </Button>
-  
+
                 <Feature name="localLabelling">{exportButton}</Feature>
               </ButtonGroup>
             )}
