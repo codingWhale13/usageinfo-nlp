@@ -54,7 +54,7 @@ for reviews_batch in grouper(json_df[:total_output_reviews], reviews_per_task):
         metadata.append(datapoint_metadata)
 
     manifest.append({
-    "source" : source,
+    "source" : json.dumps(source),
     "metadata" : metadata
    })
 
