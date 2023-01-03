@@ -2,7 +2,7 @@ import { Button, ButtonGroup } from '@chakra-ui/react';
 import React, { Component } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { Review } from './Review';
-
+import { InstructionsAlertDialog } from './InstructionsAlertDialog';
 const REVIEWS =
   process.env.NODE_ENV === 'production'
     ? {
@@ -11,14 +11,14 @@ const REVIEWS =
     }
     : {
       metadata: [{
-        product_title: 'hello World',
-        product_category: 'Test'
+        product_title: 'Super splitting axe',
+        product_category: 'Outdoor'
       },
       {
         product_title: 'hello World 2',
         product_category: 'Test 2'
       }],
-      review_bodys: ['Hello world wow 1','Hello world wow 1']
+      review_bodys: ['I like this axe for chopping wood and digging a fire pit.','Hello world wow 1']
       };
 class MTurkReview extends Component {
   constructor(props) {
@@ -68,6 +68,7 @@ class MTurkReview extends Component {
           numberOfReviews={this.state.reviews.length}
           extra={
             <ButtonGroup gap="2">
+             <InstructionsAlertDialog />
                 <Button colorScheme="teal" size="lg"  
                 disabled={!isLastReview}
                 onClick={
