@@ -7,7 +7,7 @@ parser.add_argument(
     "--golden_file",
     "-g",
     required=True,
-    help="Golden dataset tsv file name",
+    help="Golden dataset file name",
 )
 parser.add_argument(
     "--number_of_tasks",
@@ -26,7 +26,7 @@ parser.add_argument(
     "--golden_fraction",
     "-f",
     default=0.05,
-    type=int,
+    type=float,
     help="Proportion of golden samples",
 )
 
@@ -123,12 +123,8 @@ final_json = mix_normal_and_golden_samples(
 )
 
 for reviews_batch in grouper(final_json, reviews_per_task):
-    print(reviews_batch)
     reviews_batch = list(reviews_batch)
     random.shuffle(reviews_batch)
-    print()
-    print(reviews_batch)
-    exit()
     source = []
     metadata = []
     for review in reviews_batch:

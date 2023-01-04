@@ -1,0 +1,2009 @@
+{
+    "reviews": [
+        {
+            "marketplace": "US",
+            "customer_id": "26333091",
+            "review_id": "RLWCGIO5HLK9F",
+            "product_id": "B005Z6UL1M",
+            "product_parent": "529948569",
+            "product_title": "Novartis Capstar Flea Tablets for Dogs and Cats",
+            "product_category": "Pet Products",
+            "star_rating": "5",
+            "helpful_votes": "4",
+            "total_votes": "5",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "It WORKS!",
+            "review_body": "My cat had the worst flea infestation she had ever had. Because is 15 years old i feared giving her a treatment to toxic and thus harmful.  Capstar worked within ONE HOUR! I worried about how to give  her a pill. No problem, crushed the pill and mixed with wet food. Again, it worked like noting else and NO side effects. Now one pill a week does the trick.",
+            "review_date": "2012-09-05",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "treat flea infestation"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 3345
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "41981718",
+            "review_id": "RIQ0R6AMT9Y42",
+            "product_id": "B000GF0X38",
+            "product_parent": "498763249",
+            "product_title": "PetSafe Simply Clean Self-Cleaning Cat Litter Box, Automatic, Works with Clumping Cat Litter",
+            "product_category": "Pet Products",
+            "star_rating": "1",
+            "helpful_votes": "0",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "Total Waste of Money",
+            "review_body": "This box never worked for me.  I followed the directions to the letter.  First of all, the sides are not tall enough.  My cats got litter every where.  I literally burned up a vacuum trying to get all of the litter up off of the carpet.  Second of all, it never scooped up any of the clumped litter into the little bin.  Third of all, it takes the regular shopping bags that you put into the bin, and they get wrapped around the metal part that turns the conveyor belt, burning out the motor.    I would NOT recommend this box to anyone.  If you want an automatic box, go with something different.  I should have known it was junk when the person at the pet store told me \\\\\"make sure you keep your receipt.\\\\\"",
+            "review_date": "2011-11-12",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1492
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "33323351",
+            "review_id": "R2GEKK93AC3JLJ",
+            "product_id": "B005BV0QP2",
+            "product_parent": "945159778",
+            "product_title": "Stink Bug Trap By Sterling International Rescue",
+            "product_category": "Lawn and Garden",
+            "star_rating": "1",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "Does not work",
+            "review_body": "I have had one of these up for about two weeks and caught -one- stinkbug. And this was -after- it was placed in an area with a visible, heavy concentration of them. It sits right now with dozens of them within several feet of it. None of them find it the least bit interesting, there is no increased concentration of them near it. Useless waste of money.",
+            "review_date": "2011-09-25",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 535
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "41078287",
+            "review_id": "R2QCNFDUMGG01K",
+            "product_id": "B005GYRZV2",
+            "product_parent": "13629141",
+            "product_title": "iPower Digital Dimmable Grow Light System for Plants - Air Cooled Hood Set",
+            "product_category": "Lawn and Garden",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Good system",
+            "review_body": "Came with both kinds of light bulbs and everything else I needed to start growing in my own house here.",
+            "review_date": "2013-06-10",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "grow plants"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 898
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "40798946",
+            "review_id": "RNJEH768J53SC",
+            "product_id": "B008A0JL3O",
+            "product_parent": "544793652",
+            "product_title": "Beach Umbrella Carry Bag (Umbrella Not Included) Large 53L x 12W in.",
+            "product_category": "Lawn and Garden",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "I love this bag",
+            "review_body": "I love this bag, I use it every time I go to the beach.  I have two umbrellas and they both fit perfectly in this roomy bag!  The material is very sturdy too.",
+            "review_date": "2015-06-01",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 11,
+                        "end": 15,
+                        "tokens": [
+                            "go",
+                            "to",
+                            "the",
+                            "beach"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1012
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "37196219",
+            "review_id": "R3CASIL5VYHGB7",
+            "product_id": "B009Q0AHKS",
+            "product_parent": "613257640",
+            "product_title": "Sloggers Women's Rain and Garden Shoe",
+            "product_category": "Lawn and Garden",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Getting ready to buy a 2nd pair,",
+            "review_body": "I love these shoes...they are great for yard work. Washable. Durable. Getting ready to buy a 2nd pair just to have a choice. Worth every penny.",
+            "review_date": "2013-10-19",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 11,
+                        "end": 13,
+                        "tokens": [
+                            "yard",
+                            "work"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 980
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "14256344",
+            "review_id": "RQDT8C89037LZ",
+            "product_id": "B00535C708",
+            "product_parent": "979010665",
+            "product_title": "Dorfman Pacific Mens Twill Bucket Hat",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "The hat is perfect, very comfortable and keeps the sun off my face!",
+            "review_date": "2015-06-02",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "keep sun off face"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 16539
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "44875635",
+            "review_id": "R1K6BT6NOEODOK",
+            "product_id": "B00T4XMBQ0",
+            "product_parent": "434503231",
+            "product_title": "Foxy FNAF Mens T-Shirt Five Nights at Horror Freddys Video Game New Black",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "She was very happy with it",
+            "review_body": "Bought for my daughter. She was very happy with it! Would love to see other colors in FNAF merch.",
+            "review_date": "2015-08-31",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 816
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "28500779",
+            "review_id": "R3KIQIGQWUFQSR",
+            "product_id": "B00GU07P7K",
+            "product_parent": "551229917",
+            "product_title": "American Flag Crewneck Men's Fleece Pullover Sweatshirt",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "31",
+            "total_votes": "48",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "'MERICA",
+            "review_body": "I ordered a 5xl and it's a little snug.  I usually buy my flag shirts at Dollar General, but since this was a lightning deal I decided to pull the trigger.  See what I did there?  I love pulling triggers.<br /><br />My only gripe with this shirt is that it's not a confederate flag, but as is, this will work for almost any occasion. Weddings, funerals, work functions, I'll be wearing this to all of them.",
+            "review_date": "2014-01-09",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 71,
+                        "end": 72,
+                        "tokens": [
+                            "Weddings"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 73,
+                        "end": 74,
+                        "tokens": [
+                            "funerals"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 75,
+                        "end": 77,
+                        "tokens": [
+                            "work",
+                            "functions"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1193
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "46128189",
+            "review_id": "R1R9VGG1ZBH0E9",
+            "product_id": "B00EJTM1IM",
+            "product_parent": "996306615",
+            "product_title": "Kids Dream Girls Organza Floral Special Occasion Dress",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "more beautiful than expected",
+            "review_body": "bought for my youngest daughter as a flower girl dress for my oldest daughters wedding....gorgeous we couldn't be happier",
+            "review_date": "2014-12-17",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 7,
+                        "end": 10,
+                        "tokens": [
+                            "flower",
+                            "girl",
+                            "dress"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 14,
+                        "end": 15,
+                        "tokens": [
+                            "wedding"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2231
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "5141934",
+            "review_id": "R2T7R5K3A6U4GY",
+            "product_id": "B001DNFAOO",
+            "product_parent": "526317012",
+            "product_title": "Formal Black Satin Banded Men's Bow Tie",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Fastic Product",
+            "review_body": "I used it for my senior prom. Worked out great. Didn't fall off or anything. I expected it to fall off. Boy was I wrong. Lol.",
+            "review_date": "2014-06-05",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 5,
+                        "end": 7,
+                        "tokens": [
+                            "senior",
+                            "prom"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 5057
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "17953522",
+            "review_id": "R1EJTGI8U1JM9Z",
+            "product_id": "B006Q5ACKG",
+            "product_parent": "372754638",
+            "product_title": "EnergyFlux Ellipse Rechargeable Hand Warmer 5200mAh / USB Portable Charger Power Bank Battery Pack",
+            "product_category": "Outdoors",
+            "star_rating": "3",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Only half the utility",
+            "review_body": "I purchased this because I'm attending school in MN and it was going to be extremely cold - and it was! It did help me cope with the subzero temperatures and I'm grateful. However, I also looked forward to using it as a battery pack and I was rather disappointed. I was never able to get it to charge my phone. All the cords were connected and it seemed fine but my phone never got charged. Not even for a second. Also, even when I think I've charged it fully, the light on my device continues to flash orange. Perhaps I got a faulty one. Still, it's useful as a hand warmer - I just wish I got to use it as a battery pack as well.",
+            "review_date": "2014-06-03",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 26,
+                        "end": 31,
+                        "tokens": [
+                            "cope",
+                            "with",
+                            "the",
+                            "subzero",
+                            "temperatures"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 122,
+                        "end": 124,
+                        "tokens": [
+                            "hand",
+                            "warmer"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2273
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "23491752",
+            "review_id": "R5TN1OORUP3GI",
+            "product_id": "B0047D0J8O",
+            "product_parent": "18968590",
+            "product_title": "Crack of Dawn Spider Seat",
+            "product_category": "Outdoors",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great seat, I love it",
+            "review_body": "Great seat, I love it!  I use this on a 12 ft fishing kayak and I'm over 200lbs.  It held up all last Fall and still looks brand new.  Very pleased!",
+            "review_date": "2015-01-07",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 14,
+                        "end": 16,
+                        "tokens": [
+                            "fishing",
+                            "kayak"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1785
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "25371355",
+            "review_id": "R1RKZEZ6992QMX",
+            "product_id": "B00027IMOM",
+            "product_parent": "316823510",
+            "product_title": "HP PSC 1315 All-in-One Printer",
+            "product_category": "Office Products",
+            "star_rating": "1",
+            "helpful_votes": "4",
+            "total_votes": "5",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "PC Load Letter?  What the *$%& does that mean?",
+            "review_body": "I hate this printer.  I got it super cheap when a local Circuit City closed down and sold off floor models.  I design business cards, pamplets, etc. on my computer as a side business while going to college and suffice to say, printing them on this printer can't happen.  Nothing lines up correctly.  It completly ignores the margins I've set.  Everything prints at a slanted angle.  And then to make it even better, it will print say 3 pages perfect and then never print it right again. I have to say that this printer works great for printing non-coloured documents, but DO NOT BUY THIS PRINTER if you need it to print on anything other than standard paper.  It will not do it.",
+            "review_date": "2005-11-01",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 109,
+                        "end": 112,
+                        "tokens": [
+                            "printing",
+                            "non-coloured",
+                            "documents"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2543
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "19725548",
+            "review_id": "R3865JNPKZPQM5",
+            "product_id": "B0093XTHHM",
+            "product_parent": "588022130",
+            "product_title": "Coby Kyros 7-Inch Android 4.0 4 GB Internet Tablet 16:9 Resistive Touchscreen, Black MID7034-4",
+            "product_category": "PC",
+            "star_rating": "3",
+            "helpful_votes": "0",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "its alright!!! not the best but ok for the kids",
+            "review_body": "i got this for a gift to my little niece's 3rd birthday. it was mostly for education i downloaded learning games like ABC, math, color, shapes and she loves it and she has shown understanding. i also hacked it and installed the android market which allowed me to get better and more apps. over all great for her.",
+            "review_date": "2013-01-01",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 17,
+                        "end": 18,
+                        "tokens": [
+                            "education"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 3406
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "50264706",
+            "review_id": "R1SQ443CJZ2008",
+            "product_id": "B00BWYQ9YE",
+            "product_parent": "270050908",
+            "product_title": "Kindle Fire HDX 7\", HDX Display (Previous Generation - 3rd)",
+            "product_category": "PC",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Light, wonderful features and great for travel!",
+            "review_body": "The battery life is twice as long as my old Kindle which I love for airplane travel. No fighting for plug in's at airports. Like the clean, crisp colors and the many features. Highly reccommended",
+            "review_date": "2014-03-16",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 15,
+                        "end": 17,
+                        "tokens": [
+                            "airplane",
+                            "travel"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 3543
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "21470152",
+            "review_id": "R2KURKFBYXGQ7W",
+            "product_id": "B00PWY0PWM",
+            "product_parent": "842519150",
+            "product_title": "Sivan Health and Fitness 1/2-InchExtra Thick 71-Inch Long NBR Comfort Foam Yoga Mat for Exercise, Yoga, and Pilates",
+            "product_category": "Sports",
+            "star_rating": "1",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "not for advanced yoga",
+            "review_body": "My yoga teacher would not allow me to bring this mat because it is to too  slippery for down dog and handstands.<br />It is a serious studio that does teacher training. They say it is not a yoga mat.",
+            "review_date": "2015-02-10",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2351
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "31382161",
+            "review_id": "R16BQX7K2X6XYZ",
+            "product_id": "B00FDLM2Y8",
+            "product_parent": "83144143",
+            "product_title": "\"Deal of the Day\" I Love You Forever\" Mondaynoon Dual Heart Shape Austrian Clear Crystal Pendant Charm Necklace Jewelry 18\" Chain - Best Chirstmas Gift for Girlfriend Lover Families",
+            "product_category": "Jewelry",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "I got it for my wife, she love it very much.",
+            "review_date": "2015-01-04",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1473
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "18857553",
+            "review_id": "RZWYL8GEI1HP5",
+            "product_id": "B006ZRBGSC",
+            "product_parent": "766452724",
+            "product_title": "1 Gallon or 1/2 Gallon Glass Jar",
+            "product_category": "Kitchen",
+            "star_rating": "3",
+            "helpful_votes": "2",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Works as well as any other glass jar would for kombucha",
+            "review_body": "I'm a little annoyed at myself for getting caught up in the reviews and the \\\\\"perfect for brewing kombucha\\\\\" tagline of this product, and the fact that it has gone in price down from the $26 I spent on it two months ago - it might now be worth the cheaper price but was definitely not worth what I paid for it. It is narrower than most, which might make it easier for storing when the brew is fermenting, but other than that there is nothing that sets it apart from any other glass jar you could find.  Also, it does not come with the cheesecloth or rubberband as noted in some of the other reviews - not really a big deal since you can just use a papertowel to cover the bucha and rubberbands are easy to come by, but it was just one more annoyance with this already-overpriced purchase.",
+            "review_date": "2013-08-19",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 3404
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "701808",
+            "review_id": "R1CKNRI7D4WKXK",
+            "product_id": "B00PQ60DVO",
+            "product_parent": "597889149",
+            "product_title": "Vakind® Women Bodycon Slim Cocktail Clubwear Evening Party Mini Dress (S=US4)",
+            "product_category": "Apparel",
+            "star_rating": "1",
+            "helpful_votes": "2",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Buyers beware!",
+            "review_body": "False advertisement! This dress looks nothing like the picture. Very cheaply made it's not worst the wait or your money! It reminds me of a costume for Halloween for the dollar store. Omg so disappointed",
+            "review_date": "2015-01-06",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 5302
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "12872620",
+            "review_id": "R1WOVJFJRML2A1",
+            "product_id": "B00C94GTMI",
+            "product_parent": "445850760",
+            "product_title": "The Friendly Swede Bundle of 2 Long Camera / Camcorder Neck Shoulder Straps Belt - Length Approximately 36\" + Cleaning Cloth in Retail Packaging (Light Blue/Dark Blue/Orange + Black)",
+            "product_category": "Camera",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Awesome!",
+            "review_body": "I like this a lot. The colorful strap is sturdy and the color is fantastically vibrant. I have already used it on one of my hiking trips. It is soft and comfortable. I have yet to try out the black strap but I'm sure it's just as comfortable.",
+            "review_date": "2014-03-02",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 27,
+                        "end": 29,
+                        "tokens": [
+                            "hiking",
+                            "trips"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 329272
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "42159385",
+            "review_id": "R224QVZSGQ1U0X",
+            "product_id": "B007H9LJKC",
+            "product_parent": "81529919",
+            "product_title": "Body-Bands 1/4-inch Loop Resistance Bands, Light Orange (1-Pair)",
+            "product_category": "Sports",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great for starters",
+            "review_body": "These light resistance bands are great  for those who are just getting started with resistance band training.  Good quality at a fair price.",
+            "review_date": "2014-02-11",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 11,
+                        "end": 17,
+                        "tokens": [
+                            "getting",
+                            "started",
+                            "with",
+                            "resistance",
+                            "band",
+                            "training"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 87219
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "25082773",
+            "review_id": "R38J4FGXCHFZS",
+            "product_id": "B001J0QJ2S",
+            "product_parent": "493791",
+            "product_title": "Nikon Forestry 550 Hypsometer Rangefinder Spotting Scope",
+            "product_category": "Home Entertainment",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great Product to Use in the Field",
+            "review_body": " I purchased this product to use when doing engineering jobs in the field and it has been great! This range finder can measure horizontal distances as well as measuring the height of structures. Great product to use in the field and I would recommend it to anyone!",
+            "review_date": "2011-12-05",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 7,
+                        "end": 13,
+                        "tokens": [
+                            "doing",
+                            "engineering",
+                            "jobs",
+                            "in",
+                            "the",
+                            "field"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 23,
+                        "end": 26,
+                        "tokens": [
+                            "measure",
+                            "horizontal",
+                            "distances"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 29,
+                        "end": 34,
+                        "tokens": [
+                            "measuring",
+                            "the",
+                            "height",
+                            "of",
+                            "structures"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 100352
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "46441332",
+            "review_id": "R2MC7MMTF8EZIN",
+            "product_id": "B0058CR58U",
+            "product_parent": "962012332",
+            "product_title": "Dalmatian Costume for Kids",
+            "product_category": "Toys",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "It was the perfect costume for my son and fit him perfectly.",
+            "review_date": "2014-11-24",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "boy costume"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 21841
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "15186063",
+            "review_id": "R162FF9SU33HQ4",
+            "product_id": "B004XHFA7E",
+            "product_parent": "92139738",
+            "product_title": "Disney Princess Pop Up Hamper",
+            "product_category": "Toys",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Niece loves it",
+            "review_body": "We purchased this hamper for our brother to complete our niece's bedroom. She loves it. Okay, she doesn't use it as a hamper, she uses it to store her stuff toys. This hamper matches all of her other Princess items in the bedroom. So far our brother has not found any fault with this product...and for us...that's a message that this product is made well.",
+            "review_date": "2012-12-07",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "store toys"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 252215
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "38135736",
+            "review_id": "R1DP0BOU6HPHOP",
+            "product_id": "B00755KNCS",
+            "product_parent": "268275538",
+            "product_title": "Hamilton Beach Brands 70740 Food Processor, 2-Speed, 8-Cups",
+            "product_category": "Kitchen",
+            "star_rating": "5",
+            "helpful_votes": "2",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great power.",
+            "review_body": "Cuts all my vegetables in a matter of seconds. Great power.",
+            "review_date": "2015-01-13",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "cutting vegetables fast"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 59573
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "16571657",
+            "review_id": "R25VHG6YZHCLCA",
+            "product_id": "B004D50LO8",
+            "product_parent": "126422245",
+            "product_title": "Super Efficient 25' Counterflow Wort Chiller -",
+            "product_category": "Kitchen",
+            "star_rating": "5",
+            "helpful_votes": "6",
+            "total_votes": "6",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great!",
+            "review_body": "Best investment in my beer collection tools that I have! Chills my beer on the fly and uses less water. 212F to 68F at the end of the hose! Thanks!",
+            "review_date": "2013-12-27",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "chilling beer"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 24001
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "23078811",
+            "review_id": "R2FP9DLIFZ036Q",
+            "product_id": "B00HLUKEQW",
+            "product_parent": "19854895",
+            "product_title": "Magic Bullet NutriBullet 12-Piece Hi-Speed Blender/Mixer System",
+            "product_category": "Kitchen",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "SUPERIOR BLENDER",
+            "review_body": "What a fantastic product!  Easy to use and easy to clean.  Fruits and vegetable are blended perfectly with a simple twist.",
+            "review_date": "2014-05-14",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "blending fruits",
+                    "blending vegetables"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 121808
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "16399626",
+            "review_id": "R3H7Q8H9DMMN6N",
+            "product_id": "B001DZTIP4",
+            "product_parent": "204309105",
+            "product_title": "Repel 33801 6-1/2-Ounce Sportsmen Max Formula Insect Repellent Aerosol 40-Percent DEET Spray, Case Pack of 1",
+            "product_category": "Lawn and Garden",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Not Only Does This Product Keep Bugs Off Of You It Will Clean The Haze Off Of Your Cars Headlights",
+            "review_body": "Many will not believe what I purchased this product for but I did not purchase it to do what it was actually made for. Saw a You Tube Video where someone used this same product to clean up a hazed plastic headlight like what comes on todays cars. Used it on my wife's 2000 Dodge Intrepid like it was shown to be used in the video and could not believe my eyes as it cleaned the headlight surface up to almost as good as new. Spray it on the headlight and a clean dry cloth and it wiped away all of the crud that was blocking the light from coming through the headlight lense properly.",
+            "review_date": "2015-01-16",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 37,
+                        "end": 43,
+                        "tokens": [
+                            "clean",
+                            "up",
+                            "a",
+                            "hazed",
+                            "plastic",
+                            "headlight"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 28415
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "36377630",
+            "review_id": "R2DU3DHWXEAQD1",
+            "product_id": "B002DQMXNQ",
+            "product_parent": "476746997",
+            "product_title": "Deer Out 32oz Concentrate Deer Repellent",
+            "product_category": "Lawn and Garden",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "The best, most effective deer repellent",
+            "review_body": "If you want to eliminate deer damage, buy Deer Out!  For the past two months I've been wondering where the deer went. My flowers and tomatoes are growing, whereas my neighbor's tomato plants are mere stubs. Well, the deer are still around.  I just saw four walk by. They merely walk through my yard and don't stop to munch. I can now plan my spring garden with the expectation that I'll be able to enjoy my tulips.",
+            "review_date": "2013-09-13",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 7,
+                        "tokens": [
+                            "eliminate",
+                            "deer",
+                            "damage"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 36729
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "12219740",
+            "review_id": "R3SPGAM6CCHHH8",
+            "product_id": "B000N8S18W",
+            "product_parent": "480956076",
+            "product_title": "Dickies Men's Denim Bib Overall",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "Perfect for my son's Luigi themed party!",
+            "review_date": "2015-05-08",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 7,
+                        "tokens": [
+                            "Luigi",
+                            "themed",
+                            "party"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 65618
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "13116781",
+            "review_id": "R2OCFWR4ZG8BJU",
+            "product_id": "B0019474A0",
+            "product_parent": "821571525",
+            "product_title": "Rothco Long Sleeve T-Shirt",
+            "product_category": "Sports",
+            "star_rating": "4",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "Perfectly good for base layers for hunting or for paintball",
+            "review_body": "Just as I thought it would be. Fades some on washing but it didn't shrink. Perfectly good for base layers for hunting or for paintball.",
+            "review_date": "2014-07-15",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "base layer for paintball",
+                    "base layer for hunting"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 15067
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "24252977",
+            "review_id": "R10S4UDLQYV73Y",
+            "product_id": "B004QK7HI8",
+            "product_parent": "663821832",
+            "product_title": "Mohu Leaf 30 TV Antenna, Indoor, 30 Mile Range, Original Paper-thin, Reversible, Paintable, 4K-Ready HDTV, 10 Foot Detachable Cable, Premium Materials for Performance, USA Made, MH-110583",
+            "product_category": "Electronics",
+            "star_rating": "5",
+            "helpful_votes": "3",
+            "total_votes": "3",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Easy to install and excellent reception",
+            "review_body": "When I moved into my new apartment, the reception was so poor that I was only able to get a couple of channels. The channels I did receive came in and out. The Leaf Indoor Antenna perfectly fixed the problem and we now get over 40 channels. I followed the recommendation to tape up the antenna and check to see which channels it received. Moving it around (I actually moved it further down the wall) allowed me to find a place where I received all the channels I wanted before affixing to the wall. The install could not have been more simple and easy. Now, we get a lot of channels without loss of signal. I am very happy with this product. Looking at the other reviews, I think I should mention that I live in New York City, much more urban than other reviewers who were less satisfied.",
+            "review_date": "2012-01-27",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "receive channels"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 12510
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "50287059",
+            "review_id": "RIPKXJZRPBTXE",
+            "product_id": "B001G5ZSAA",
+            "product_parent": "307941318",
+            "product_title": "CR Gibson White Flower Girl Basket Wedding Accessory",
+            "product_category": "Toys",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Prettier than the box shows",
+            "review_body": "This is the perfect flower girl basket.  The stock photo doesn't show you the pretty bottom part of the basket.",
+            "review_date": "2012-12-01",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 7,
+                        "tokens": [
+                            "flower",
+                            "girl",
+                            "basket"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 20396
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "38589130",
+            "review_id": "R1FB25B2DDNG8S",
+            "product_id": "B0078K3ZPM",
+            "product_parent": "96625117",
+            "product_title": "Rubbermaid  Lunch Blox - 2 pack sauce containers,3 oz Cup",
+            "product_category": "Kitchen",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Happy lunching!",
+            "review_body": "I use this almost everyday. Great for work lunch. Helps to measure what I eat. Ice pack doesn't stay cold as long as I need it so I use another with it. Otherwise very happy with it.",
+            "review_date": "2015-08-08",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 8,
+                        "end": 10,
+                        "tokens": [
+                            "work",
+                            "lunch"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 13,
+                        "end": 17,
+                        "tokens": [
+                            "measure",
+                            "what",
+                            "I",
+                            "eat"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 4494
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "25126703",
+            "review_id": "RHFP87TRPH7ZN",
+            "product_id": "B000N5WJVK",
+            "product_parent": "27069803",
+            "product_title": "iTouchless Stainless Steel Battery Powered Salt or Pepper Mill",
+            "product_category": "Kitchen",
+            "star_rating": "1",
+            "helpful_votes": "12",
+            "total_votes": "14",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "Very disappointing,",
+            "review_body": "These grinders look great. After 3 days of use the grinder I was using for pepper quit working.  It just does not have enough torque to grind pepper.  They work alright for grinding sea salt but are worthless for pepper.  I will be buying a manual grinder set soon.",
+            "review_date": "2007-09-29",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 35,
+                        "end": 38,
+                        "tokens": [
+                            "grinding",
+                            "sea",
+                            "salt"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2722
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "47192584",
+            "review_id": "R1I1RIBQGHKIQU",
+            "product_id": "B0093XAV4U",
+            "product_parent": "509557404",
+            "product_title": "KEDSUM Arduino Wireless Bluetooth Transceiver Module Slave 4Pin Serial + DuPont Cable",
+            "product_category": "PC",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Unassuming but very capable",
+            "review_body": "It did everything it was supposed to do and for a very reasonable price. If all you need is a way of addressing a serial port wirelessly, then this is for you.",
+            "review_date": "2013-12-04",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 23,
+                        "end": 28,
+                        "tokens": [
+                            "addressing",
+                            "a",
+                            "serial",
+                            "port",
+                            "wirelessly"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 24910
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "37231606",
+            "review_id": "R1C63Z46U6JRUG",
+            "product_id": "B00175GFGK",
+            "product_parent": "676512317",
+            "product_title": "Pelican 1470 Laptop Case With Foam (Desert Tan)",
+            "product_category": "PC",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Case is cool",
+            "review_body": "I purchased this case not for my laptop but for carrying our off-site backup drives. (We take our server's backup drives off-site every week just in case the office is robbed or is burned down). This case was perfect for storing 2 removable hard drives with lots of padding.  It is relatively light.",
+            "review_date": "2013-01-05",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 10,
+                        "end": 15,
+                        "tokens": [
+                            "carrying",
+                            "our",
+                            "off-site",
+                            "backup",
+                            "drives"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 44,
+                        "end": 49,
+                        "tokens": [
+                            "storing",
+                            "2",
+                            "removable",
+                            "hard",
+                            "drives"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 123429
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "21316490",
+            "review_id": "R2CRU05SEEMFHA",
+            "product_id": "B00DHW4HXY",
+            "product_parent": "938516858",
+            "product_title": "EVGA GeForce Dual-Link DVI-I, DVI-D, HDMI,DP, SLI Ready Graphics Card  Graphics Cards",
+            "product_category": "PC",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "FPS went through roof?!!!",
+            "review_body": "I have an Alienware R3 that came with stock 450GT which was way outdated to play BF4 on max settings.  I had 2 450GT sli, and it just didn't do it.  I bought this GTX 760 and voila, problem solved. FPS went through roof!  I'm getting like 50~60 fps during the fights which is awesome.  I've always used EVGA and I love it.",
+            "review_date": "2015-04-10",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 15,
+                        "end": 20,
+                        "tokens": [
+                            "play",
+                            "BF4",
+                            "on",
+                            "max",
+                            "settings"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 27660
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "1207531",
+            "review_id": "R2HR3SD3XIFTS2",
+            "product_id": "B00LLWHW20",
+            "product_parent": "665843173",
+            "product_title": "Seat Cushion For Back Pain - Coccyx Orthopedic Memory Foam - Lower Back, Tailbone and Sciatica Pain Relief - Perfect for home, office, patio, kitchen, car, truck, bleacher, wheelchair, travel...",
+            "product_category": "Home",
+            "star_rating": "5",
+            "helpful_votes": "2",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "I like its squishyness",
+            "review_body": "helps alleviate pressure from pregnancy.  I like its squishyness! :)",
+            "review_date": "2014-12-30",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 1,
+                        "end": 5,
+                        "tokens": [
+                            "alleviate",
+                            "pressure",
+                            "from",
+                            "pregnancy"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 18403
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "48387042",
+            "review_id": "R3UBPDZQS733QH",
+            "product_id": "B003D7V9HU",
+            "product_parent": "364746990",
+            "product_title": "Vintage Suede Parchment Fabric",
+            "product_category": "Home",
+            "star_rating": "5",
+            "helpful_votes": "3",
+            "total_votes": "3",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "It worked very well I doubled the layers just to give it a little more support and the therapist was very pleased with the resul",
+            "review_body": "Ordered this fabric to make a wrist brace for a patient.  It worked very well  I doubled the layers just to give it a little more support and the therapist was very pleased with the results.",
+            "review_date": "2015-03-04",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 8,
+                        "tokens": [
+                            "make",
+                            "a",
+                            "wrist",
+                            "brace"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 42962
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "16110637",
+            "review_id": "R1RH51DFV1WMFP",
+            "product_id": "B001AUA5VS",
+            "product_parent": "910434910",
+            "product_title": "Pioneer Photo Albums 200-Pocket European Bonded Leather Photo Album for 4 by 6-Inch Prints, Black",
+            "product_category": "Home",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "This is a beautiful album. I filled one with our wedding photos ...",
+            "review_body": "This is a beautiful album.  I filled one with our wedding photos to give to my parents for Christmas.  It held just the right number of photos for a wedding album.  My parents display it proudly on their coffee table.",
+            "review_date": "2015-06-23",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 31,
+                        "end": 33,
+                        "tokens": [
+                            "wedding",
+                            "album"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 40631
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "13822583",
+            "review_id": "RTBVSR7RSEGLP",
+            "product_id": "B003W0MUVW",
+            "product_parent": "733311619",
+            "product_title": "Armour Glass Etching Cream Carded,2.8-Ounce",
+            "product_category": "Home",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great product for removing coating on eyeglasses!",
+            "review_body": "Worked great to removed the worn down lens coating on eyeglasses!!  It is worth the money to save an old pair",
+            "review_date": "2013-03-27",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 3,
+                        "end": 11,
+                        "tokens": [
+                            "removed",
+                            "the",
+                            "worn",
+                            "down",
+                            "lens",
+                            "coating",
+                            "on",
+                            "eyeglasses"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 7219
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "12828211",
+            "review_id": "R1PD9X8SDX4NAW",
+            "product_id": "B00D8YWLJS",
+            "product_parent": "803916585",
+            "product_title": "1 Strand (34inches) of Real Natural Fluorite Gemstone Chips Beads. wholesale price. Prepared exclusively by GemMartUSA.",
+            "product_category": "Home",
+            "star_rating": "2",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "need a microscope",
+            "review_body": "these are gorgeous chips but they are the tiniest ones i have ever seen.  they could be used for doll jewelry.  the strand i received was almost entirely pale green with a few purple specks. they bear no resemblance to the picture.",
+            "review_date": "2014-02-10",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 20,
+                        "end": 22,
+                        "tokens": [
+                            "doll",
+                            "jewelry"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 15351
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "48016064",
+            "review_id": "RXN869A6OSPA5",
+            "product_id": "B000W4LANU",
+            "product_parent": "637024168",
+            "product_title": "Oil Bronze Toilet Paper Roll Holder Reserve Caddy",
+            "product_category": "Home",
+            "star_rating": "4",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Classy",
+            "review_body": "Sturdy, well built and adds a touch of class to the bathroom.  Also holds even the larger toilet rolls, so no worries about buying those at the store because they might not fit.  Good value.",
+            "review_date": "2013-01-28",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "holding larger toilet rolls"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 22409
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "347632",
+            "review_id": "R30EVHZ4GP86D",
+            "product_id": "B011623SDQ",
+            "product_parent": "568690908",
+            "product_title": "Super Mesh Magnetic Screen Door - Magic Mesh Instant Screen Door Insect & Fly Screens Set",
+            "product_category": "Home Improvement",
+            "star_rating": "5",
+            "helpful_votes": "17",
+            "total_votes": "18",
+            "vine": "N",
+            "verified_purchase": "N",
+            "review_headline": "Its just perfect for me!",
+            "review_body": "I live in the South. Leaving doors open without a screen in the hot Summer is a terrible mistake.  Mosquitoes and flies will fly inside like crazy. However, I really enjoy opening the door sometimes and letting fresh air into the house. Especially after a good fresh rain shower. I got tired of mosquito bites, so I decided to order this Magic Mesh Magnetic Screen Door. The fact that it is covered in butterflies was just icing on the cake for me. I absolutely love butterflies.<br /><br />The day my new Screen arrived, I had my hubby to hang it up. The screen is very simple to install. It comes with a package of velcro strips and a small box of tacs. I could have easily installed it myself if only I was taller. It only took my husband maybe 5 minutes or less to install. It looks gorgeous in my true opinion. I really love my new Screen. The butterflies just stand out so well. Several of my neighbors have complimented it just in the past few days.<br /><br />This Screen is made of good quality materials. The materials used to hang it are made good also. For the great price that the Screen is available for, this deal just can't be beat. Your not gonna get a good quality screen like this from anywhere else. I have tried other mesh screens in the past. None of them were made as well as this one. I am very pleased with it.<br /><br />* I received this Magic Mesh Magnetic Screen for free in exchange for my honest and unbiased review.",
+            "review_date": "2015-07-28",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [
+                    "keep insects out"
+                ],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 14044
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "11935569",
+            "review_id": "RT3YICBJRESWF",
+            "product_id": "B0046ECL80",
+            "product_parent": "484618623",
+            "product_title": "Watts Pre-Cut 5/8-Inch Diameter by 1/2-Inch Clear Vinyl Tubing",
+            "product_category": "Home Improvement",
+            "star_rating": "5",
+            "helpful_votes": "1",
+            "total_votes": "1",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Yep, its pvc tubing!",
+            "review_body": "Worked great for a siphon hose, the best part is you can see if the flow stops from across the room. Seems like good quality, and Amazon delivered it quickly!",
+            "review_date": "2011-11-13",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 6,
+                        "tokens": [
+                            "siphon",
+                            "hose"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 15717
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "52951032",
+            "review_id": "R1GBQH8HXCLT0C",
+            "product_id": "B00CDW94OG",
+            "product_parent": "197843811",
+            "product_title": "Applied Magnets ® 10-pc N45 Neodymium Magnets 1/2\" x 1/16\" Discs",
+            "product_category": "Home Improvement",
+            "star_rating": "5",
+            "helpful_votes": "2",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Just what the shower needed!",
+            "review_body": "I bought these to help keep the shower curtain from blowing in when the water was running.<br />They hold firmly to each other through the curtain, and stick (with less force) to the inside of the tub.<br /><br />BTW, these guys are so strong that when you drop the stack though a copper tube it slows way down. Very coole effect.<br /><br />Packaged very well - highly recommended.",
+            "review_date": "2013-08-23",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 5,
+                        "end": 12,
+                        "tokens": [
+                            "keep",
+                            "the",
+                            "shower",
+                            "curtain",
+                            "from",
+                            "blowing",
+                            "in"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 19072
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "47584595",
+            "review_id": "R37QRRYBPQKKPD",
+            "product_id": "B005B4N5CA",
+            "product_parent": "477731981",
+            "product_title": "CTA Tools A154 4-Piece Lug Nut Remover Socket Set",
+            "product_category": "Tools",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great Product at a great price",
+            "review_body": "As described and it shipped timely as well as worked perfectly to remove multiple damaged lug nuts on my car.",
+            "review_date": "2013-08-18",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 12,
+                        "end": 17,
+                        "tokens": [
+                            "remove",
+                            "multiple",
+                            "damaged",
+                            "lug",
+                            "nuts"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 10616
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "31040946",
+            "review_id": "RO7YWKDA3OZPN",
+            "product_id": "B003A0CNFC",
+            "product_parent": "454896219",
+            "product_title": "GENERAL INTL 21 In. Tilting Head",
+            "product_category": "Tools",
+            "star_rating": "5",
+            "helpful_votes": "3",
+            "total_votes": "6",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Best Scroll Saw",
+            "review_body": "I am a hobbist and decided that I wanted a good quality reliable scroll saw.  I found it in the Excalibur.  Great brand, great quality and great cutting tool.  I hope you find this helpful, because if I ever needed another scroll saw I would not hesitate to purchase an Excalibur.",
+            "review_date": "2012-01-19",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 13,
+                        "end": 15,
+                        "tokens": [
+                            "scroll",
+                            "saw"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    },
+                    {
+                        "start": 30,
+                        "end": 32,
+                        "tokens": [
+                            "cutting",
+                            "tool"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 15460
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "2720405",
+            "review_id": "R16B85RXE01683",
+            "product_id": "B000WO8BFK",
+            "product_parent": "849523741",
+            "product_title": "Fun Express Captains Hat - Skipper Your Own Kon Tiki Raft !!!One size fits most",
+            "product_category": "Apparel",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "Purchased several for an event and they are perfect.",
+            "review_date": "2015-06-21",
+            "label": {
+                "isFlagged": false,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 3752
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "13200767",
+            "review_id": "R32KDHQ07P2FT8",
+            "product_id": "B00SGSA46S",
+            "product_parent": "757520838",
+            "product_title": "The Friendly Swede Silicone Fasteners for Fitbit Charge Wristband (12 Pack)",
+            "product_category": "Outdoors",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Five Stars",
+            "review_body": "Arrived as promised and is working well with my Fitbit.",
+            "review_date": "2015-04-19",
+            "label": {
+                "isFlagged": false,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 7771
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "24096410",
+            "review_id": "RAOZDRDM148CX",
+            "product_id": "B001DCJ3L6",
+            "product_parent": "469674288",
+            "product_title": "StrongArm 4396 Chrysler Aspen, Liftgate Power Liftgate Lift Support, Pack of 1",
+            "product_category": "Automotive",
+            "star_rating": "1",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "not as advertised",
+            "review_body": "They are not strong enough to hold the back door open.  The door opens then comes right back down.",
+            "review_date": "2015-02-04",
+            "label": {
+                "isFlagged": false,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2562
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "35393505",
+            "review_id": "R38AX1QLQ9LG2W",
+            "product_id": "B001TZWNF0",
+            "product_parent": "193425467",
+            "product_title": "Case Logic SLRC-202 Medium SLR Camera Bag (Black)",
+            "product_category": "Camera",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great Camera Bag!",
+            "review_body": "This is a great camera bag for the Nikon D7000. It has several pockets and is well made. I really love the hard bottom feature as well.",
+            "review_date": "2013-03-07",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 4,
+                        "end": 10,
+                        "tokens": [
+                            "camera",
+                            "bag",
+                            "for",
+                            "the",
+                            "Nikon",
+                            "D7000"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 9680
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "37494828",
+            "review_id": "R1KZ71WOMX73S3",
+            "product_id": "B00004ZCB5",
+            "product_parent": "981807250",
+            "product_title": "TiffenNeutral Density 0.9 Filter",
+            "product_category": "Camera",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Very Useful",
+            "review_body": "I do a lot of waterfall photography in Oregon's mountains and this filter is an absolute must to get quality photos.",
+            "review_date": "2014-03-01",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 5,
+                        "end": 7,
+                        "tokens": [
+                            "waterfall",
+                            "photography"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 2642
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "31839330",
+            "review_id": "R1CTLVV3BGQR7F",
+            "product_id": "B005OMUDTM",
+            "product_parent": "873665277",
+            "product_title": "Drawstring Halloween Goody Bags",
+            "product_category": "Toys",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great for what they are!",
+            "review_body": "Cute, decent quality little bags with nice little drawstrings.  Wonderful for Halloween party treat bags - nicely fit some candy and several small cheapo party gifts, with room to spare.  :)",
+            "review_date": "2013-10-15",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 13,
+                        "end": 17,
+                        "tokens": [
+                            "Halloween",
+                            "party",
+                            "treat",
+                            "bags"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1868
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "13255883",
+            "review_id": "R211BIC1ERZ5VI",
+            "product_id": "B004ZUW2D4",
+            "product_parent": "59828745",
+            "product_title": "Monster Straw brand Milkshake Straws - Extra Wide Diameter - 35ct/Poly Bag. Individually Cello-Wrapped, Assorted Neon Colors",
+            "product_category": "Kitchen",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Perfect size for my bubble Tea.",
+            "review_body": "These straws are the perfect size to drink my bubble tea. The tapioca pearls do not get stuck in them. Also, I have found them heave duty enough that I can wash them and re use them.",
+            "review_date": "2014-01-24",
+            "label": {
+                "isFlagged": true,
+                "annotations": [
+                    {
+                        "start": 7,
+                        "end": 11,
+                        "tokens": [
+                            "drink",
+                            "my",
+                            "bubble",
+                            "tea"
+                        ],
+                        "tag": "",
+                        "color": "#8afd8a"
+                    }
+                ],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 1502
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "10846599",
+            "review_id": "R6G57ZIHJW3JT",
+            "product_id": "B002LFB0PQ",
+            "product_parent": "474906075",
+            "product_title": "Samsung 12MP Dig Camera 4.6X Opt 3 In LCD Red",
+            "product_category": "Camera",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "2",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Great gift, no complaints.",
+            "review_body": "I had a bad experience with Amazon previously so I was surprised when everything went smoothly. I purchased this camera as a gift so I can't give a review on the actual camera but for the price and the shipping time, it was great.",
+            "review_date": "2010-08-16",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 90087
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "22192575",
+            "review_id": "R2WPSVR9KW9RHG",
+            "product_id": "B00009USZE",
+            "product_parent": "684441033",
+            "product_title": "Polaroid One Step Close-Up 600 Instant Camera",
+            "product_category": "Camera",
+            "star_rating": "4",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Christmas",
+            "review_body": "My Granddaughter was thrilled with it. Works great.",
+            "review_date": "2015-01-09",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 8704
+        },
+        {
+            "marketplace": "US",
+            "customer_id": "51399082",
+            "review_id": "R3GPYYXGNBEJ9O",
+            "product_id": "B00DZIFWTS",
+            "product_parent": "764186249",
+            "product_title": "Lens Cap Bundle - 4 Snap-on Lens Caps for DSLR Cameras including Nikon, Canon, Sony - 4 Lens Cap Keepers / 1 CamKix Microfiber Cleaning Cloth included",
+            "product_category": "Camera",
+            "star_rating": "5",
+            "helpful_votes": "0",
+            "total_votes": "0",
+            "vine": "N",
+            "verified_purchase": "Y",
+            "review_headline": "Their Great",
+            "review_body": "I kept loosing my Nikon lens cap and decided to order these as a replacement. Fits perfectly and a great price for 4.",
+            "review_date": "2014-02-19",
+            "label": {
+                "isFlagged": true,
+                "annotations": [],
+                "customUsageOptions": [],
+                "replacementClasses": {}
+            },
+            "inspectionTime": 35629
+        }
+    ],
+    "maxReviewIndex": 70
+}
