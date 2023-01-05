@@ -9,8 +9,8 @@ const timer = new Timer({label: 'review-inspection-timer'});
 const REVIEWS =
   process.env.NODE_ENV === 'production'
     ? {
-      metadata: JSON.parse(document.getElementById('metadata').innerHTML),
-      review_bodys: JSON.parse(document.getElementById('source').innerHTML)
+      metadata: JSON.parse(document.getElementById('metadata').innerText),
+      review_bodys: JSON.parse(document.getElementById('source').innerText)
     }
     : {
       metadata: [{
