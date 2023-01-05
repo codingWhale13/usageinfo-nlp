@@ -3,6 +3,9 @@ import React, { Component } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { Review } from './Review';
 import { InstructionsAlertDialog } from './InstructionsAlertDialog';
+const { Timer } = require('timer-node');
+const timer = new Timer({label: 'review-inspection-timer'});
+
 const REVIEWS =
   process.env.NODE_ENV === 'production'
     ? {
@@ -20,6 +23,7 @@ const REVIEWS =
       }],
       review_bodys: ['I like this axe for chopping wood and digging a fire pit.','Hello world wow 1']
       };
+
 class MTurkReview extends Component {
   constructor(props) {
     super(props);
@@ -28,6 +32,7 @@ class MTurkReview extends Component {
       reviews: [],
       annotations: [],
       customUsageOptions: [],
+      inspectionTimes: [],
       reviewIndex: 0
     };
 
@@ -38,7 +43,10 @@ class MTurkReview extends Component {
       });
       this.state.annotations.push([]);
       this.state.customUsageOptions.push([]);
+      this.state.inspectionTimes.push(0);
     }
+
+    timer.start();
   }
 
   saveAnnotations = (reviewAnnotations, i) => {
@@ -52,6 +60,19 @@ class MTurkReview extends Component {
       const customUsageOptions = [...this.state.customUsageOptions];
       customUsageOptions[i] = reviewCustomUsageOptions;
       this.setState({ customUsageOptions: customUsageOptions });
+  };
+
+  updateInspectionTime = (callback) => {
+    const time = timer.ms();
+    const inspectionTimes = [...this.state.inspectionTimes];
+    inspectionTimes[this.state.reviewIndex] = inspectionTimes[this.state.reviewIndex] + time;
+    this.setState({ inspectionTimes: inspectionTimes }, () => {
+      console.log(this.state.inspectionTimes);
+      if (callback) {
+        callback();
+      }
+    });
+    timer.clear().start();
   };
 
   render() {
@@ -68,12 +89,12 @@ class MTurkReview extends Component {
           numberOfReviews={this.state.reviews.length}
           extra={
             <ButtonGroup gap="2">
-             <InstructionsAlertDialog />
+              <InstructionsAlertDialog />
                 <Button colorScheme="teal" size="lg"  
                 disabled={!isLastReview}
                 onClick={
               () => {
-                document.querySelector('crowd-form').submit();
+                this.updateInspectionTime(() => document.querySelector('crowd-form').submit());
               }}>
             Submit task
             </Button>
@@ -88,6 +109,7 @@ class MTurkReview extends Component {
               customUsageOptions: customUsageOptions,
             },
           }}
+
           onSaveAnnotations={ (annotations) => {
             this.saveAnnotations(
               annotations,
@@ -103,14 +125,18 @@ class MTurkReview extends Component {
           }}
 
           navigateToNext={() => {
+            this.updateInspectionTime();
             this.setState({
               reviewIndex: this.state.reviewIndex + 1,
             });
           }}
 
           isPreviousDisabled={this.state.reviewIndex === 0}
+
           isNextDisabled={isLastReview}
+
           navigateToPrevious={() => {
+              this.updateInspectionTime();
               this.setState({ reviewIndex: this.state.reviewIndex - 1});
           }}
 
@@ -118,7 +144,8 @@ class MTurkReview extends Component {
 
         <pre hidden>{JSON.stringify({
           annotations: this.state.annotations,
-          customUsageOptions: this.state.customUsageOptions
+          customUsageOptions: this.state.customUsageOptions,
+          inspectionTimes: this.state.inspectionTimes
         }, null, 2)}</pre>
       </>
     );

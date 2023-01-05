@@ -1,20 +1,11 @@
 import {
     Button,
-    Progress,
-    Heading,
-    Container,
-    Stat,
-    StatNumber,
-    Spacer,
     ButtonGroup,
-    Box,
-    Flex,
     Center,
     Grid,
     GridItem,
   } from '@chakra-ui/react';
   import { Review } from './Review';
-  import { Card } from './Elements';
   import { Feature } from 'flagged';
 import { ProgressBar } from './ProgressBar';
   
@@ -117,7 +108,7 @@ import { ProgressBar } from './ProgressBar';
       const time = timer.ms();
       const reviews = [...this.state.reviews];
       reviews[this.state.reviewIndex].inspectionTime = reviews[this.state.reviewIndex].inspectionTime + time;
-      this.setState({ reviews });
+      this.setState({ reviews: reviews });
       timer.clear().start();
   }
   
@@ -138,9 +129,9 @@ import { ProgressBar } from './ProgressBar';
       );
   
       return (
-        <Container maxWidth="1300px">
+        <>
           {this.state.reviews.length === 0 && (
-            <Center h="100%">
+            <Center h="100vh">
               <Grid templateColumns="repeat(2, 1fr)">
                 <GridItem>
                   <h1>Please upload a .tsv file:</h1>
@@ -155,7 +146,6 @@ import { ProgressBar } from './ProgressBar';
           )}
           {this.state.reviewIndex < this.state.reviews.length && (
             <>
-              
               <ProgressBar 
                 currentReviewIndex={this.state.reviewIndex}
                 numberOfReviews={this.state.reviews.length}
@@ -222,7 +212,7 @@ import { ProgressBar } from './ProgressBar';
                 <Feature name="localLabelling">{exportButton}</Feature>
               </ButtonGroup>
             )}
-        </Container>
+        </>
       );
     }
   }

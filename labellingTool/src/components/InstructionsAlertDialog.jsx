@@ -40,7 +40,7 @@ export function InstructionsAlertDialog() {
             </AlertDialogHeader>
 
             <AlertDialogBody>
-              <Stack spacing={4}>
+              <Stack spacing={4} pl="2">
                 <Text>
                   The goal of this project is to extract usage information from
                   Amazon product reviews. For every review, your job is to
@@ -65,7 +65,6 @@ export function InstructionsAlertDialog() {
                 <Text>
                   Examples of what should be labeled as a usage option:
                 </Text>
-                <Text>
                   <UnorderedList>
                     <ListItem>
                       {' '}
@@ -87,11 +86,9 @@ export function InstructionsAlertDialog() {
                       <Text as="b">blending vegetables</Text>" (free text)
                     </ListItem>
                   </UnorderedList>
-                </Text>
                 <Heading as="h4" size="md">
                   What does <Text as="b">not</Text> count as a usage option?
                 </Heading>
-                <Text>
                   <UnorderedList>
                     <ListItem>
                       References to similar products (
@@ -128,12 +125,10 @@ export function InstructionsAlertDialog() {
                       )
                     </ListItem>
                   </UnorderedList>
-                </Text>
 
                 <Heading as="h3" size="md">
                   How to use the labeling tool
                 </Heading>
-                <Text>
                   <OrderedList>
                     <ListItem>
                       In one review, there can be any number (including 0) of
@@ -164,7 +159,6 @@ export function InstructionsAlertDialog() {
                       </UnorderedList>
                     </ListItem>
                   </OrderedList>
-                </Text>
               </Stack>
             </AlertDialogBody>
 
