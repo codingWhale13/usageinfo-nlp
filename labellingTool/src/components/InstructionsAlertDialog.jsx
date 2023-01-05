@@ -11,9 +11,11 @@ import {
   Stack,
   UnorderedList,
   OrderedList,
+  Image,
   ListItem,
 } from '@chakra-ui/react';
 
+import HowToImage from './how-to-high2.jpg';
 import { useDisclosure } from '@chakra-ui/react';
 import React from 'react';
 
@@ -31,7 +33,7 @@ export function InstructionsAlertDialog() {
         isOpen={isOpen}
         leastDestructiveRef={cancelRef}
         onClose={onClose}
-        size="4xl"
+        size="6xl"
       >
         <AlertDialogOverlay>
           <AlertDialogContent>
@@ -133,38 +135,9 @@ export function InstructionsAlertDialog() {
                 <Heading as="h3" size="md">
                   How to use the labeling tool
                 </Heading>
-                <Text>
-                  <OrderedList>
-                    <ListItem>
-                      In one review, there can be any number (including 0) of
-                      usage options.
-                    </ListItem>
-                    <ListItem>
-                      Usages can be either
-                      <UnorderedList>
-                        <ListItem>
-                          marked and used exactly as it's written in the review
-                          or
-                        </ListItem>
-                        <ListItem>
-                          {' '}
-                          written as free text; this allows:
-                          <UnorderedList>
-                            <ListItem>
-                              avoid filler words used by review author
-                            </ListItem>
-                            <ListItem> correct misspellings</ListItem>
-                            <ListItem>
-                              {' '}
-                              articulate something that's clear from context but
-                              not written explicitly
-                            </ListItem>
-                          </UnorderedList>
-                        </ListItem>
-                      </UnorderedList>
-                    </ListItem>
-                  </OrderedList>
-                </Text>
+                <Image 
+                    src={HowToImage}
+                />
               </Stack>
             </AlertDialogBody>
 
