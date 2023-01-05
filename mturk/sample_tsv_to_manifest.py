@@ -108,13 +108,6 @@ def grouper(iterable, n, fillvalue=None):
 
 manifest = []
 SOURCE_COLUMN = "review_body"
-METADATA_COLUMNS = [
-    "review_id",
-    "product_id",
-    "product_title",
-    "review_date",
-    "product_category",
-]
 
 reviews_per_task = args.reviews_per_task
 
@@ -131,8 +124,9 @@ for reviews_batch in grouper(final_json, reviews_per_task):
         source.append(review[SOURCE_COLUMN])
 
         datapoint_metadata = {}
-        for column in METADATA_COLUMNS:
-            datapoint_metadata[column] = review[column]
+        for column in review.keys():
+            if column != SOURCE_COLUMN:
+                datapoint_metadata[column] = review[column]
         metadata.append(datapoint_metadata)
 
     manifest.append({"source": json.dumps(source), "metadata": metadata})
