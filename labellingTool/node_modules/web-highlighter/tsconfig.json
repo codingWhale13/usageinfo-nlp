@@ -1,0 +1,23 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "declaration": true,
+        "sourceMap": true,
+        "outDir": "./dist",
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "es2015"
+        ],
+        "target": "es5",
+        "downlevelIteration": true,
+        "resolveJsonModule": true,
+        "baseUrl": ".",
+        "paths": {
+            "@src/*": ["./src/*"]
+        }
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
