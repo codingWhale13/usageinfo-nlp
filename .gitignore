@@ -127,3 +127,7 @@ data/
 .slurm
 .err
 .out
+
+node_modules
+.DS_Store
+mturk/.DS_Store
