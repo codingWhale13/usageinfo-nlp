@@ -8,12 +8,14 @@ parser.add_argument("manifest_file",  help=".manifest sagemaker output file")
 
 args = parser.parse_args()
 
+DEFAULT_OUTPUT_FOLDER = "labellingJobsJsonOutput"
+
 def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[Path, str] = None):
     with open(input_path, "r") as turker_labels:
         reviews = {"reviews": [], "maxReviewIndex": 0}
         run_name = get_run_name(input_path)
         if output_path is None:
-            output_path = f"{run_name}-output.json"
+            output_path = f"{DEFAULT_OUTPUT_FOLDER}/{run_name}-output.json"
         for line in turker_labels:
             data = json.loads(line)
             review_bodies = json.loads(data["source"])
