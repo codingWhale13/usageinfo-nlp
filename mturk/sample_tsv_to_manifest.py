@@ -12,20 +12,20 @@ parser.add_argument(
 parser.add_argument(
     "--number_of_tasks",
     "-n",
-    default=10,
+    default=20,
     help="The number of tasks (MTurk HITs) in the output manifest",
 )
 parser.add_argument(
     "--reviews_per_task",
     "-r",
-    default=5,
+    default=10,
     type=int,
     help="The number of reviews for each task",
 )
 parser.add_argument(
     "--golden_fraction",
     "-f",
-    default=0.05,
+    default=0.1,
     type=float,
     help="Proportion of golden samples",
 )
