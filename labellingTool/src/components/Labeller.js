@@ -8,6 +8,7 @@ import {
   import { Review } from './Review';
   import { Feature } from 'flagged';
 import { ProgressBar } from './ProgressBar';
+import { reverse } from 'lodash';
   
   const React = require('react');
   const { CSVUpload } = require('./CSVUpload');
@@ -63,6 +64,12 @@ import { ProgressBar } from './ProgressBar';
             maxReviewIndex: jsonData.maxReviewIndex
         });
         timer.start();
+    }
+
+    saveDataForIndexAtKey = (data, i, key) => {
+      const reviews = [...this.state.reviews];
+      reviews[i].label[key] = data;
+      this.setState({reviews: reviews});
     }
 
     saveReviewFlag = (isFlagged, i) => {
@@ -175,6 +182,9 @@ import { ProgressBar } from './ProgressBar';
 
                 onSaveFlag={ (isFlagged) => {
                   this.saveReviewFlag(isFlagged, this.state.reviewIndex);
+                }}
+                onSaveLabelQualityFlag={(isLabelGood) => {
+                  this.saveDataForIndexAtKey(isLabelGood, 'isLabelGood', this.state.reviewIndex);
                 }}
                 
                 navigateToNext={() => {

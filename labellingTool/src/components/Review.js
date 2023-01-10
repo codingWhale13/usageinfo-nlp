@@ -15,6 +15,8 @@ const {
   Stack,
   Flex,
   Text,
+  Spacer,
+  VStack
 } = require('@chakra-ui/react');
 const {
   StarIcon,
@@ -135,12 +137,19 @@ export function Review(props) {
   if (!review) {
     return 'No review';
   }
+
+  const roundToTwoDecimals = (num) => {
+    return Math.round(num * 100) / 100;
+  }
+
+  const inspectionTimeInSeconds = roundToTwoDecimals(review.workerInspectionTime/1000);
+  const wordsPerMinute = roundToTwoDecimals(review.review_body.split(' ').length / (inspectionTimeInSeconds /60));
   return (
     <Card>
       <Grid
         templateAreas={`"header nav"
                         "main nav"`}
-        gridTemplateRows={'110px 1fr'}
+        gridTemplateRows={'140px 1fr'}
         gridTemplateColumns={'1fr 350px'}
         gap="3"
         fontSize={'lg'}
@@ -158,7 +167,21 @@ export function Review(props) {
               {review.product_title}{' '}
             </Text>
             <Divider m={2} />
-            <Tag size="lg">{review.product_category}</Tag>
+            <VStack direction={[ 'row', 'column']} style={{'align-items': 'start'}}> 
+              <Feature name="localLabelling">
+              <Stack direction={['column', 'row']}>
+                <Tag size="lg">{review.review_id}</Tag>
+                <Tag size="lg">{review.workerId}</Tag>
+                <Tag size="lg">Time: {inspectionTimeInSeconds}s</Tag>
+                <Tag size="lg">Words per minute: {wordsPerMinute}</Tag>
+                </Stack>
+
+              </Feature>
+              <Tag size="lg" colorScheme='blue'>{review.product_category}</Tag>
+              
+
+            
+            </VStack>
           </Card>
         </GridItem>
 
@@ -179,8 +202,52 @@ export function Review(props) {
         <GridItem pt="2" pl="2" area={'nav'}>
           <Stack>
             <Feature name="localLabelling">
-              {review.label.isFlagged ? (
+
+      
+            <ButtonGroup gap="2">
+              {!review.label.isLabelGood ?
+              <>
                 <Button
+                onClick={resetAnnotation}
+                colorScheme="red"
+                size="md"
+              >
+                Mark label as bad
+              </Button>                
+
+              <Button
+                type="submit"
+                onClick={props.navigateToNext}
+                size="md"
+                colorScheme="green"
+              >
+                Mark label as good
+              </Button>
+              </>
+              :
+              <>
+               <Button
+                onClick={resetAnnotation}
+                colorScheme="red"
+                size="md"
+              >
+                Mark label bad
+              </Button>                
+
+              <Button
+                type="submit"
+                onClick={props.navigateToNext}
+                rightIcon={<ArrowRightIcon />}
+                size="md"
+                colorScheme="green"
+              >
+                Mark label good
+              </Button>
+              </>
+              }
+            </ButtonGroup>
+              {review.label.isFlagged ? (
+                               <Button
                   leftIcon={<StarIcon />}
                   colorScheme="red"
                   onClick={() => props.onSaveFlag(false)}
