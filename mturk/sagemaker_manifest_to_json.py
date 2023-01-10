@@ -21,9 +21,10 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
             review_bodies = json.loads(data["source"])
             number_of_workers_per_hit = len(data[run_name]["annotationsFromAllWorkers"])
             number_of_reviews_per_hit = len(review_bodies)
-            print(number_of_reviews_per_hit)
+            
             for worker in range(number_of_workers_per_hit):
                 for review in range(number_of_reviews_per_hit):
+                    worker_id = data[run_name]["annotationsFromAllWorkers"][worker]["workerId"]
                     inner_annotations = json.loads(data[run_name]["annotationsFromAllWorkers"][worker]["annotationData"]["content"])
                     annotations = json.loads(inner_annotations["annotations"])["annotations"]
                     customUsageOptions = json.loads(inner_annotations["annotations"])["customUsageOptions"]
@@ -35,6 +36,7 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
                         "customUsageOptions": customUsageOptions[review],
                         "replacementClasses": {}
                     },
+                    "workerId": worker_id,
                     "inspectionTime": None})
         with open(output_path, "w") as output_file:
             json.dump(reviews, output_file)
