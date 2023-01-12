@@ -30,6 +30,10 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
 
                     annotations = labelling_data["annotations"]
                     customUsageOptions = labelling_data["customUsageOptions"]
+                    worker_inspection_time = None
+                    if "inspectionTimes" in labelling_data:
+                        worker_inspection_time = labelling_data["inspectionTimes"][review]
+
                     reviews["reviews"].append(data["metadata"][review] | {
                     "review_body": review_bodies[review],
                     "label": {
@@ -39,7 +43,7 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
                         "replacementClasses": {}
                     },
                     "workerId": worker_id,
-                    "workerInspectionTime": labelling_data["inspectionTimes"][review],
+                    "workerInspectionTime": worker_inspection_time,
                     "inspectionTime": None})
         with open(output_path, "w") as output_file:
             json.dump(reviews, output_file)
