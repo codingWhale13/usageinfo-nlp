@@ -1,6 +1,11 @@
 import { CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
-
+import {
+  IS_FLAGGED,
+  ANNOTATIONS,
+  CUSTOM_USAGE_OPTIONS,
+  IS_GOLDEN_DATASET
+} from '../utils/labelKeys';
 const React = require('react');
 
 const {
@@ -16,7 +21,7 @@ const {
   Flex,
   Text,
   Spacer,
-  VStack
+  VStack,
 } = require('@chakra-ui/react');
 const {
   StarIcon,
@@ -32,38 +37,44 @@ const { Card } = require('./Elements');
 export function Review(props) {
   const { review } = props;
   const { isPreviousDisabled, isNextDisabled } = props;
-  
+
   const annotationsToUsageOptions = annotations => {
     return annotations.map(annotation => annotation.tokens.join(' ')).flat();
   };
 
-  const uniqueAnnotations = (annotations) => {
+  const uniqueAnnotations = annotations => {
     return annotations.filter(
-        (annotation, index) => annotations.map(annotation => annotation.tokens.join(' ')).indexOf(annotation.tokens.join(' ')) === index
+      (annotation, index) =>
+        annotations
+          .map(annotation => annotation.tokens.join(' '))
+          .indexOf(annotation.tokens.join(' ')) === index
     );
-    };
+  };
 
-  const saveAnnotations = (annotations) => {
+  const saveAnnotations = annotations => {
     const usageOptions = annotationsToUsageOptions(annotations);
-    props.onSaveCustomUsageOptions(
+    props.saveLabel(
+      CUSTOM_USAGE_OPTIONS,
       review.label.customUsageOptions.filter(
         usageOptionA => !usageOptions.includes(usageOptionA)
       )
     );
-    props.onSaveAnnotations(annotations);
+    props.saveLabel(ANNOTATIONS, annotations);
   };
 
-  const deleteAnnotation = (annotation) => {
-    props.onSaveAnnotations(
+  const deleteAnnotation = annotation => {
+    props.saveLabel(
+      ANNOTATIONS,
       review.label.annotations.filter(
-        annotationA => annotationA.tokens.join(' ') !== annotation.tokens.join(' ')
+        annotationA =>
+          annotationA.tokens.join(' ') !== annotation.tokens.join(' ')
       )
     );
   };
-  
 
-  const deleteCustomUsageOption = (customUsageOption) => {
-    props.onSaveCustomUsageOptions(
+  const deleteCustomUsageOption = customUsageOption => {
+    props.saveLabel(
+      CUSTOM_USAGE_OPTIONS,
       review.label.customUsageOptions.filter(
         usageOptionA => usageOptionA !== customUsageOption
       )
@@ -71,79 +82,77 @@ export function Review(props) {
   };
 
   const resetAnnotation = () => {
-    props.onSaveAnnotations([]);
-    props.onSaveCustomUsageOptions([]);
+    props.saveLabel(ANNOTATIONS, []);
+    props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
   };
 
-  const saveCustomUsageOption =  (newCustomUsageOption) => {
-        if (!review.label.customUsageOptions.includes(
-            newCustomUsageOption
-        ) &&
-            !annotationsToUsageOptions(
-                review.label.annotations
-            ).includes(newCustomUsageOption) && newCustomUsageOption !== "") {
-            props.onSaveCustomUsageOptions(
-                review.label.customUsageOptions.concat(
-                    newCustomUsageOption
-                )
-            );
-        }
+  const saveCustomUsageOption = newCustomUsageOption => {
+    if (
+      !review.label.customUsageOptions.includes(newCustomUsageOption) &&
+      !annotationsToUsageOptions(review.label.annotations).includes(
+        newCustomUsageOption
+      ) &&
+      newCustomUsageOption !== ''
+    ) {
+      props.saveLabel(
+        CUSTOM_USAGE_OPTIONS,
+        review.label.customUsageOptions.concat(newCustomUsageOption)
+      );
+    }
+  };
+
+  const updateAnnotation = annotation => {
+    return newCustomUsageOption => {
+      if (newCustomUsageOption === '') {
+        deleteAnnotation(annotation);
+      } else {
+        saveCustomUsageOption(newCustomUsageOption);
+        deleteAnnotation(annotation);
+      }
     };
+  };
 
-    // const onUpdateAnnotationToCustomUsage = (annotation, newCustomUsageOption) => {
-    //   const key = annotation.tokens.join(' ');
-    //   console.log(review.label.updatedUsageOptions)
-    //   let replacements = review.label.updatedUsageOptions.get(key);
-    //   console.log(replacements)
-    //   if (replacements === undefined) {
-    //     replacements = [];
-    //   }
-    //   if (!replacements.includes(newCustomUsageOption)) {
-    //     replacements.push(newCustomUsageOption);
-    //   }
-    //   review.label.updatedUsageOptions.set(key, replacements);
-    //   props.onUpdateUsageOption(review.label.updatedUsageOptions);
-    // };
-
-
-
-
-    const updateAnnotation = (annotation) => {
-      return (newCustomUsageOption) => {
-        if (newCustomUsageOption === "") {
-          deleteAnnotation(annotation);
-        } else {
-          saveCustomUsageOption(newCustomUsageOption);
-          // onUpdateAnnotationToCustomUsage(annotation, newCustomUsageOption);
-          deleteAnnotation(annotation);
-        }
-      };
-    }
-
-    const updateCustomUsageOption = (customUsageOption) => {
-        return updatedCustomUsageOption => {
-            if (annotationsToUsageOptions(review.label.annotations).includes(updatedCustomUsageOption) || updatedCustomUsageOption === "") {
-                deleteCustomUsageOption(customUsageOption);
-            } else {
-                props.onSaveCustomUsageOptions(
-                    review.label.customUsageOptions.map(
-                        usageOptionA => usageOptionA === customUsageOption ? updatedCustomUsageOption : usageOptionA
-                    ).filter((usageOptionA, index, self) => self.indexOf(usageOptionA) === index)
-                ); // different from saveCustomUsageOption because we do not append to list
-            }
-        };
-    }
+  const updateCustomUsageOption = customUsageOption => {
+    return updatedCustomUsageOption => {
+      if (
+        annotationsToUsageOptions(review.label.annotations).includes(
+          updatedCustomUsageOption
+        ) ||
+        updatedCustomUsageOption === ''
+      ) {
+        deleteCustomUsageOption(customUsageOption);
+      } else {
+        props.saveLabel(
+          CUSTOM_USAGE_OPTIONS,
+          review.label.customUsageOptions
+            .map(usageOptionA =>
+              usageOptionA === customUsageOption
+                ? updatedCustomUsageOption
+                : usageOptionA
+            )
+            .filter(
+              (usageOptionA, index, self) =>
+                self.indexOf(usageOptionA) === index
+            )
+        ); // different from saveCustomUsageOption because we do not append to list
+      }
+    };
+  };
 
   if (!review) {
     return 'No review';
   }
 
-  const roundToTwoDecimals = (num) => {
+  const roundToTwoDecimals = num => {
     return Math.round(num * 100) / 100;
-  }
+  };
 
-  const inspectionTimeInSeconds = roundToTwoDecimals(review.workerInspectionTime/1000);
-  const wordsPerMinute = roundToTwoDecimals(review.review_body.split(' ').length / (inspectionTimeInSeconds /60));
+  const inspectionTimeInSeconds = roundToTwoDecimals(
+    review.workerInspectionTime / 1000
+  );
+  const wordsPerMinute = roundToTwoDecimals(
+    review.review_body.split(' ').length / (inspectionTimeInSeconds / 60)
+  );
   return (
     <Card>
       <Grid
@@ -167,20 +176,21 @@ export function Review(props) {
               {review.product_title}{' '}
             </Text>
             <Divider m={2} />
-            <VStack direction={[ 'row', 'column']} style={{'align-items': 'start'}}> 
+            <VStack
+              direction={['row', 'column']}
+              style={{ 'align-items': 'start' }}
+            >
               <Feature name="localLabelling">
-              <Stack direction={['column', 'row']}>
-                <Tag size="lg">{review.review_id}</Tag>
-                <Tag size="lg">{review.workerId}</Tag>
-                <Tag size="lg">Time: {inspectionTimeInSeconds}s</Tag>
-                <Tag size="lg">Words per minute: {wordsPerMinute}</Tag>
+                <Stack direction={['column', 'row']}>
+                  <Tag size="lg">{review.review_id}</Tag>
+                  <Tag size="lg">{review.workerId}</Tag>
+                  <Tag size="lg">Time: {inspectionTimeInSeconds}s</Tag>
+                  <Tag size="lg">Words per minute: {wordsPerMinute}</Tag>
                 </Stack>
-
               </Feature>
-              <Tag size="lg" colorScheme='blue'>{review.product_category}</Tag>
-              
-
-            
+              <Tag size="lg" colorScheme="blue">
+                {review.product_category}
+              </Tag>
             </VStack>
           </Card>
         </GridItem>
@@ -202,55 +212,32 @@ export function Review(props) {
         <GridItem pt="2" pl="2" area={'nav'}>
           <Stack>
             <Feature name="localLabelling">
+         
 
-      
-            <ButtonGroup gap="2">
-              {!review.label.isLabelGood ?
-              <>
+            {review.label[IS_GOLDEN_DATASET] ? (
                 <Button
-                onClick={resetAnnotation}
-                colorScheme="red"
-                size="md"
-              >
-                Mark label as bad
-              </Button>                
-
-              <Button
-                type="submit"
-                onClick={props.navigateToNext}
-                size="md"
-                colorScheme="green"
-              >
-                Mark label as good
-              </Button>
-              </>
-              :
-              <>
-               <Button
-                onClick={resetAnnotation}
-                colorScheme="red"
-                size="md"
-              >
-                Mark label bad
-              </Button>                
-
-              <Button
-                type="submit"
-                onClick={props.navigateToNext}
-                rightIcon={<ArrowRightIcon />}
-                size="md"
-                colorScheme="green"
-              >
-                Mark label good
-              </Button>
-              </>
-              }
-            </ButtonGroup>
-              {review.label.isFlagged ? (
-                               <Button
+                  leftIcon={<StarIcon />}
+                  colorScheme="yellow"
+                  onClick={() => props.saveLabel(IS_GOLDEN_DATASET, false)}
+                  size="md"
+                >
+                  Remove flag
+                </Button>
+              ) : (
+                <Button
+                  leftIcon={<WarningIcon />}
+                  colorScheme="yellow"
+                  onClick={() => props.saveLabel(IS_GOLDEN_DATASET, true)}
+                  size="md"
+                >
+                  Flag for golden dataset
+                </Button>
+              )}
+              {review.label[IS_FLAGGED] ? (
+                <Button
                   leftIcon={<StarIcon />}
                   colorScheme="red"
-                  onClick={() => props.onSaveFlag(false)}
+                  onClick={() => props.saveLabel(IS_FLAGGED, false)}
                   size="md"
                 >
                   Remove flag
@@ -259,7 +246,7 @@ export function Review(props) {
                 <Button
                   leftIcon={<WarningIcon />}
                   colorScheme="red"
-                  onClick={() => props.onSaveFlag(true)}
+                  onClick={() => props.saveLabel(IS_FLAGGED, true)}
                   size="md"
                 >
                   Flag for follow up
@@ -294,12 +281,13 @@ export function Review(props) {
                 leftIcon={<RepeatClockIcon />}
                 size="md"
                 disabled={
-                  review.label.annotations.length === 0 && review.label.customUsageOptions.length === 0
+                  review.label.annotations.length === 0 &&
+                  review.label.customUsageOptions.length === 0
                 }
               >
                 Reset
-              </Button>                
-        
+              </Button>
+
               <Button
                 type="submit"
                 onClick={props.navigateToNext}
@@ -317,7 +305,6 @@ export function Review(props) {
             Annotated usage options
           </Heading>
           <Wrap spacing={2} pt="2">
-            
             {uniqueAnnotations(review.label.annotations).map(annotation => (
               <UsageOptionTag
                 usageOption={annotation.tokens.join(' ')}
@@ -326,32 +313,28 @@ export function Review(props) {
                 onUpdateUsageOption={updateAnnotation(annotation)}
               ></UsageOptionTag>
             ))}
+          </Wrap>
+          <Divider my={4} />
 
-            </Wrap>
-            <Divider my={4} />
+          <Heading as="h5" size="sm" paddingY={2}>
+            Custom usage options
+          </Heading>
 
-            <Heading as="h5" size="sm" paddingY={2}>
-                Custom usage options
-            </Heading>
-
-            
-          <CustomUsageOptionFormTag
-            onSave={saveCustomUsageOption}
-          />
-            <Wrap spacing={2} pt="5">
+          <CustomUsageOptionFormTag onSave={saveCustomUsageOption} />
+          <Wrap spacing={2} pt="5">
             {review.label.customUsageOptions.map(customUsageOption => (
               <UsageOptionTag
                 usageOption={customUsageOption}
                 key={customUsageOption}
-                onDeleteUsageOption={() => deleteCustomUsageOption(customUsageOption)}
+                onDeleteUsageOption={() =>
+                  deleteCustomUsageOption(customUsageOption)
+                }
                 onUpdateUsageOption={updateCustomUsageOption(customUsageOption)}
               ></UsageOptionTag>
             ))}
-            </Wrap>
+          </Wrap>
         </GridItem>
       </Grid>
     </Card>
   );
-
-  
 }
