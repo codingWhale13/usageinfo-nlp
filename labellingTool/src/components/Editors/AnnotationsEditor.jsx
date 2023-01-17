@@ -1,19 +1,13 @@
 import { ANNOTATIONS } from '../../utils/labelKeys';
 import { Wrap, Heading } from '@chakra-ui/react';
 import { UsageOptionTag } from '../UsageOptionTag';
+import { uniqueAnnotations } from '../../utils/conversion';
 export function AnnotationsEditor({
     annotations,
     saveLabel,
     saveCustomUsageOption,
   }) {
-    const uniqueAnnotations = annotations => {
-      return annotations.filter(
-        (annotation, index) =>
-          annotations
-            .map(annotation => annotation.tokens.join(' '))
-            .indexOf(annotation.tokens.join(' ')) === index
-      );
-    };
+    
   
     const deleteAnnotation = annotation => {
       saveLabel(

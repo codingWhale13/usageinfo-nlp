@@ -4,11 +4,15 @@ import {
   ANNOTATIONS,
   CUSTOM_USAGE_OPTIONS,
   IS_GOLDEN_DATASET,
+  PREDICTED_USAGE_OPTIONS,
 } from '../utils/labelKeys';
 import { Button, Flex, ButtonGroup, Divider, Text, Grid, Tag, GridItem, VStack, Stack } from '@chakra-ui/react';
 import { annotationsToUsageOptions } from '../utils/conversion';
 import { AnnotationsEditor } from './Editors/AnnotationsEditor';
 import { CustomUsageOptionsEditor } from './Editors/CustomUsageOptionsEditor';
+import { UsageOptionsRatingEditor } from './Editors/UsageOptionsRatingEditor';
+import { getFeatureFlags } from '../featureFlags';
+
 const React = require('react');
 
 const {
@@ -26,7 +30,8 @@ const { Card } = require('./Elements');
 export function Review(props) {
   const { review } = props;
   const { isPreviousDisabled, isNextDisabled } = props;
-
+  const features = getFeatureFlags();
+  console.log(features);
   const resetAnnotation = () => {
     props.saveLabel(ANNOTATIONS, []);
     props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
@@ -208,6 +213,15 @@ export function Review(props) {
           </Flex>
 
           <Divider my={4} />
+          {features.ratePredictedUseCases ? 
+         
+           <UsageOptionsRatingEditor 
+            predictedUsageOptions={review.label[PREDICTED_USAGE_OPTIONS]}
+            saveLabel={props.saveLabel}
+          />
+         
+          :
+          <>
           <AnnotationsEditor
             annotations={review.label[ANNOTATIONS]}
             saveLabel={props.saveLabel}
@@ -220,6 +234,10 @@ export function Review(props) {
             saveLabel={props.saveLabel}
             saveCustomUsageOption={saveCustomUsageOption}
           />
+          </>
+        
+         
+        }
         </GridItem>
       </Grid>
     </Card>
