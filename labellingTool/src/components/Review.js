@@ -218,6 +218,7 @@ export function Review(props) {
             customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
             annotations={review.label[ANNOTATIONS]}
             saveLabel={props.saveLabel}
+            saveCustomUsageOption={saveCustomUsageOption}
           />
         </GridItem>
       </Grid>
