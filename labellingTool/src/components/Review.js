@@ -1,28 +1,16 @@
-import { CustomUsageOptionFormTag, UsageOptionTag } from './UsageOptionTag';
 import { Feature } from 'flagged';
 import {
   IS_FLAGGED,
   ANNOTATIONS,
   CUSTOM_USAGE_OPTIONS,
-  IS_GOLDEN_DATASET
+  IS_GOLDEN_DATASET,
 } from '../utils/labelKeys';
+import { Button, Flex, ButtonGroup, Divider, Text, Grid, Tag, GridItem, VStack, Stack } from '@chakra-ui/react';
+import { annotationsToUsageOptions } from '../utils/conversion';
+import { AnnotationsEditor } from './Editors/AnnotationsEditor';
+import { CustomUsageOptionsEditor } from './Editors/CustomUsageOptionsEditor';
 const React = require('react');
 
-const {
-  Grid,
-  GridItem,
-  Heading,
-  Tag,
-  Divider,
-  Wrap,
-  Button,
-  ButtonGroup,
-  Stack,
-  Flex,
-  Text,
-  Spacer,
-  VStack,
-} = require('@chakra-ui/react');
 const {
   StarIcon,
   ArrowRightIcon,
@@ -31,55 +19,13 @@ const {
   WarningIcon,
 } = require('@chakra-ui/icons');
 
-const { ReviewTokenAnnotator } = require('./ReviewTokenAnnotator');
+const { ReviewTokenEditor } = require('./Editors/ReviewTokenEditor');
 const { Card } = require('./Elements');
+
 
 export function Review(props) {
   const { review } = props;
   const { isPreviousDisabled, isNextDisabled } = props;
-
-  const annotationsToUsageOptions = annotations => {
-    return annotations.map(annotation => annotation.tokens.join(' ')).flat();
-  };
-
-  const uniqueAnnotations = annotations => {
-    return annotations.filter(
-      (annotation, index) =>
-        annotations
-          .map(annotation => annotation.tokens.join(' '))
-          .indexOf(annotation.tokens.join(' ')) === index
-    );
-  };
-
-  const saveAnnotations = annotations => {
-    const usageOptions = annotationsToUsageOptions(annotations);
-    props.saveLabel(
-      CUSTOM_USAGE_OPTIONS,
-      review.label.customUsageOptions.filter(
-        usageOptionA => !usageOptions.includes(usageOptionA)
-      )
-    );
-    props.saveLabel(ANNOTATIONS, annotations);
-  };
-
-  const deleteAnnotation = annotation => {
-    props.saveLabel(
-      ANNOTATIONS,
-      review.label.annotations.filter(
-        annotationA =>
-          annotationA.tokens.join(' ') !== annotation.tokens.join(' ')
-      )
-    );
-  };
-
-  const deleteCustomUsageOption = customUsageOption => {
-    props.saveLabel(
-      CUSTOM_USAGE_OPTIONS,
-      review.label.customUsageOptions.filter(
-        usageOptionA => usageOptionA !== customUsageOption
-      )
-    );
-  };
 
   const resetAnnotation = () => {
     props.saveLabel(ANNOTATIONS, []);
@@ -99,44 +45,6 @@ export function Review(props) {
         review.label.customUsageOptions.concat(newCustomUsageOption)
       );
     }
-  };
-
-  const updateAnnotation = annotation => {
-    return newCustomUsageOption => {
-      if (newCustomUsageOption === '') {
-        deleteAnnotation(annotation);
-      } else {
-        saveCustomUsageOption(newCustomUsageOption);
-        deleteAnnotation(annotation);
-      }
-    };
-  };
-
-  const updateCustomUsageOption = customUsageOption => {
-    return updatedCustomUsageOption => {
-      if (
-        annotationsToUsageOptions(review.label.annotations).includes(
-          updatedCustomUsageOption
-        ) ||
-        updatedCustomUsageOption === ''
-      ) {
-        deleteCustomUsageOption(customUsageOption);
-      } else {
-        props.saveLabel(
-          CUSTOM_USAGE_OPTIONS,
-          review.label.customUsageOptions
-            .map(usageOptionA =>
-              usageOptionA === customUsageOption
-                ? updatedCustomUsageOption
-                : usageOptionA
-            )
-            .filter(
-              (usageOptionA, index, self) =>
-                self.indexOf(usageOptionA) === index
-            )
-        ); // different from saveCustomUsageOption because we do not append to list
-      }
-    };
   };
 
   if (!review) {
@@ -203,18 +111,17 @@ export function Review(props) {
           borderRight="1px"
           borderColor="gray.100"
         >
-          <ReviewTokenAnnotator
+          <ReviewTokenEditor
+            saveLabel={props.saveLabel}
             review_body={review.review_body}
-            annotations={review.label.annotations}
-            onSaveAnnotations={saveAnnotations}
+            annotations={review.label[ANNOTATIONS]}
+            customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
           />
         </GridItem>
         <GridItem pt="2" pl="2" area={'nav'}>
           <Stack>
             <Feature name="localLabelling">
-         
-
-            {review.label[IS_GOLDEN_DATASET] ? (
+              {review.label[IS_GOLDEN_DATASET] ? (
                 <Button
                   leftIcon={<StarIcon />}
                   colorScheme="yellow"
@@ -301,40 +208,22 @@ export function Review(props) {
           </Flex>
 
           <Divider my={4} />
-          <Heading as="h5" size="sm" paddingY={2}>
-            Annotated usage options
-          </Heading>
-          <Wrap spacing={2} pt="2">
-            {uniqueAnnotations(review.label.annotations).map(annotation => (
-              <UsageOptionTag
-                usageOption={annotation.tokens.join(' ')}
-                key={annotation.tokens.join(' ')}
-                onDeleteUsageOption={() => deleteAnnotation(annotation)}
-                onUpdateUsageOption={updateAnnotation(annotation)}
-              ></UsageOptionTag>
-            ))}
-          </Wrap>
+          <AnnotationsEditor
+            annotations={review.label[ANNOTATIONS]}
+            saveLabel={props.saveLabel}
+            saveCustomUsageOption={saveCustomUsageOption}
+          />
           <Divider my={4} />
-
-          <Heading as="h5" size="sm" paddingY={2}>
-            Custom usage options
-          </Heading>
-
-          <CustomUsageOptionFormTag onSave={saveCustomUsageOption} />
-          <Wrap spacing={2} pt="5">
-            {review.label.customUsageOptions.map(customUsageOption => (
-              <UsageOptionTag
-                usageOption={customUsageOption}
-                key={customUsageOption}
-                onDeleteUsageOption={() =>
-                  deleteCustomUsageOption(customUsageOption)
-                }
-                onUpdateUsageOption={updateCustomUsageOption(customUsageOption)}
-              ></UsageOptionTag>
-            ))}
-          </Wrap>
+          <CustomUsageOptionsEditor
+            customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
+            annotations={review.label[ANNOTATIONS]}
+            saveLabel={props.saveLabel}
+          />
         </GridItem>
       </Grid>
     </Card>
   );
 }
+
+
+

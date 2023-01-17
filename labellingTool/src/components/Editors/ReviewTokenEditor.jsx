@@ -1,24 +1,37 @@
 import { Feature } from 'flagged';
-
+import { annotationsToUsageOptions } from '../../utils/conversion';
+import { ANNOTATIONS, CUSTOM_USAGE_OPTIONS } from '../../utils/labelKeys';
 const React = require('react');
 const { TokenAnnotator } = require('react-text-annotate');
 const { Select, Divider, Box } = require('@chakra-ui/react');
 
-const tokenizeString = require('../utils/tokenize');
-const { POSITIVE_TAG, NEGATIVE_TAG } = require('../utils/tags');
+const tokenizeString = require('../../utils/tokenize');
+const { POSITIVE_TAG, NEGATIVE_TAG } = require('../../utils/tags');
 
 const TAG_COLORS = {
   [POSITIVE_TAG]: '#8afd8a',
   [NEGATIVE_TAG]: '#fc8c90',
 };
 
-export class ReviewTokenAnnotator extends React.Component {
+export class ReviewTokenEditor extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       tag: POSITIVE_TAG,
     };
+    console.log(CUSTOM_USAGE_OPTIONS, this.props, this.props[CUSTOM_USAGE_OPTIONS]);
   }
+
+  saveAnnotations = annotations => {
+    const usageOptions = annotationsToUsageOptions(annotations);
+    this.props.saveLabel(
+      CUSTOM_USAGE_OPTIONS,
+      this.props[CUSTOM_USAGE_OPTIONS].filter(
+        usageOptionA => !usageOptions.includes(usageOptionA)
+      )
+    );
+    this.props.saveLabel(ANNOTATIONS, annotations);
+  };
 
   render() {
     return (
@@ -49,7 +62,7 @@ export class ReviewTokenAnnotator extends React.Component {
             tokens={tokenizeString(this.props.review_body)}
             value={this.props.annotations}
             onChange={value => {
-              this.props.onSaveAnnotations(value);
+              this.saveAnnotations(value);
             }}
             getSpan={span => ({
               ...span,
