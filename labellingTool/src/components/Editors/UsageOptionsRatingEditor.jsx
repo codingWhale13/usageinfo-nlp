@@ -6,9 +6,9 @@ import {
   CardBody,
   CardFooter,
   Button,
-  ButtonGroup,
+  ButtonGroup
 } from '@chakra-ui/react';
-import { FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
+import { FaThumbsUp, FaThumbsDown, FaQuestionCircle } from 'react-icons/fa';
 import {
   PREDICTED_USAGE_OPTIONS,
   PREDICTED_USAGE_OPTIONS_VOTE,
@@ -19,12 +19,14 @@ function updateArrayAtIndex(list, index, newValue) {
   newList[index] = newValue;
   return newList;
 }
+
 function updateArrayAtIndexAtKey(array, index, key, newValue) {
   return updateArrayAtIndex(array, index, { ...array[index], [key]: newValue });
 }
 
-const GOOD_VOTE = 'good';
-const BAD_VOTE = 'bad';
+const GOOD_VOTE = 1;
+const BAD_VOTE = 0;
+const QUESTION_VOTE = 2;
 
 export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
   return (
@@ -32,8 +34,9 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
       <Heading as="h5" size="sm" paddingY={2}>
         Rate usage options
       </Heading>
+
       {predictedUsageOptions.map(({ label, vote }, i) => (
-        <Card maxW="md" variant="outline" sx={{ '--card-padding': '0.5rem' }}>
+        <Card maxW="100%" variant="outline" sx={{ '--card-padding': '0.5rem' }} key={({ label, vote }, i)}>
           <CardBody>
             <Text>{label}</Text>
           </CardBody>
@@ -47,7 +50,7 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
               },
             }}
           >
-            <ButtonGroup>
+            <ButtonGroup direction='row' spacing={3} align='center' size={"md"}>
               <ToggleButton
                 text={'Upvote'}
                 isOn={vote === GOOD_VOTE}
@@ -65,6 +68,24 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
                   )
                 }
               />
+
+              <ToggleButton
+                isOn={vote === QUESTION_VOTE}
+                onColor={'yellow'}
+                text={<FaQuestionCircle />}
+                onClick={e =>
+                  saveLabel(
+                    PREDICTED_USAGE_OPTIONS,
+                    updateArrayAtIndexAtKey(
+                      predictedUsageOptions,
+                      i,
+                      PREDICTED_USAGE_OPTIONS_VOTE,
+                      QUESTION_VOTE
+                    )
+                  )
+                }
+              />
+
               <ToggleButton
                 text={'Downvote'}
                 isOn={vote === BAD_VOTE}

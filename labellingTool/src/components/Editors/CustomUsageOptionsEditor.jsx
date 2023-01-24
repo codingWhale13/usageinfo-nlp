@@ -2,6 +2,7 @@ import { CUSTOM_USAGE_OPTIONS } from '../../utils/labelKeys';
 import { annotationsToUsageOptions } from '../../utils/conversion';
 import { Heading, Wrap } from '@chakra-ui/react';
 import { CustomUsageOptionFormTag, UsageOptionTag } from '../UsageOptionTag';
+
 export function CustomUsageOptionsEditor({
     customUsageOptions,
     annotations,
@@ -16,8 +17,8 @@ export function CustomUsageOptionsEditor({
         )
       );
     };
-    const updateCustomUsageOption = customUsageOption => {
-      return updatedCustomUsageOption => {
+    const updateCustomUsageOption = (customUsageOption) => {
+      return (updatedCustomUsageOption) => {
         if (
           annotationsToUsageOptions(annotations).includes(
             updatedCustomUsageOption

@@ -3,6 +3,7 @@ export function getFeatureFlags() {
   return {
     negativeUseCases: false,
     ratePredictedUseCases: true,
+    reviewLabelling: false,
     localLabelling: !mTurk,
     mTurk: mTurk,
   };

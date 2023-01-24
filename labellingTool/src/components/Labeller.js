@@ -23,7 +23,7 @@ export class Labeller extends React.Component {
     const jsonData = await parseJSONReviews(e);
     this.setState({
       reviews: jsonData.reviews,
-      reviewIndex: jsonData.maxReviewIndex,
+      reviewIndex: 0,
       maxReviewIndex: jsonData.maxReviewIndex,
     });
     timer.start();
@@ -75,7 +75,7 @@ export class Labeller extends React.Component {
       <>
         {this.state.reviews.length === 0 && (
           <Center h="100vh">
-            <Grid templateColumns="repeat(2, 1fr)">
+            <Grid templateColumns="repeat(1, 1fr)">
               <GridItem>
                 <h1>Upload .json file:</h1>
                 <JSONUpload onUpload={this.loadJSONReviews} />
@@ -98,7 +98,9 @@ export class Labeller extends React.Component {
             <Review
               review={this.state.reviews[this.state.reviewIndex]}
               saveLabel={this.saveLabel}
-             
+              
+              isPreviousDisabled={this.state.reviewIndex === 0}
+              
               navigateToNext={() => {
                 this.updateInspectionTime();
 
@@ -116,6 +118,7 @@ export class Labeller extends React.Component {
                   this.setState({ reviewIndex: this.state.reviewIndex - 1 });
                 }
               }}
+
             />
           </>
         )}

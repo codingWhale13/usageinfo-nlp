@@ -5,6 +5,8 @@ import {
   CUSTOM_USAGE_OPTIONS,
   IS_GOLDEN_DATASET,
   PREDICTED_USAGE_OPTIONS,
+  PREDICTED_USAGE_OPTION_LABEL,
+  PREDICTED_USAGE_OPTIONS_VOTE,
 } from '../utils/labelKeys';
 import { Button, Flex, ButtonGroup, Divider, Text, Grid, Tag, GridItem, VStack, Stack } from '@chakra-ui/react';
 import { annotationsToUsageOptions } from '../utils/conversion';
@@ -31,16 +33,16 @@ export function Review(props) {
   const { review } = props;
   const { isPreviousDisabled, isNextDisabled } = props;
   const features = getFeatureFlags();
-  console.log(features);
   const resetAnnotation = () => {
     props.saveLabel(ANNOTATIONS, []);
     props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
+    props.saveLabel(PREDICTED_USAGE_OPTIONS, review.label[PREDICTED_USAGE_OPTIONS].map(usageOption => { return { [PREDICTED_USAGE_OPTION_LABEL]: usageOption[PREDICTED_USAGE_OPTION_LABEL], [PREDICTED_USAGE_OPTIONS_VOTE]: NaN } }));
   };
 
   const saveCustomUsageOption = newCustomUsageOption => {
     if (
       !review.label.customUsageOptions.includes(newCustomUsageOption) &&
-      !annotationsToUsageOptions(review.label.annotations).includes(
+      !annotationsToUsageOptions(review.label[ANNOTATIONS]).includes(
         newCustomUsageOption
       ) &&
       newCustomUsageOption !== ''
@@ -91,14 +93,16 @@ export function Review(props) {
             <Divider m={2} />
             <VStack
               direction={['row', 'column']}
-              style={{ 'align-items': 'start' }}
+              alignItems="start"
             >
               <Feature name="localLabelling">
                 <Stack direction={['column', 'row']}>
-                  <Tag size="lg">{review.review_id}</Tag>
-                  <Tag size="lg">{review.workerId}</Tag>
-                  <Tag size="lg">Time: {inspectionTimeInSeconds}s</Tag>
-                  <Tag size="lg">Words per minute: {wordsPerMinute}</Tag>
+                  <Feature name="reviewLabelling">
+                    <Tag size="lg">{review.review_id}</Tag>
+                    <Tag size="lg">{review.workerId}</Tag>
+                    <Tag size="lg">Time: {inspectionTimeInSeconds}s</Tag>
+                    <Tag size="lg">Words per minute: {wordsPerMinute}</Tag>
+                  </Feature>
                 </Stack>
               </Feature>
               <Tag size="lg" colorScheme="blue">
@@ -123,7 +127,7 @@ export function Review(props) {
             customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
           />
         </GridItem>
-        <GridItem pt="2" pl="2" area={'nav'}>
+        <GridItem p="2" area={'nav'}>
           <Stack>
             <Feature name="localLabelling">
               {review.label[IS_GOLDEN_DATASET] ? (
@@ -174,7 +178,7 @@ export function Review(props) {
             mt={2}
             gap="2"
           >
-            <ButtonGroup gap="2">
+            <ButtonGroup gap="1">
               <Button
                 onClick={() => {
                   props.navigateToPrevious();
@@ -182,7 +186,7 @@ export function Review(props) {
                 leftIcon={<ArrowLeftIcon />}
                 size="md"
                 colorScheme="gray"
-                disabled={isPreviousDisabled}
+                isDisabled={isPreviousDisabled}
               >
                 Previous
               </Button>
@@ -192,9 +196,10 @@ export function Review(props) {
                 colorScheme="pink"
                 leftIcon={<RepeatClockIcon />}
                 size="md"
-                disabled={
-                  review.label.annotations.length === 0 &&
-                  review.label.customUsageOptions.length === 0
+                isDisabled={
+                  review.label[ANNOTATIONS].length === 0 &&
+                  review.label[CUSTOM_USAGE_OPTIONS].length === 0 &&
+                  review.label[PREDICTED_USAGE_OPTIONS].length === 0
                 }
               >
                 Reset
@@ -205,7 +210,7 @@ export function Review(props) {
                 onClick={props.navigateToNext}
                 rightIcon={<ArrowRightIcon />}
                 size="md"
-                disabled={isNextDisabled}
+                isDisabled={isNextDisabled}
               >
                 Next
               </Button>
@@ -213,31 +218,31 @@ export function Review(props) {
           </Flex>
 
           <Divider my={4} />
-          {features.ratePredictedUseCases ? 
-         
-           <UsageOptionsRatingEditor 
-            predictedUsageOptions={review.label[PREDICTED_USAGE_OPTIONS]}
-            saveLabel={props.saveLabel}
-          />
-         
-          :
-          <>
-          <AnnotationsEditor
-            annotations={review.label[ANNOTATIONS]}
-            saveLabel={props.saveLabel}
-            saveCustomUsageOption={saveCustomUsageOption}
-          />
-          <Divider my={4} />
-          <CustomUsageOptionsEditor
-            customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
-            annotations={review.label[ANNOTATIONS]}
-            saveLabel={props.saveLabel}
-            saveCustomUsageOption={saveCustomUsageOption}
-          />
-          </>
-        
-         
-        }
+          {features.ratePredictedUseCases ?
+
+            <UsageOptionsRatingEditor
+              predictedUsageOptions={review.label[PREDICTED_USAGE_OPTIONS]}
+              saveLabel={props.saveLabel}
+            />
+            :
+            <>
+              <AnnotationsEditor
+                annotations={review.label[ANNOTATIONS]}
+                saveLabel={props.saveLabel}
+                saveCustomUsageOption={saveCustomUsageOption}
+              />
+
+              <Divider my={4} />
+              <CustomUsageOptionsEditor
+                customUsageOptions={review.label[CUSTOM_USAGE_OPTIONS]}
+                annotations={review.label[ANNOTATIONS]}
+                saveLabel={props.saveLabel}
+                saveCustomUsageOption={saveCustomUsageOption}
+              />
+            </>
+
+
+          }
         </GridItem>
       </Grid>
     </Card>

@@ -6,3 +6,4 @@ export const PREDICTED_USAGE_OPTIONS = 'predictedUsageOptions';
 
 //inside predictedUsageOptions
 export const PREDICTED_USAGE_OPTIONS_VOTE = 'vote';
+export const PREDICTED_USAGE_OPTION_LABEL = 'label';

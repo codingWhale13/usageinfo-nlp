@@ -3,26 +3,29 @@ import React, { Component } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { Review } from './Review';
 import { InstructionsAlertDialog } from './InstructionsAlertDialog';
+import { ANNOTATIONS, CUSTOM_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS_VOTE, PREDICTED_USAGE_OPTION_LABEL } from '../utils/labelKeys';
 const { Timer } = require('timer-node');
-const timer = new Timer({label: 'review-inspection-timer'});
+const timer = new Timer({ label: 'review-inspection-timer' });
 
 const REVIEWS =
   process.env.NODE_ENV === 'production'
     ? {
       metadata: JSON.parse(document.getElementById('metadata').innerText),
-      review_bodys: JSON.parse(document.getElementById('source').innerText)
+      review_bodies: JSON.parse(document.getElementById('source').innerText)
     }
     : {
       metadata: [{
         product_title: 'Super splitting axe',
-        product_category: 'Outdoor'
+        product_category: 'Outdoor',
+        [PREDICTED_USAGE_OPTIONS]: ["dsdaasddsdaasd dsdaasddsdaasd dsdaasd dsdaasddsdaasddsdaasddsdaasd", "dsdaasd"]
       },
       {
         product_title: 'hello World 2',
-        product_category: 'Test 2'
+        product_category: 'Test 2',
+        [PREDICTED_USAGE_OPTIONS]: ["dsas"]
       }],
-      review_bodys: ['I like this axe for chopping wood and digging a fire pit.','Hello world wow 1']
-      };
+      review_bodies: ['I like this axe for chopping wood and digging a fire pit.', 'Hello world wow 1']
+    };
 
 class MTurkReview extends Component {
   constructor(props) {
@@ -30,36 +33,33 @@ class MTurkReview extends Component {
 
     this.state = {
       reviews: [],
-      annotations: [],
-      customUsageOptions: [],
+      label: {
+        [ANNOTATIONS]: [],
+        [CUSTOM_USAGE_OPTIONS]: [],
+        [PREDICTED_USAGE_OPTIONS]: [],
+      },
       inspectionTimes: [],
       reviewIndex: 0
     };
 
-    for (let index = 0; index < REVIEWS.review_bodys.length; index++) {
+    for (let index = 0; index < REVIEWS.review_bodies.length; index++) {
       this.state.reviews.push({
-        review_body: REVIEWS.review_bodys[index],
+        review_body: REVIEWS.review_bodies[index],
         ...REVIEWS.metadata[index]
       });
-      this.state.annotations.push([]);
-      this.state.customUsageOptions.push([]);
+      this.state.label[ANNOTATIONS].push([]);
+      this.state.label[CUSTOM_USAGE_OPTIONS].push([]);
+      this.state.label[PREDICTED_USAGE_OPTIONS].push(REVIEWS.metadata[index][PREDICTED_USAGE_OPTIONS].map((label) => { return { [PREDICTED_USAGE_OPTION_LABEL]: label, [PREDICTED_USAGE_OPTIONS_VOTE]: NaN}}))
       this.state.inspectionTimes.push(0);
     }
 
     timer.start();
   }
 
-  saveAnnotations = (reviewAnnotations, i) => {
-    console.log(reviewAnnotations)
-    const annotations = [...this.state.annotations];
-    annotations[i] = reviewAnnotations;
-    this.setState({ annotations: annotations });
-  };
-
-  saveCustomUsageOptions = (reviewCustomUsageOptions, i) => {
-      const customUsageOptions = [...this.state.customUsageOptions];
-      customUsageOptions[i] = reviewCustomUsageOptions;
-      this.setState({ customUsageOptions: customUsageOptions });
+  saveLabel = (key, data) => {
+    const label = { ...this.state.label };
+    label[key][this.state.reviewIndex] = data;
+    this.setState({ label: label });
   };
 
   updateInspectionTime = (callback) => {
@@ -67,7 +67,6 @@ class MTurkReview extends Component {
     const inspectionTimes = [...this.state.inspectionTimes];
     inspectionTimes[this.state.reviewIndex] = inspectionTimes[this.state.reviewIndex] + time;
     this.setState({ inspectionTimes: inspectionTimes }, () => {
-      console.log(this.state.inspectionTimes);
       if (callback) {
         callback();
       }
@@ -78,51 +77,43 @@ class MTurkReview extends Component {
   render() {
     const index = this.state.reviewIndex;
     const review = this.state.reviews[index];
-    const annotations = this.state.annotations[index];
-    const customUsageOptions = this.state.customUsageOptions[index];
 
+    const annotations = this.state.label[ANNOTATIONS][index];
+    const predictedUsageOptions = this.state.label[PREDICTED_USAGE_OPTIONS][index];
+    const customUsageOptions = this.state.label[CUSTOM_USAGE_OPTIONS][index];
     const isLastReview = this.state.reviewIndex === this.state.reviews.length - 1;
+
     return (
       <>
-        <ProgressBar 
+        <ProgressBar
           currentReviewIndex={this.state.reviewIndex}
           numberOfReviews={this.state.reviews.length}
           extra={
             <ButtonGroup gap="2">
               <InstructionsAlertDialog />
-                <Button colorScheme="teal" size="lg"  
-                disabled={!isLastReview}
+              <Button colorScheme="teal" size="lg"
+                isDisabled={!isLastReview}
                 onClick={
-              () => {
-                this.updateInspectionTime(() => document.querySelector('crowd-form').submit());
-              }}>
-            Submit task
-            </Button>
-           </ButtonGroup>
+                  () => {
+                    this.updateInspectionTime(() => document.querySelector('crowd-form').submit());
+                  }}>
+                Submit task
+              </Button>
+            </ButtonGroup>
           }
         />
+
         <Review
           review={{
             ...review,
             label: {
-              annotations: annotations,
-              customUsageOptions: customUsageOptions,
+              [ANNOTATIONS]: annotations,
+              [CUSTOM_USAGE_OPTIONS]: customUsageOptions,
+              [PREDICTED_USAGE_OPTIONS]: predictedUsageOptions
             },
           }}
 
-          onSaveAnnotations={ (annotations) => {
-            this.saveAnnotations(
-              annotations,
-              this.state.reviewIndex
-            );
-          }}
-
-          onSaveCustomUsageOptions={ (customUsageOptions) => {
-            this.saveCustomUsageOptions(
-              customUsageOptions,
-              this.state.reviewIndex
-            );
-          }}
+          saveLabel={this.saveLabel}
 
           navigateToNext={() => {
             this.updateInspectionTime();
@@ -136,15 +127,16 @@ class MTurkReview extends Component {
           isNextDisabled={isLastReview}
 
           navigateToPrevious={() => {
-              this.updateInspectionTime();
-              this.setState({ reviewIndex: this.state.reviewIndex - 1});
+            this.updateInspectionTime();
+            this.setState({ reviewIndex: this.state.reviewIndex - 1 });
           }}
 
         />
 
         <pre hidden>{JSON.stringify({
-          annotations: this.state.annotations,
-          customUsageOptions: this.state.customUsageOptions,
+          annotations: this.state.label[ANNOTATIONS],
+          customUsageOptions: this.state.label[CUSTOM_USAGE_OPTIONS],
+          predictedUsageOptions: this.state.label[PREDICTED_USAGE_OPTIONS],
           inspectionTimes: this.state.inspectionTimes
         }, null, 2)}</pre>
       </>
