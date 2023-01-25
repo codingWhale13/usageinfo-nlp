@@ -7,6 +7,7 @@ import {
   PREDICTED_USAGE_OPTIONS,
   PREDICTED_USAGE_OPTION_LABEL,
   PREDICTED_USAGE_OPTIONS_VOTE,
+  CONTAINS_MORE_USAGE_OPTIONS,
 } from '../utils/labelKeys';
 import { Button, Flex, ButtonGroup, Divider, Text, Grid, Tag, GridItem, VStack, Stack } from '@chakra-ui/react';
 import { annotationsToUsageOptions } from '../utils/conversion';
@@ -14,6 +15,9 @@ import { AnnotationsEditor } from './Editors/AnnotationsEditor';
 import { CustomUsageOptionsEditor } from './Editors/CustomUsageOptionsEditor';
 import { UsageOptionsRatingEditor } from './Editors/UsageOptionsRatingEditor';
 import { getFeatureFlags } from '../featureFlags';
+
+
+import { FaFlag, FaRegFlag } from 'react-icons/fa';
 
 const React = require('react');
 
@@ -34,9 +38,12 @@ export function Review(props) {
   const { isPreviousDisabled, isNextDisabled } = props;
   const features = getFeatureFlags();
   const resetAnnotation = () => {
-    props.saveLabel(ANNOTATIONS, []);
-    props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
-    props.saveLabel(PREDICTED_USAGE_OPTIONS, review.label[PREDICTED_USAGE_OPTIONS].map(usageOption => { return { [PREDICTED_USAGE_OPTION_LABEL]: usageOption[PREDICTED_USAGE_OPTION_LABEL], [PREDICTED_USAGE_OPTIONS_VOTE]: NaN } }));
+    if (features.ratePredictedUseCases) {
+      props.saveLabel(PREDICTED_USAGE_OPTIONS, review.label[PREDICTED_USAGE_OPTIONS].map(usageOption => { return { [PREDICTED_USAGE_OPTION_LABEL]: usageOption[PREDICTED_USAGE_OPTION_LABEL], [PREDICTED_USAGE_OPTIONS_VOTE]: NaN } }));
+    } else {
+      props.saveLabel(ANNOTATIONS, []);
+      props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
+    }
   };
 
   const saveCustomUsageOption = newCustomUsageOption => {
@@ -197,9 +204,9 @@ export function Review(props) {
                 leftIcon={<RepeatClockIcon />}
                 size="md"
                 isDisabled={
-                  review.label[ANNOTATIONS].length === 0 &&
-                  review.label[CUSTOM_USAGE_OPTIONS].length === 0 &&
-                  review.label[PREDICTED_USAGE_OPTIONS].length === 0
+                  (review.label[ANNOTATIONS].length === 0 &&
+                    review.label[CUSTOM_USAGE_OPTIONS].length === 0 && !features.ratePredictedUseCases) ||
+                  (review.label[PREDICTED_USAGE_OPTIONS].length === 0 && features.ratePredictedUseCases)
                 }
               >
                 Reset
@@ -218,6 +225,34 @@ export function Review(props) {
           </Flex>
 
           <Divider my={4} />
+
+          <Feature name="ratePredictedUseCases">
+            <Stack>
+            {review.label[CONTAINS_MORE_USAGE_OPTIONS] ? (
+              <Button
+                leftIcon={<FaRegFlag/>}
+                colorScheme="green"
+                onClick={() => props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, false)}
+                size="md"
+              >
+                Denote as fully labelled
+              </Button>) :
+              (<Button
+                leftIcon={<FaFlag/>}
+                colorScheme="orange"
+                onClick={() => props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, true)}
+                size="md"
+              >
+                Denote as incompletely labelled
+              </Button>)
+            }
+            </Stack>
+            
+          <Divider my={4} />
+          </Feature>
+
+
+
           {features.ratePredictedUseCases ?
 
             <UsageOptionsRatingEditor

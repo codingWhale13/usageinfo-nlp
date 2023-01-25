@@ -4,7 +4,7 @@ export function getFeatureFlags() {
     negativeUseCases: false,
     ratePredictedUseCases: true,
     reviewLabelling: false,
-    localLabelling: !mTurk,
+    localLabelling: false,
     mTurk: mTurk,
   };
 }

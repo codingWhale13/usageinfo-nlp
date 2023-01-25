@@ -19,7 +19,7 @@ export class Labeller extends React.Component {
     };
   }
 
-  loadJSONReviews = async e => {
+  loadJSONReviews = async (e) => {
     const jsonData = await parseJSONReviews(e);
     this.setState({
       reviews: jsonData.reviews,

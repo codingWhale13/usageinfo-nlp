@@ -64,7 +64,7 @@ export class ReviewTokenEditor extends React.Component {
               minHeight: '1000px',
             }}
             tokens={tokenizeString(this.props.review_body)}
-            value={this.props.annotations}
+            value={features.ratePredictedUseCases ? [] : this.props.annotations}
             onChange={(value) => {
               if(!features.ratePredictedUseCases) {
                 this.saveAnnotations(value);
