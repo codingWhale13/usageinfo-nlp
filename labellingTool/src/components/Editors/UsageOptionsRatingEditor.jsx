@@ -14,6 +14,7 @@ import {
   PREDICTED_USAGE_OPTIONS_VOTE,
 } from '../../utils/labelKeys';
 
+import { GOOD_VOTE, BAD_VOTE, QUESTION_VOTE } from '../../utils/voteDefinitions';
 function updateArrayAtIndex(list, index, newValue) {
   const newList = [...list];
   newList[index] = newValue;
@@ -24,9 +25,7 @@ function updateArrayAtIndexAtKey(array, index, key, newValue) {
   return updateArrayAtIndex(array, index, { ...array[index], [key]: newValue });
 }
 
-const GOOD_VOTE = 1;
-const BAD_VOTE = 0;
-const QUESTION_VOTE = 2;
+
 
 export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
   return (
@@ -111,7 +110,7 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
   );
 }
 
-function ToggleButton({ isOn, text, onColor, offColor, ...otherProps }) {
+export function ToggleButton({ isOn, text, onColor, offColor, ...otherProps }) {
   if (isOn) {
     return (
       <Button colorScheme={onColor} {...otherProps}>

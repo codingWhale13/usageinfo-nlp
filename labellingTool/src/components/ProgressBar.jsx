@@ -7,11 +7,11 @@ import {
     Box,
     Flex
   } from '@chakra-ui/react';
-import { Card } from './Elements'
+import { CustomCard } from './Elements'
 
 
 export function ProgressBar({numberOfReviews, currentReviewIndex, extra}){
-    return (<Card spacing={2} mb={2}>
+    return (<CustomCard spacing={2} mb={2}>
         <Flex>
         <Box>
         <Heading as="h5" size="md">
@@ -34,5 +34,5 @@ export function ProgressBar({numberOfReviews, currentReviewIndex, extra}){
         100
         }
     />
-    </Card>);
+    </CustomCard>);
 }

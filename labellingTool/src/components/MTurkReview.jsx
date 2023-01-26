@@ -3,7 +3,10 @@ import React, { Component } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { Review } from './Review';
 import { InstructionsAlertDialog } from './InstructionsAlertDialog';
+import { InstructionsAlertDialogCuration } from './InstructionsAlertDialogCuration';
+
 import { ANNOTATIONS, CONTAINS_MORE_USAGE_OPTIONS, CUSTOM_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS_VOTE, PREDICTED_USAGE_OPTION_LABEL } from '../utils/labelKeys';
+import { getFeatureFlags } from '../featureFlags';
 const { Timer } = require('timer-node');
 const timer = new Timer({ label: 'review-inspection-timer' });
 
@@ -136,6 +139,7 @@ class MTurkReview extends Component {
     const containsMoreUsageOptions = this.state.label[CONTAINS_MORE_USAGE_OPTIONS][index];
     const isLastReview = this.state.reviewIndex === this.state.reviews.length - 1;
 
+    const features = getFeatureFlags();
     return (
       <>
         <ProgressBar
@@ -143,7 +147,12 @@ class MTurkReview extends Component {
           numberOfReviews={this.state.reviews.length}
           extra={
             <ButtonGroup gap="2">
-              <InstructionsAlertDialog />
+              {features.ratePredictedUseCases ? 
+                <InstructionsAlertDialogCuration />
+                :
+                <InstructionsAlertDialog />
+              }
+             
               <Button colorScheme="teal" size="lg"
                 isDisabled={!isLastReview}
                 onClick={

@@ -10,11 +10,9 @@ import {
     Text,
     Stack,
     UnorderedList,
-    Image,
     ListItem,
   } from '@chakra-ui/react';
   
-  import HowToImage from './how-to-high2.jpg';
   import { useDisclosure } from '@chakra-ui/react';
   import React from 'react';
   
@@ -49,7 +47,6 @@ import {
                     </Text>
                     <UnorderedList stylePosition={'inside'}>
                       <ListItem>
-                      {' '}
                         <Text as="b">Down- or Upvote</Text> each usage option according to the rules below
                       </ListItem>
                       <ListItem>
@@ -122,13 +119,6 @@ import {
                         )
                       </ListItem>
                     </UnorderedList>
-  
-                  <Heading as="h3" size="md">
-                    How to use the labeling tool
-                  </Heading>{/*
-                  <Image 
-                      src={HowToImage}
-                  />*/}
                 </Stack>
               </AlertDialogBody>
   

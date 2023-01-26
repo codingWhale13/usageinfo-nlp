@@ -9,15 +9,33 @@ import {
   PREDICTED_USAGE_OPTIONS_VOTE,
   CONTAINS_MORE_USAGE_OPTIONS,
 } from '../utils/labelKeys';
-import { Button, Flex, ButtonGroup, Divider, Text, Grid, Tag, GridItem, VStack, Stack } from '@chakra-ui/react';
+import { GOOD_VOTE, BAD_VOTE } from '../utils/voteDefinitions';
+import {
+  Button,
+  Flex,
+  ButtonGroup,
+  Divider,
+  Text,
+  Grid,
+  Tag,
+  GridItem,
+  VStack,
+  Stack,
+  Card,
+  CardBody,
+  CardFooter,
+  Heading,
+} from '@chakra-ui/react';
 import { annotationsToUsageOptions } from '../utils/conversion';
 import { AnnotationsEditor } from './Editors/AnnotationsEditor';
 import { CustomUsageOptionsEditor } from './Editors/CustomUsageOptionsEditor';
 import { UsageOptionsRatingEditor } from './Editors/UsageOptionsRatingEditor';
 import { getFeatureFlags } from '../featureFlags';
-
-
-import { FaFlag, FaRegFlag } from 'react-icons/fa';
+import { ToggleButton } from './Editors/UsageOptionsRatingEditor';
+import {
+  FaThumbsDown,
+  FaThumbsUp,
+} from 'react-icons/fa';
 
 const React = require('react');
 
@@ -30,8 +48,7 @@ const {
 } = require('@chakra-ui/icons');
 
 const { ReviewTokenEditor } = require('./Editors/ReviewTokenEditor');
-const { Card } = require('./Elements');
-
+const { CustomCard } = require('./Elements');
 
 export function Review(props) {
   const { review } = props;
@@ -39,7 +56,16 @@ export function Review(props) {
   const features = getFeatureFlags();
   const resetAnnotation = () => {
     if (features.ratePredictedUseCases) {
-      props.saveLabel(PREDICTED_USAGE_OPTIONS, review.label[PREDICTED_USAGE_OPTIONS].map(usageOption => { return { [PREDICTED_USAGE_OPTION_LABEL]: usageOption[PREDICTED_USAGE_OPTION_LABEL], [PREDICTED_USAGE_OPTIONS_VOTE]: NaN } }));
+      props.saveLabel(
+        PREDICTED_USAGE_OPTIONS,
+        review.label[PREDICTED_USAGE_OPTIONS].map(usageOption => {
+          return {
+            [PREDICTED_USAGE_OPTION_LABEL]:
+              usageOption[PREDICTED_USAGE_OPTION_LABEL],
+            [PREDICTED_USAGE_OPTIONS_VOTE]: NaN,
+          };
+        })
+      );
     } else {
       props.saveLabel(ANNOTATIONS, []);
       props.saveLabel(CUSTOM_USAGE_OPTIONS, []);
@@ -76,7 +102,7 @@ export function Review(props) {
     review.review_body.split(' ').length / (inspectionTimeInSeconds / 60)
   );
   return (
-    <Card>
+    <CustomCard>
       <Grid
         templateAreas={`"header nav"
                         "main nav"`}
@@ -86,7 +112,7 @@ export function Review(props) {
         fontSize={'lg'}
       >
         <GridItem pl="0" pt="1" area={'header'}>
-          <Card>
+          <CustomCard>
             <Text
               fontWeight={'bold'}
               fontSize={'20px'}
@@ -98,10 +124,7 @@ export function Review(props) {
               {review.product_title}{' '}
             </Text>
             <Divider m={2} />
-            <VStack
-              direction={['row', 'column']}
-              alignItems="start"
-            >
+            <VStack direction={['row', 'column']} alignItems="start">
               <Feature name="localLabelling">
                 <Stack direction={['column', 'row']}>
                   <Feature name="reviewLabelling">
@@ -116,7 +139,7 @@ export function Review(props) {
                 {review.product_category}
               </Tag>
             </VStack>
-          </Card>
+          </CustomCard>
         </GridItem>
 
         <GridItem
@@ -205,8 +228,10 @@ export function Review(props) {
                 size="md"
                 isDisabled={
                   (review.label[ANNOTATIONS].length === 0 &&
-                    review.label[CUSTOM_USAGE_OPTIONS].length === 0 && !features.ratePredictedUseCases) ||
-                  (review.label[PREDICTED_USAGE_OPTIONS].length === 0 && features.ratePredictedUseCases)
+                    review.label[CUSTOM_USAGE_OPTIONS].length === 0 &&
+                    !features.ratePredictedUseCases) ||
+                  (review.label[PREDICTED_USAGE_OPTIONS].length === 0 &&
+                    features.ratePredictedUseCases)
                 }
               >
                 Reset
@@ -227,39 +252,73 @@ export function Review(props) {
           <Divider my={4} />
 
           <Feature name="ratePredictedUseCases">
+            <Heading as="h5" size="sm" paddingY={2}>
+              Evaluate completeness of usage options
+            </Heading>
             <Stack>
-            {review.label[CONTAINS_MORE_USAGE_OPTIONS] ? (
-              <Button
-                leftIcon={<FaRegFlag/>}
-                colorScheme="green"
-                onClick={() => props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, false)}
-                size="md"
+              <Card
+                maxW="100%"
+                variant="outline"
+                sx={{ '--card-padding': '0.5rem' }}
               >
-                Denote as fully labelled
-              </Button>) :
-              (<Button
-                leftIcon={<FaFlag/>}
-                colorScheme="orange"
-                onClick={() => props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, true)}
-                size="md"
-              >
-                Denote as incompletely labelled
-              </Button>)
-            }
+                <CardBody>
+                  <Text>
+                    All usage options mentioned in the review are listed
+                  </Text>
+                </CardBody>
+
+                <CardFooter
+                  justify="space-between"
+                  flexWrap="wrap"
+                  sx={{
+                    '& > button': {
+                      minW: '136px',
+                    },
+                  }}
+                >
+                  <ButtonGroup
+                    direction="row"
+                    spacing={3}
+                    align="center"
+                    size={'md'}
+                  >
+                    <ToggleButton
+                      text={'Upvote'}
+                      isOn={
+                        review.label[CONTAINS_MORE_USAGE_OPTIONS] === BAD_VOTE
+                      }
+                      onColor={'green'}
+                      leftIcon={<FaThumbsUp />}
+                      onClick={e =>
+                        props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, BAD_VOTE)
+                      }
+                    />
+
+                    <ToggleButton
+                      text={'Downvote'}
+                      isOn={
+                        review.label[CONTAINS_MORE_USAGE_OPTIONS] === GOOD_VOTE
+                      }
+                      onColor={'red'}
+                      leftIcon={<FaThumbsDown />}
+                      onClick={e =>
+                        props.saveLabel(CONTAINS_MORE_USAGE_OPTIONS, GOOD_VOTE)
+                      }
+                    />
+                  </ButtonGroup>
+                </CardFooter>
+              </Card>
             </Stack>
-            
-          <Divider my={4} />
+
+            <Divider my={4} />
           </Feature>
 
-
-
-          {features.ratePredictedUseCases ?
-
+          {features.ratePredictedUseCases ? (
             <UsageOptionsRatingEditor
               predictedUsageOptions={review.label[PREDICTED_USAGE_OPTIONS]}
               saveLabel={props.saveLabel}
             />
-            :
+          ) : (
             <>
               <AnnotationsEditor
                 annotations={review.label[ANNOTATIONS]}
@@ -275,14 +334,9 @@ export function Review(props) {
                 saveCustomUsageOption={saveCustomUsageOption}
               />
             </>
-
-
-          }
+          )}
         </GridItem>
       </Grid>
-    </Card>
+    </CustomCard>
   );
 }
-
-
-
