@@ -127,3 +127,10 @@ data/
 .slurm
 .err
 .out
+
+# wandb
+**/wandb/
+
+# data exploration
+data_exploration/queries/
+data_exploration/test_samples/

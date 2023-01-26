@@ -1,0 +1,13 @@
+model: "t5-small"
+artifact:
+  name: #"fortuitous-moon-69"
+  checkpoint: #9
+epochs: 5
+batch_size: 30
+optimizer: 
+  name: "AdamW"
+  learning_rate: 0.01
+  weight_decay: 0.01
+dataset:
+  version: "corrected_merge"
+  validation_split: 0.10
