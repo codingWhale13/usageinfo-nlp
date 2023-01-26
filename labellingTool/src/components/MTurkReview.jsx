@@ -17,12 +17,54 @@ const REVIEWS =
       metadata: [{
         product_title: 'Super splitting axe',
         product_category: 'Outdoor',
-        [PREDICTED_USAGE_OPTIONS]: ["dsdaasddsdaasd dsdaasddsdaasd dsdaasd dsdaasddsdaasddsdaasddsdaasd", "dsdaasd"]
+        [CUSTOM_USAGE_OPTIONS]: ["dsas", "nsdjfdsjkd"],
+        [ANNOTATIONS]: [
+          {
+              "start": 41,
+              "end": 42,
+              "tokens": [
+                  "sanitize"
+              ],
+              "tag": "",
+              "color": "#8afd8a"
+          },
+          {
+              "start": 7,
+              "end": 9,
+              "tokens": [
+                  "floor",
+                  "cleaners"
+              ],
+              "tag": "",
+              "color": "#8afd8a"
+          }
+      ]
       },
       {
         product_title: 'hello World 2',
         product_category: 'Test 2',
-        [PREDICTED_USAGE_OPTIONS]: ["dsas"]
+        [CUSTOM_USAGE_OPTIONS]: ["dsas"],
+        [ANNOTATIONS]: [
+          {
+              "start": 41,
+              "end": 42,
+              "tokens": [
+                  "sanitize"
+              ],
+              "tag": "",
+              "color": "#8afd8a"
+          },
+          {
+              "start": 7,
+              "end": 9,
+              "tokens": [
+                  "floor",
+                  "cleaners"
+              ],
+              "tag": "",
+              "color": "#8afd8a"
+          }
+      ]
       }],
       review_bodies: ['I like this axe for chopping wood and digging a fire pit.', 'Hello world wow 1']
     };
@@ -49,7 +91,13 @@ class MTurkReview extends Component {
       });
       this.state.label[ANNOTATIONS].push([]);
       this.state.label[CUSTOM_USAGE_OPTIONS].push([]);
-      this.state.label[PREDICTED_USAGE_OPTIONS].push(REVIEWS.metadata[index][PREDICTED_USAGE_OPTIONS].map((label) => { return { [PREDICTED_USAGE_OPTION_LABEL]: label, [PREDICTED_USAGE_OPTIONS_VOTE]: NaN}}))
+
+      const annotatations = REVIEWS.metadata[index][ANNOTATIONS].map((annotation) => annotation.tokens.join(' '));
+      let allUsageOptions = REVIEWS.metadata[index][CUSTOM_USAGE_OPTIONS];
+      allUsageOptions = allUsageOptions.concat(annotatations);
+
+      this.state.label[PREDICTED_USAGE_OPTIONS].push(allUsageOptions.map((label) => { return { [PREDICTED_USAGE_OPTION_LABEL]: label, [PREDICTED_USAGE_OPTIONS_VOTE]: NaN}}))
+
       this.state.inspectionTimes.push(0);
     }
 
