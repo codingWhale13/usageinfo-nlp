@@ -255,15 +255,17 @@ export function Review(props) {
             <Heading as="h5" size="sm" paddingY={2}>
               Evaluate completeness of usage options
             </Heading>
-            <Stack>
+            <Stack mt={2}>
               <Card
                 maxW="100%"
-                variant="outline"
+                variant="elevated"
+                align="center"
                 sx={{ '--card-padding': '0.5rem' }}
+                bg="lightblue"
               >
-                <CardBody>
+                <CardBody align="center">
                   <Text>
-                    All usage options mentioned in the review are listed
+                    All usage options mentioned in the review are listed below
                   </Text>
                 </CardBody>
 
