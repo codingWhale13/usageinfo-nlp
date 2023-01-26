@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { Review } from './Review';
 import { InstructionsAlertDialog } from './InstructionsAlertDialog';
-import { ANNOTATIONS, CUSTOM_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS_VOTE, PREDICTED_USAGE_OPTION_LABEL } from '../utils/labelKeys';
+import { ANNOTATIONS, CONTAINS_MORE_USAGE_OPTIONS, CUSTOM_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS_VOTE, PREDICTED_USAGE_OPTION_LABEL } from '../utils/labelKeys';
 const { Timer } = require('timer-node');
 const timer = new Timer({ label: 'review-inspection-timer' });
 
@@ -79,6 +79,7 @@ class MTurkReview extends Component {
         [ANNOTATIONS]: [],
         [CUSTOM_USAGE_OPTIONS]: [],
         [PREDICTED_USAGE_OPTIONS]: [],
+        [CONTAINS_MORE_USAGE_OPTIONS]: []
       },
       inspectionTimes: [],
       reviewIndex: 0
@@ -91,6 +92,7 @@ class MTurkReview extends Component {
       });
       this.state.label[ANNOTATIONS].push([]);
       this.state.label[CUSTOM_USAGE_OPTIONS].push([]);
+      this.state.label[CONTAINS_MORE_USAGE_OPTIONS].push(false);
 
       const annotatations = REVIEWS.metadata[index][ANNOTATIONS].map((annotation) => annotation.tokens.join(' '));
       let allUsageOptions = REVIEWS.metadata[index][CUSTOM_USAGE_OPTIONS];
@@ -106,6 +108,8 @@ class MTurkReview extends Component {
 
   saveLabel = (key, data) => {
     const label = { ...this.state.label };
+    console.log(key, data, label);
+
     label[key][this.state.reviewIndex] = data;
     this.setState({ label: label });
   };
@@ -129,6 +133,7 @@ class MTurkReview extends Component {
     const annotations = this.state.label[ANNOTATIONS][index];
     const predictedUsageOptions = this.state.label[PREDICTED_USAGE_OPTIONS][index];
     const customUsageOptions = this.state.label[CUSTOM_USAGE_OPTIONS][index];
+    const containsMoreUsageOptions = this.state.label[CONTAINS_MORE_USAGE_OPTIONS][index];
     const isLastReview = this.state.reviewIndex === this.state.reviews.length - 1;
 
     return (
@@ -157,7 +162,8 @@ class MTurkReview extends Component {
             label: {
               [ANNOTATIONS]: annotations,
               [CUSTOM_USAGE_OPTIONS]: customUsageOptions,
-              [PREDICTED_USAGE_OPTIONS]: predictedUsageOptions
+              [PREDICTED_USAGE_OPTIONS]: predictedUsageOptions,
+              [CONTAINS_MORE_USAGE_OPTIONS]: containsMoreUsageOptions
             },
           }}
 
@@ -185,6 +191,7 @@ class MTurkReview extends Component {
           annotations: this.state.label[ANNOTATIONS],
           customUsageOptions: this.state.label[CUSTOM_USAGE_OPTIONS],
           predictedUsageOptions: this.state.label[PREDICTED_USAGE_OPTIONS],
+          [CONTAINS_MORE_USAGE_OPTIONS]: this.state.label[CONTAINS_MORE_USAGE_OPTIONS],
           inspectionTimes: this.state.inspectionTimes
         }, null, 2)}</pre>
       </>
