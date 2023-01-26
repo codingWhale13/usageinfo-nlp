@@ -1,14 +1,13 @@
 import argparse
 import pandas as pd
 import os
+import json
 import yaml
+import random
 from typing import List
-
-from extract_reviews import extract_reviews_with_usage_options_from_json
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
-
 
 def arg_parse():
     parser = argparse.ArgumentParser(description="Create a new training dataset.")
@@ -30,6 +29,13 @@ def arg_parse():
         default=0.1,
         help="Percentage of the data to be used for testing",
     )
+    parser.add_argument(
+        "-s",
+        "--seed",
+        type=int,
+        default=42,
+        help="Seed to shuffle data with",
+    )
     return parser.parse_args(), parser.format_help()
 
 
@@ -45,14 +51,19 @@ def create_dataset_dir(name: str):
 
 
 def create_dataset(files: List[str], test_split: float):
-    reviews = [extract_reviews_with_usage_options_from_json(file) for file in files]
+    train_data = {"reviews": [], "maxReviewIndex": 0}
+    test_data = {"reviews": [], "maxReviewIndex": 0}
+    result = list()
+    for file in files:
+        with open(file, "r") as f:
+            result.extend(json.load(f)["reviews"])
+    random.shuffle(result)
+    split_index = int(len(result) * (1 - test_split))
+    train_data["reviews"] = result[:split_index]
+    test_data["reviews"] = result[split_index:]
 
-    df = pd.concat(reviews, axis=0, ignore_index=True)
+    return train_data, test_data
 
-    df_train = df.sample(frac=1 - test_split, random_state=42)
-    df_test = df.drop(df_train.index)
-
-    return df_train, df_test
 
 
 def create_yml(dataset_version, test_split, files, dataset_dir):
@@ -70,14 +81,19 @@ def main():
     files = args.files
     dataset_version = args.dataset_name
     test_split = args.test_split
+    seed = args.seed
+    
+    random.seed(seed)
 
     dataset_dir = create_dataset_dir(name=dataset_version)
-    df_train, df_test = create_dataset(
-        dataset_dir=dataset_dir, files=files, test_split=test_split
+    train_data, test_data = create_dataset(
+         files=files, test_split=test_split
     )
-
-    df_train.to_json(os.path.join(dataset_dir, "train_data.json"))
-    df_test.to_json(os.path.join(dataset_dir, "test_data.json"))
+    with open(os.path.join(dataset_dir, "train_data.json"), 'w') as output_file:
+        json.dump(train_data, output_file)
+    
+    with open(os.path.join(dataset_dir, "test_data.json"), 'w') as output_file:
+        json.dump(test_data, output_file)
 
     create_yml(
         dataset_version=dataset_version,
