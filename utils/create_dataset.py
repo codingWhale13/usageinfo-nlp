@@ -5,9 +5,11 @@ import json
 import yaml
 import random
 from typing import List
+import glob
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
+
 
 def arg_parse():
     parser = argparse.ArgumentParser(description="Create a new training dataset.")
@@ -39,6 +41,13 @@ def arg_parse():
     return parser.parse_args(), parser.format_help()
 
 
+def get_all_files(paths: List[str]):
+    files = []
+    for path in paths:
+        files.extend(glob.glob(path))
+    return files
+
+
 def create_dataset_dir(name: str):
     dataset_dir = os.path.join(DATASETS_DIR, name)
     if os.path.exists(dataset_dir):
@@ -65,7 +74,6 @@ def create_dataset(files: List[str], test_split: float):
     return train_data, test_data
 
 
-
 def create_yml(dataset_version, test_split, files, dataset_dir):
     dict_args = {
         "version": dataset_version,
@@ -78,21 +86,19 @@ def create_yml(dataset_version, test_split, files, dataset_dir):
 
 def main():
     args, _ = arg_parse()
-    files = args.files
+    files = get_all_files(args.files)
     dataset_version = args.dataset_name
     test_split = args.test_split
     seed = args.seed
-    
+
     random.seed(seed)
 
     dataset_dir = create_dataset_dir(name=dataset_version)
-    train_data, test_data = create_dataset(
-         files=files, test_split=test_split
-    )
-    with open(os.path.join(dataset_dir, "train_data.json"), 'w') as output_file:
+    train_data, test_data = create_dataset(files=files, test_split=test_split)
+    with open(os.path.join(dataset_dir, "train_data.json"), "w") as output_file:
         json.dump(train_data, output_file)
-    
-    with open(os.path.join(dataset_dir, "test_data.json"), 'w') as output_file:
+
+    with open(os.path.join(dataset_dir, "test_data.json"), "w") as output_file:
         json.dump(test_data, output_file)
 
     create_yml(
