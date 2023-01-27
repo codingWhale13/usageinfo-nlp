@@ -155,8 +155,7 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
                     "label": {
                         "isFlagged": False,
                         "annotations": annotations[review],
-                        "customUsageOptions": customUsageOptions[review],
-                        "replacementClasses": {}
+                        "customUsageOptions": customUsageOptions[review]
                     },
                     "inspectionTime": None})
         with open(output_path, "w") as output_file:
