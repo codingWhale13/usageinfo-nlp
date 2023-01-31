@@ -1,17 +1,22 @@
 import dataset
+import torch
 from torch.utils.data import DataLoader
 
 import utils
 
 
 class Generator:
-    def __init__(self) -> None:
-        config = utils.get_config()
-        self.model, self.tokenizer, self.max_length = utils.get_model_config(
-            config["model"], config["artifact"]
+    def __init__(self, artifact_name, dataset_version: str, checkpoint=None) -> None:
+        checkpoint = torch.load(
+            utils.get_model_path({"name": artifact_name, "checkpoint": checkpoint})
         )
+        (
+            self.model,
+            self.tokenizer,
+            self.max_length,
+        ) = utils.get_model_config_from_checkpoint(checkpoint["model"], checkpoint)
         self.dataset = dataset.ReviewDataset(
-            "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/golden_dataset_v3.json",
+            utils.get_dataset_paths(dataset_version)["test_dataset"],
             self.tokenizer,
             self.max_length,
             evaluate=True,
@@ -40,8 +45,3 @@ class Generator:
                 print(f"Text: {texts[i]}")
                 print(f"Prediction: {predictions[i]}")
                 print(f"Label: {labels[i]}\n")
-
-
-if __name__ == "__main__":
-    generator = Generator()
-    generator.generate()

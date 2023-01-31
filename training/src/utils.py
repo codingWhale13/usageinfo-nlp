@@ -83,9 +83,15 @@ def get_config() -> dict:
 
 
 def get_model_config(model_name: str, model_artifact: dict) -> tuple:
-    model_config = models[model_name]()
+    checkpoint = None
     if model_artifact["name"] is not None:
         checkpoint = torch.load(get_model_path(model_artifact))
+    return get_model_config_from_checkpoint(model_name, checkpoint)
+
+
+def get_model_config_from_checkpoint(model_name: str, checkpoint: dict) -> tuple:
+    model_config = models[model_name]()
+    if checkpoint is not None:
         model_config[0].load_state_dict(
             {k[6:]: v for k, v in checkpoint["state_dict"].items()}
         )
@@ -105,4 +111,5 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger):
         dirpath=f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/models/{run_name}",
         save_last=True,
         filename="{epoch}",
+        save_weights_only=True,
     )

@@ -10,6 +10,7 @@ class ReviewModel(pl.LightningModule):
     def __init__(
         self,
         model,
+        model_name: str,
         tokenizer,
         max_length: int,
         optimizer,
@@ -18,6 +19,7 @@ class ReviewModel(pl.LightningModule):
     ):
         super(ReviewModel, self).__init__()
         self.model = model
+        self.model_name = model_name
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.optimizer = optimizer
@@ -152,3 +154,7 @@ class ReviewModel(pl.LightningModule):
             max_length=self.max_length,
         )
         return dataset.split(self.data["validation_split"])
+
+    def on_save_checkpoint(self, checkpoint):
+        checkpoint["model"] = self.model_name
+        return checkpoint

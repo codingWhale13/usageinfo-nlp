@@ -31,6 +31,7 @@ dataset_parameters["validation_split"] = config["dataset"]["validation_split"]
 # %% Initialization
 model = model.ReviewModel(
     model=model_config[0],
+    model_name=config["model"],
     tokenizer=model_config[1],
     max_length=model_config[2],
     optimizer=utils.get_optimizer(config["optimizer"]["name"]),
