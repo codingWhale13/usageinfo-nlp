@@ -130,6 +130,7 @@ data/
 node_modules
 labellingTool/node_modules
 .vercel
+.next
 
 #Mac os
 .DS_Store
