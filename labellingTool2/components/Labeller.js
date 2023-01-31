@@ -11,9 +11,8 @@ const timer = new Timer({ label: 'review-inspection-timer' });
 export class Labeller extends React.Component {
   constructor(props) {
     super(props);
-
     this.state = {
-      reviews: [],
+      reviews: props.reviews || [],
       reviewIndex: 0,
       maxReviewIndex: 0,
     };
@@ -55,6 +54,24 @@ export class Labeller extends React.Component {
     timer.clear().start();
   };
 
+  submitToS3 = async () => {
+    const reviewState = {
+      reviews: this.state.reviews,
+      maxReviewIndex: this.state.maxReviewIndex,
+    };
+    const res = await fetch('/api/saveLabels', {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      method: 'POST',
+      body: JSON.stringify({
+        run: this.props.run,
+        sampleFileName: this.props.sampleFileName,
+        labels: reviewState
+      })
+    })
+    console.log(res);
+  }
   render() {
     const reviewLabel =
       this.state.reviews.length &&
@@ -89,9 +106,18 @@ export class Labeller extends React.Component {
               currentReviewIndex={this.state.reviewIndex}
               numberOfReviews={this.state.reviews.length}
               extra={
+                <>
                 <Feature name="localLabelling">
                   <ButtonGroup gap="2">{exportButton}</ButtonGroup>
                 </Feature>
+                <Feature name="dynamicLabelling">
+                  <ButtonGroup gap="2">
+                    <Button colorScheme="teal" size="lg" onClick={this.submitToS3}>
+                      Submit
+                    </Button>
+                  </ButtonGroup>
+                </Feature>
+                </>
               }
             />
 

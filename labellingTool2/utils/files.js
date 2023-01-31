@@ -1,5 +1,5 @@
 import { PREDICTED_USAGE_OPTIONS, CUSTOM_USAGE_OPTIONS, PREDICTED_USAGE_OPTIONS_VOTE, PREDICTED_USAGE_OPTION_LABEL, ANNOTATIONS } from "./labelKeys";
-
+import { uploadToS3 } from "./s3";
 export function downloadBlob(blob, fileName) {
   const encodedUri = URL.createObjectURL(blob);
   const link = document.createElement('a');

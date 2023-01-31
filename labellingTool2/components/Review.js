@@ -230,7 +230,7 @@ export function Review(props) {
                   (review.label[ANNOTATIONS].length === 0 &&
                     review.label[CUSTOM_USAGE_OPTIONS].length === 0 &&
                     !features.ratePredictedUseCases) ||
-                  (review.label[PREDICTED_USAGE_OPTIONS].length === 0 &&
+                  (review.label[PREDICTED_USAGE_OPTIONS] && review.label[PREDICTED_USAGE_OPTIONS].length === 0 &&
                     features.ratePredictedUseCases)
                 }
               >

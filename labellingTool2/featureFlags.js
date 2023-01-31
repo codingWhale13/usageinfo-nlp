@@ -9,3 +9,14 @@ export function getFeatureFlags() {
     mTurk: mTurk,
   };
 }
+
+export function labelUsageOptionsDynamic(){
+  return {
+    mTurk: false,
+    negativeUseCases: false,
+    ratePredictedUseCases: false,
+    reviewLabelling: false,
+    localLabelling: false,
+    dynamicLabelling: true
+  }
+}
