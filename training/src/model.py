@@ -1,6 +1,7 @@
 import torch
 from lightning import pytorch as pl
 from torch.utils.data import DataLoader
+import torchmetrics
 
 import dataset as ds
 
@@ -22,6 +23,8 @@ class ReviewModel(pl.LightningModule):
         self.optimizer = optimizer
         self.data = data
         self.hparameters = hparameters
+        self.train_loss = torchmetrics.MeanMetric()
+        self.val_loss = torchmetrics.MeanMetric()
 
         self.val_dataset, self.train_dataset = self._get_dataset()
 
@@ -49,26 +52,59 @@ class ReviewModel(pl.LightningModule):
         return outputs.loss
 
     def training_step(self, batch, __):
-        return self._step(batch)
-
-    def training_epoch_end(self, outputs):
-        """Logs the average training loss over the epoch"""
-        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
+        loss = self._step(batch)
+        self.train_loss(loss)
         self.log(
-            "epoch_train_loss", avg_loss, on_epoch=True, prog_bar=True, logger=True
+            "train_loss",
+            self.train_loss,
+            on_step=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
         )
+        return loss
+
+    def training_epoch_end(self, __):
+        """Logs the average training loss over the epoch"""
+        self.log(
+            "epoch_train_loss",
+            self.train_loss,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
+        torch.cuda.empty_cache()
 
     def validation_step(self, batch, __):
-        return self._step(batch)
+        loss = self._step(batch)
+        self.val_loss(loss)
+        self.log(
+            "val_loss",
+            self.val_loss,
+            on_step=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
+        return loss
 
-    def validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, __):
         """Logs the average validation loss over the epoch"""
-        avg_loss = torch.stack(outputs).mean()
-        self.log("epoch_val_loss", avg_loss, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "epoch_val_loss",
+            self.val_loss,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+        )
 
     def test_step(self, batch, __):
         loss = self._step(batch)
-        self.log("test_loss", loss, on_step=True, prog_bar=True, logger=True)
+        self.log(
+            "test_loss", loss, on_step=True, prog_bar=True, logger=True, sync_dist=True
+        )
         return loss
 
     def configure_optimizers(self):

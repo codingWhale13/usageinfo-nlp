@@ -1,7 +1,12 @@
 import os
 import glob
 import yaml
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import (
+    T5Tokenizer,
+    T5ForConditionalGeneration,
+    BartTokenizer,
+    BartForConditionalGeneration,
+)
 import torch
 import dotenv
 import datetime
@@ -24,6 +29,11 @@ models = {
         T5ForConditionalGeneration.from_pretrained("t5-large"),
         T5Tokenizer.from_pretrained("t5-large", model_max_length=512),
         512,
+    ),
+    "bart-base": lambda: (
+        BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
+        BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
+        1024,
     ),
 }
 
@@ -71,7 +81,8 @@ def get_config() -> dict:
 
     return config
 
-def get_model_config(model_name: str, model_artifact: dict)-> tuple:
+
+def get_model_config(model_name: str, model_artifact: dict) -> tuple:
     model_config = models[model_name]()
     if model_artifact["name"] is not None:
         checkpoint = torch.load(get_model_path(model_artifact))
@@ -80,8 +91,10 @@ def get_model_config(model_name: str, model_artifact: dict)-> tuple:
         )
     return model_config
 
-def get_optimizer(optimizer_name: str)-> torch.optim.Optimizer:
+
+def get_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
     return optimizers[optimizer_name]
+
 
 def get_checkpoint_callback(logger: pl.loggers.WandbLogger):
     time = datetime.datetime.now().strftime("%m_%d_%H_%M")

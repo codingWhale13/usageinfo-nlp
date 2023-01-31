@@ -1,9 +1,9 @@
 model: "t5-small"
 artifact:
-  name: #"fortuitous-moon-69"
+  name: #"scintillating-mandu-99"
   checkpoint: #9
-epochs: 5
-batch_size: 30
+epochs: 1
+batch_size: 8
 optimizer: 
   name: "AdamW"
   learning_rate: 0.01
@@ -11,3 +11,6 @@ optimizer:
 dataset:
   version: "corrected_merge"
   validation_split: 0.10
+cluster:
+  devices: 1 #Number of gpus per node
+  num_nodes: 1 #Number of nodes

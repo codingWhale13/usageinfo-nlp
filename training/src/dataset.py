@@ -33,7 +33,9 @@ class ReviewDataset(Dataset):
     def _build(self):
         def tokenize(text, is_input):
             tokens = self.tokenizer(text, return_tensors="pt", padding="max_length")
+            # Remove batch dimension, since we only have one example
             tokens["input_ids"] = tokens["input_ids"][0]
+            tokens["attention_mask"] = tokens["attention_mask"][0]
             if not is_input and not self.evaluate:
                 ids = tokens["input_ids"]
                 # You need to set the pad tokens for the input to -100 for some Transformers (https://github.com/huggingface/transformers/issues/9770)>
