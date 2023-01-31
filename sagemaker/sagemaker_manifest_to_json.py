@@ -13,6 +13,7 @@ def get_run_name_from_manifest_file(manifest_file_path):
             if isinstance(value, dict) and "job-name" in value:
                 return line[key]["job-name"]
 
+
 def convert_manifest_output_to_json(input_path: Union[Path, str]):
     run_name = get_run_name_from_manifest_file(input_path)
 
@@ -24,9 +25,9 @@ def convert_manifest_output_to_json(input_path: Union[Path, str]):
             json.dump(reviews, output_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("manifest_file",  help=".manifest sagemaker output file")
+    parser.add_argument("manifest_file", help=".manifest sagemaker output file")
 
     args = parser.parse_args()
 

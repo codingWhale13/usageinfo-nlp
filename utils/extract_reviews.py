@@ -19,11 +19,17 @@ def extract_labelled_reviews_from_json(
 
 
 def extract_reviews_with_usage_options_from_json(
-    path: Union[Path, str]
+    path: Union[Path, str], use_predicted_usage_options=False
 ) -> pd.DataFrame:
-    extract_usage_options_list = lambda x: x["customUsageOptions"] + [
-        " ".join(annotation["tokens"]) for annotation in x["annotations"]
-    ]
+    extract_usage_options_list = None
+    if use_predicted_usage_options:
+        extract_usage_options_list = lambda row: [
+            x["label"] for x in row["predictedUsageOptions"]
+        ]
+    else:
+        extract_usage_options_list = lambda x: x["customUsageOptions"] + [
+            " ".join(annotation["tokens"]) for annotation in x["annotations"]
+        ]
     return extract_labelled_reviews_from_json(
         path, extract_usage_options_list, "usage_options"
     )
