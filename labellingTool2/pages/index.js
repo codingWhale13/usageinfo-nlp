@@ -1,18 +1,18 @@
-import React from 'react';
-import { ChakraProvider, Container } from '@chakra-ui/react';
-import { FlagsProvider } from 'flagged';
-import { getFeatureFlags } from '../featureFlags';
+import { Heading, UnorderedList, ListItem } from "@chakra-ui/react";
+import Link from "next/link";
 
 function App() {
-  const features = getFeatureFlags();
   return (
-    <FlagsProvider features={getFeatureFlags()}>
-      <ChakraProvider>
-       <Container maxWidth="1300px" p='3'>
-          gas
-        </Container>
-      </ChakraProvider>
-    </FlagsProvider>
+    <>
+      <Heading as="h1">Hello world</Heading>
+      <UnorderedList>
+        <ListItem>
+          <Link href="/local" passHref>
+            Local Labelling
+          </Link>
+        </ListItem>
+      </UnorderedList>
+    </>
   );
 }
 

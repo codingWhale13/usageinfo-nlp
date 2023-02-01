@@ -20,3 +20,13 @@ export function labelUsageOptionsDynamic(){
     dynamicLabelling: true
   }
 }
+
+export function localLabelling(){
+  return {
+    mTurk: false,
+    negativeUseCases: false,
+    ratePredictedUseCases: false,
+    localLabelling: true,
+    dynamicLabelling: false
+  };
+}
