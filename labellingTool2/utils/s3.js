@@ -1,11 +1,11 @@
 import { S3Client, ListObjectsCommand, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-console.log( process.env.AWS_DEFAULT_REGION, process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY);
+console.log( process.env.AWS_DEFAULT_REGION, process.env.ACCESS_KEY_ID_AWS, process.env.SECRET_ACCESS_KEY_AWS);
 const client = new S3Client({
     region: "eu-central-1",
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.ACCESS_KEY_ID_AWS,
+    secretAccessKey: process.env.SECRET_ACCESS_KEY_AWS,
 });
 
 const BUCKET = 'bsc2022-usageinfo';
