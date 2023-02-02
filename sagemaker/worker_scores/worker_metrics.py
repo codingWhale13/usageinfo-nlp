@@ -1,7 +1,7 @@
 import spacy
-from worker_custom_metrics import extract_labels
-from worker_custom_metrics import get_most_similar
-from worker_custom_metrics import custom_precision, custom_recall
+from .worker_custom_metrics import extract_labels
+from .worker_custom_metrics import get_most_similar
+from .worker_custom_metrics import custom_precision, custom_recall
 
 """
 INSTALL spacy model

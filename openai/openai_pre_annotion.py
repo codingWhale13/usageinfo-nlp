@@ -1,4 +1,5 @@
 import os
+import time
 import argparse
 import json
 import openai
@@ -18,27 +19,42 @@ def parse_args():
     return arg_parser.parse_args(), arg_parser.format_help()
 
 
-def pre_label(review: str, model: str = "text-davinci-003"):
-    prompt_with_review = f"""This is a review for an E-Commerce product by a customer:
+def pre_label(review: json, model: str = "text-davinci-003", prompt: str = None):
+    if prompt is not None:
+        prompt_with_review = eval('f"""' + prompt + '"""')
+    else:
+        prompt_with_review = \
+        f"""This is a review for an E-Commerce product by a customer.
 
-{review}
+{review['review_body']}
 
-Summarize what the product can be used for in real life according to the customer. Write one usage option or a list of only the most important use cases described with as few words as possible as a comma separated list. Don't consider negative use cases, gifts, presents, characteristics, attributes or product qualities. Write '"No use cases" if there are no valid use cases left:"""
+Summarize the customer's most important use cases for the product in real life, as a list of short phrases separated by commas. Only include positive use cases that the customer describes, and exclude mentions of gifts, presents, characteristics, attributes, or product qualities. If no valid use cases are mentioned in the review, write "No use cases.\""""
 
     openai.organization = openai_org_id
     openai.api_key = openai_api_key
 
-    completion = openai.Completion.create(
-        engine=model,
-        prompt=prompt_with_review,
-        max_tokens=2048,
-    )
+    try:
+        completion = openai.Completion.create(
+            engine=model,
+            prompt=prompt_with_review,
+            max_tokens=2048,
+        )
+    except openai.OpenAIError as e:
+        print("WARNING: OpenAI API error: " + str(e))
+        print("Waiting 30 seconds and trying again...")
+        time.sleep(30)
+        completion = openai.Completion.create(
+            engine=model,
+            prompt=prompt_with_review,
+            max_tokens=2048,
+        )
+        print("INFO: Retrying successful.")
 
     return completion.choices[0].text.strip()
 
 
-def pre_label_format_manifest(review: str, model: str = "text-davinci-003"):
-    output = pre_label(review, model)
+def pre_label_format_manifest(review: json, model: str = "text-davinci-003", prompt: str = None):
+    output = pre_label(review, model, prompt)
     labels = []
     for label in output.split(","):
         if label.strip().startswith(no_usage_option_string):
@@ -59,7 +75,7 @@ def main():
 
         for review in review_json["reviews"]:
             review["label"]["customUsageOptions"] = pre_label_format_manifest(
-                review["review_body"]
+                review
             )
 
     output_file_name = (

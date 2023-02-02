@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import random
 from itertools import zip_longest
-from openai_pre_annotion import pre_label_format_manifest
+from ..openai.openai_pre_annotion import pre_label_format_manifest
 from reproducable_context import ReproducableContext
 
 
@@ -159,7 +159,7 @@ def main():
                     else:
                         datapoint_metadata[
                             "customUsageOptions"
-                        ] = pre_label_format_manifest(review[SOURCE_COLUMN])
+                        ] = pre_label_format_manifest(review)
                 metadata.append(datapoint_metadata)
 
             manifest.append(
