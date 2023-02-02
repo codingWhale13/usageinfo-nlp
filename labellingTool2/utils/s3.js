@@ -4,8 +4,6 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 console.log( process.env.NEXT_AWS_DEFAULT_REGION, process.env.NEXT_ACCESS_KEY_ID_AWS, process.env.NEXT_SECRET_ACCESS_KEY_AWS);
 const client = new S3Client({
     region: process.env.NEXT_AWS_DEFAULT_REGION || "eu-central-1",
-    accessKeyId: process.env.NEXT_ACCESS_KEY_ID_AWS,
-    secretAccessKey: process.env.NEXT_SECRET_ACCESS_KEY_AWS,
 });
 
 const BUCKET = 'bsc2022-usageinfo';
