@@ -29,14 +29,14 @@ def arg_parse():
         "--test_split",
         type=float,
         default=0.1,
-        help="Percentage of the data to be used for testing",
+        help="Percentage of the data to be used for testing (default. 0.1)",
     )
     parser.add_argument(
         "-u",
         "--usage-split",
         type=float,
         default=None,
-        help="Percentage of the data containing usage options",
+        help="Percentage of the data containing usage options (default: original)",
     )
     parser.add_argument(
         "-s",
