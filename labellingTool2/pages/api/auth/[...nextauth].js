@@ -1,6 +1,7 @@
 // pages/api/auth/[...nextauth].js
 import NextAuth from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import { ALLOWED_EMAILS } from "../../../utils/allowedUsers";
 
 export default NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -8,7 +9,7 @@ export default NextAuth({
   providers: [
     GitHubProvider({
       clientId: '9e79722d0209e0d25bae',
-      clientSecret: 'a862b516afd9188633d2c884238452ea6326aa4a'
+      clientSecret: 'a862b516afd9188633d2c884238452ea6326aa4a',
     }),
     {
       id: "hpiopenidconnect",
@@ -39,4 +40,17 @@ export default NextAuth({
       },
     },
   ],
+  callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      const isAllowedToSignIn = ALLOWED_EMAILS.includes(profile.email);
+      if (isAllowedToSignIn) {
+        return true
+      } else {
+        // Return false to display a default error message
+        return false
+        // Or you can return a URL to redirect to:
+        // return '/unauthorized'
+      }
+    }
+  }
 });
