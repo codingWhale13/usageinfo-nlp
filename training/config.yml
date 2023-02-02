@@ -9,8 +9,9 @@ optimizer:
   learning_rate: 0.01
   weight_decay: 0.01
 dataset:
-  version: "corrected_merge"
+  version: "pipeline_test"
   validation_split: 0.10
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
+test_run: False

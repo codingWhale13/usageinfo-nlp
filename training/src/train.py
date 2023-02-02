@@ -19,7 +19,8 @@ warnings.filterwarnings(
 config = utils.get_config()
 model_config = utils.get_model_config(config["model"], config["artifact"])
 cluster_config = config["cluster"]
-del config["cluster"]
+test_run = config["test_run"]
+del config["cluster"], config["test_run"]
 
 hyperparameters = {
     key: config["optimizer"][key] for key in ["learning_rate", "weight_decay"]
@@ -50,10 +51,10 @@ trainer = pl.Trainer(
     devices=cluster_config["devices"],
     num_nodes=cluster_config["num_nodes"],
     deterministic=True,
-    logger=logger,
     max_epochs=config["epochs"],
     accelerator="gpu",
-    callbacks=[checkpoint_callback],
+    callbacks=[checkpoint_callback] if not test_run else None,
+    logger=logger if not test_run else None,
 )
 
 # %% Training
