@@ -1,7 +1,6 @@
 import { S3Client, ListObjectsCommand, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-console.log( process.env.NEXT_AWS_DEFAULT_REGION, process.env.NEXT_ACCESS_KEY_ID_AWS, process.env.NEXT_SECRET_ACCESS_KEY_AWS);
 const client = new S3Client({
     region: process.env.NEXT_AWS_DEFAULT_REGION || "eu-central-1",
 });
@@ -19,17 +18,66 @@ export async function uploadToS3(key, body){
     return data;
 }
 
+function fileToRelativeBaseDir(path, file){
+    const relativePath = file.Key.replace(path, '');
+    const splits = relativePath.split('/');
+    if(splits.length > 1){
+        return splits[0];
+    }
+    return null;
+}
+function transformFilesToDirs(path, files){
+    const dirKeys = files.map((file) => fileToRelativeBaseDir(path, file));
+    const uniqueDirKeys = [...new Set(dirKeys)].filter(key => key);
+    return uniqueDirKeys.map((dirKey) => ({
+        Key: path+dirKey,
+        isDirectory: true
+    }));
+}
 
 export async function listObjects(path){
     const data = await client.send(new ListObjectsCommand({
         Bucket: BUCKET,
         Prefix: path
     }));
-    console.log("Success", data);
-    return data; // For unit tests.
+    let files = data.Contents !== undefined ? data.Contents : [];
+    const dirs = transformFilesToDirs(path, files);
+
+    files.forEach((file) => {
+        if(file.Size === 0){
+            file.isDirectory = true;
+        }
+        else{
+            file.isDirectory = false;
+        }
+    })
+
+    //if the path prefix is '' for the complete bucket, only show files and dirs directory at the "root"
+    files = files.filter(file => {
+        const relativePath = file.Key.replace(path, '');
+        const slashCount = relativePath.split('/').length;
+        if(!file.isDirectory){
+            return slashCount === 1;
+        }
+        else{
+            return false;
+        }
+    });
+    
+    return [...files, ...dirs];
 }
 
 export async function getObject(key){
+    // Get the object from the Amazon S3 bucket. It is returned as a ReadableStream.
+    const data = await client.send(new GetObjectCommand({
+        Bucket: BUCKET,
+        Key: key
+    }));
+    // Convert the ReadableStream to a string.
+    return await data;
+};
+
+export async function getAndReadStringObject(key){
     // Get the object from the Amazon S3 bucket. It is returned as a ReadableStream.
     const data = await client.send(new GetObjectCommand({
         Bucket: BUCKET,
