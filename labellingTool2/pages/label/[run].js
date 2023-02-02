@@ -1,4 +1,4 @@
-import { listObjects, getAndReadStringObject, moveObject, DYNAMIC_SAMPLING_BASE_FOLDER } from "../../utils/s3";
+import { listObjects, getAndReadStringObject, moveObject, DYNAMIC_SAMPLING_BASE_FOLDER } from "../../utils/aws/s3";
 import { Labeller } from "../../components/Labeller";
 import { FlagsProvider } from "flagged";
 import { labelUsageOptionsDynamic } from "../../featureFlags";

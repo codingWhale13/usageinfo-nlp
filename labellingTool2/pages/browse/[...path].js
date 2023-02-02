@@ -1,4 +1,4 @@
-import { listObjects, moveObject, DYNAMIC_SAMPLING_BASE_FOLDER } from "../../utils/s3";
+import { listObjects, moveObject, DYNAMIC_SAMPLING_BASE_FOLDER } from "../../utils/aws/s3";
 import { dateToString } from "../../utils/serializeToJson";
 import { File } from "../../components/FileBrowser/File";
 import { Dir } from "../../components/FileBrowser/Dir";

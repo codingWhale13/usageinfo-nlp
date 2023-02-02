@@ -1,4 +1,4 @@
-import { uploadToS3, DYNAMIC_SAMPLING_BASE_FOLDER, deleteObject } from "../../utils/s3";
+import { uploadToS3, DYNAMIC_SAMPLING_BASE_FOLDER, deleteObject } from "../../utils/aws/s3";
 
 export default async function handler(req, res) {
     const sampleFileName = req.body.sampleFileName;

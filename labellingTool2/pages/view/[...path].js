@@ -1,6 +1,6 @@
 import {
     getAndReadStringObject
-} from "../../utils/s3";
+} from "../../utils/aws/s3";
 import { Labeller } from "../../components/Labeller";
 import { FlagsProvider } from "flagged";
 import { localLabelling } from "../../featureFlags";

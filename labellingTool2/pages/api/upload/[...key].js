@@ -1,4 +1,4 @@
-import { uploadToS3 } from "../../../utils/s3";
+import { uploadToS3 } from "../../../utils/aws/s3";
 export default async function handler(req, res) {
   console.log(req);
   if (req.method === 'POST') {
