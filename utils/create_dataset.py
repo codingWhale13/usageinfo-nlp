@@ -57,6 +57,7 @@ def get_all_files(paths: List[str]):
 
 def create_dataset_dir(name: str):
     dataset_dir = os.path.join(DATASETS_DIR, name)
+    print(f"Creating dataset at {dataset_dir}...")
     if os.path.exists(dataset_dir):
         if input("Dataset already exists. Overwrite? (y/N): ").lower() != "y":
             exit("Aborted.")
@@ -117,7 +118,9 @@ def create_yml(dataset_version, usage_split, test_split, files, dataset_dir):
         "files": files,
     }
     with open(os.path.join(dataset_dir, "config.yml"), "w") as file:
-        yaml.dump(dict_args, file)
+        config = yaml.dump(dict_args)
+        print(config, end="")
+        file.write(config)
 
 
 def main():
