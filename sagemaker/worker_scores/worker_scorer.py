@@ -37,9 +37,7 @@ def calculate_golden_dataset_scores(
         "true_negative",
         "true_positive",
         "false_positive",
-        "false_negative",
-        "custom_recall",
-        "custom_precision",
+        "false_negative"
     ]
 
     if not use_predicted_usage_options:
@@ -121,8 +119,10 @@ if __name__ == "__main__":
         for metric_name, score in metrics.items():
             print(f"\t{metric_name}: {score}")
 
+    """
     plot_metrics(
         res,
         title=file_base_name,
         save_path=os.path.join(args.out_path, f"{file_base_name}.png"),
     )
+    """
