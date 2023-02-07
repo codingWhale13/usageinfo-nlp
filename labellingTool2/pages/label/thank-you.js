@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 export default function ThankYou(props){
 const router = useRouter()
 const { run } = router.query;
-  const { width, height } = useWindowSize();
+const { width, height } = useWindowSize(1920, 1080);
 
     return (
         <>
