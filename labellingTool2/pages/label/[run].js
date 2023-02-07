@@ -3,7 +3,7 @@ import { Labeller } from "../../components/Labeller";
 import { FlagsProvider } from "flagged";
 import { labelUsageOptionsDynamic } from "../../featureFlags";
 import { useRouter } from 'next/router'
-import { formatJsonReviews } from "../../../labellingTool/src/utils/files";
+import { formatJsonReviews } from "../../utils/files";
 function Page({ reviews, sampleFileName }) {
     const features = labelUsageOptionsDynamic();
     const router = useRouter()
