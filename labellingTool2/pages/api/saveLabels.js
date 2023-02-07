@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const data = await uploadToS3(key, JSON.stringify(req.body.labels));
     const inProgressKey = DYNAMIC_SAMPLING_BASE_FOLDER + run + '/in_progress/' + sampleFileName;
     await deleteObject(inProgressKey);
-    return data;
+    return res.status(200).send();
 };
 
 export const config = {

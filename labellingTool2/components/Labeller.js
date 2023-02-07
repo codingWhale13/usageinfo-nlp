@@ -69,7 +69,11 @@ export class Labeller extends React.Component {
         sampleFileName: this.props.sampleFileName,
         labels: reviewState
       })
-    })
+    });
+
+    if(res.status === 200){
+      window.location.replace(`/label/thank-you?run=${encodeURIComponent(this.props.run)}`);
+    }
     console.log(res);
   }
   render() {

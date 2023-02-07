@@ -3,7 +3,7 @@ import { Labeller } from "../../components/Labeller";
 import { FlagsProvider } from "flagged";
 import { labelUsageOptionsDynamic } from "../../featureFlags";
 import { useRouter } from 'next/router'
-
+import { formatJsonReviews } from "../../../labellingTool/src/utils/files";
 function Page({ reviews, sampleFileName }) {
     const features = labelUsageOptionsDynamic();
     const router = useRouter()
@@ -23,7 +23,7 @@ function Page({ reviews, sampleFileName }) {
 // This gets called on every request
 export async function getServerSideProps(context) {
     const runFolder = DYNAMIC_SAMPLING_BASE_FOLDER + context.params.run
-    const sourceFolder =  runFolder + "/backlog";
+    const sourceFolder =  runFolder + "/backlog/";
     const inProgressFolder = runFolder + '/in_progress/';
 
     const availableSamples =  (await listObjects(sourceFolder)).filter((file) => file.Key.endsWith('.json'));
@@ -33,11 +33,9 @@ export async function getServerSideProps(context) {
         const choosenSampleFileName = choosenSample.Key.split('/').slice(-1)[0];
         console.log(`Choose ${choosenSample.Key} from ${availableSamples.length} available samples.`);
     
-        const choosenSampleReviews = JSON.parse(await getAndReadStringObject(choosenSample.Key));
-        // Pass data to the page via props
-    
+        let choosenSampleReviews = JSON.parse(await getAndReadStringObject(choosenSample.Key));
         await moveObject(choosenSample.Key, inProgressFolder + choosenSampleFileName);
-        return { props: { ...choosenSampleReviews, sampleFileName: choosenSampleFileName } };
+        return { props: { ...formatJsonReviews(choosenSampleReviews), sampleFileName: choosenSampleFileName } };
     }
     else{
         console.log('No samples available');
