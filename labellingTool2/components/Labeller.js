@@ -131,6 +131,8 @@ export class Labeller extends React.Component {
               
               isPreviousDisabled={this.state.reviewIndex === 0}
               
+              isNextDisabled={this.state.reviewIndex === this.state.reviews.length - 1}
+
               navigateToNext={() => {
                 this.updateInspectionTime();
 
