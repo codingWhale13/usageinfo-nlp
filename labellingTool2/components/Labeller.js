@@ -71,7 +71,7 @@ export class Labeller extends React.Component {
       })
     });
 
-    if(res.status === 200){
+    if (res.status === 200) {
       window.location.replace(`/label/thank-you?run=${encodeURIComponent(this.props.run)}`);
     }
     console.log(res);
@@ -79,7 +79,7 @@ export class Labeller extends React.Component {
   render() {
     const reviewLabel =
       this.state.reviews.length &&
-      this.state.reviewIndex < this.state.reviews.length
+        this.state.reviewIndex < this.state.reviews.length
         ? this.state.reviews[this.state.reviewIndex]
         : {};
     console.log(this.state, reviewLabel);
@@ -111,16 +111,16 @@ export class Labeller extends React.Component {
               numberOfReviews={this.state.reviews.length}
               extra={
                 <>
-                <Feature name="localLabelling">
-                  <ButtonGroup gap="2">{exportButton}</ButtonGroup>
-                </Feature>
-                <Feature name="dynamicLabelling">
-                  <ButtonGroup gap="2">
-                    <Button colorScheme="teal" size="lg" onClick={this.submitToS3}>
-                      Submit
-                    </Button>
-                  </ButtonGroup>
-                </Feature>
+                  <Feature name="localLabelling">
+                    <ButtonGroup gap="2">{exportButton}</ButtonGroup>
+                  </Feature>
+                  <Feature name="dynamicLabelling">
+                    <ButtonGroup gap="2">
+                      <Button colorScheme="teal" size="lg" onClick={this.submitToS3} isDisabled={this.props.sampleFileName === undefined}>
+                        Submit
+                      </Button>
+                    </ButtonGroup>
+                  </Feature>
                 </>
               }
             />
@@ -128,9 +128,9 @@ export class Labeller extends React.Component {
             <Review
               review={this.state.reviews[this.state.reviewIndex]}
               saveLabel={this.saveLabel}
-              
+
               isPreviousDisabled={this.state.reviewIndex === 0}
-              
+
               isNextDisabled={this.state.reviewIndex === this.state.reviews.length - 1}
 
               navigateToNext={() => {
