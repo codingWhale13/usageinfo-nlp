@@ -1,4 +1,5 @@
 model: "t5-small"
+active_layers: "encoder_1 decoder_2 lm_head" #Space seperated components, with number of layers backwards after _. E.g. "encoder_1 decoder_2 lm_head"
 artifact:
   name: #"scintillating-mandu-99"
   checkpoint: #9

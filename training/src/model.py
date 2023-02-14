@@ -10,6 +10,7 @@ class ReviewModel(pl.LightningModule):
     def __init__(
         self,
         model,
+        active_layers: str,
         model_name: str,
         tokenizer,
         max_length: int,
@@ -27,8 +28,41 @@ class ReviewModel(pl.LightningModule):
         self.hparameters = hparameters
         self.train_loss = torchmetrics.MeanMetric()
         self.val_loss = torchmetrics.MeanMetric()
+        self.active_layers = active_layers
 
         self.val_dataset, self.train_dataset = self._get_dataset()
+
+        self._freeze_model()
+
+    def _freeze_model(self):
+        def _unfreeze(component, layer):
+            num_layers = int(layer.split("_")[-1])
+            last_layer_index = len(component.block)
+            for i in range(last_layer_index - num_layers, last_layer_index):
+                for param in component.block[i].parameters():
+                    param.requires_grad = True
+
+        for param in self.model.parameters():
+            param.requires_grad = False
+
+        layers = self.active_layers.split()
+        for layer in layers:
+            if "encoder" in layer:
+                _unfreeze(self.model.encoder, layer)
+
+            if "decoder" in layer:
+                _unfreeze(self.model.decoder, layer)
+
+            if "lm_head" in layer:
+                for param in self.model.lm_head.parameters():
+                    param.requires_grad = True
+
+        for param in self.model.named_parameters():
+            print(param[0], param[1].requires_grad)
+
+        for param in self.model.lm_head.parameters():
+            print(param.requires_grad)
+
 
     def forward(
         self,

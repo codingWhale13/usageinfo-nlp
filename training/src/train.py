@@ -19,6 +19,7 @@ warnings.filterwarnings(
 config = utils.get_config()
 model_config = utils.get_model_config(config["model"], config["artifact"])
 cluster_config = config["cluster"]
+active_layers = config["active_layers"]
 test_run = config["test_run"]
 del config["cluster"], config["test_run"]
 
@@ -35,16 +36,18 @@ model = model.ReviewModel(
     model_name=config["model"],
     tokenizer=model_config[1],
     max_length=model_config[2],
+    active_layers=active_layers,
     optimizer=utils.get_optimizer(config["optimizer"]["name"]),
     hparameters=hyperparameters,
     data=dataset_parameters,
 )
 
-logger = pl.loggers.WandbLogger(
-    project="rlp-t2t", entity="bsc2022-usageinfo", config=config
-)
+if not test_run:
+    logger = pl.loggers.WandbLogger(
+        project="rlp-t2t", entity="bsc2022-usageinfo", config=config
+    )
 
-checkpoint_callback = utils.get_checkpoint_callback(logger)
+    checkpoint_callback = utils.get_checkpoint_callback(logger)
 
 trainer = pl.Trainer(
     strategy="ddp_find_unused_parameters_false",
