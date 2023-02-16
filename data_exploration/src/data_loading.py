@@ -134,7 +134,10 @@ def filter_reviews_by_word_count(
     df = df[df["review_body"].str.split(" ").str.len() < max_word_count]
     return df
 
-def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[Path, str] = None):
+
+def extract_json_from_manifest(
+    input_path: Union[Path, str], output_path: Union[Path, str] = None
+):
     with open(input_path, "r") as turker_labels:
         reviews = {"reviews": [], "maxReviewIndex": 0}
         run_name = get_run_name(turker_labels)
@@ -147,19 +150,32 @@ def extract_json_from_manifest(input_path: Union[Path, str], output_path: Union[
             number_of_reviews_per_hit = len(review_bodies)
             for worker in range(number_of_workers_per_hit):
                 for review in range(number_of_reviews_per_hit):
-                    inner_annotations = json.loads(data[run_name]["annotationsFromAllWorkers"][worker]["annotationData"]["content"])
-                    annotations = json.loads(inner_annotations["annotations"])["annotations"]
-                    customUsageOptions = json.loads(inner_annotations["annotations"])["customUsageOptions"]
-                    reviews["reviews"].append(data["metadata"][review] | {
-                    "review_body": review_bodies[review],
-                    "label": {
-                        "isFlagged": False,
-                        "annotations": annotations[review],
-                        "customUsageOptions": customUsageOptions[review]
-                    },
-                    "inspectionTime": None})
+                    inner_annotations = json.loads(
+                        data[run_name]["annotationsFromAllWorkers"][worker][
+                            "annotationData"
+                        ]["content"]
+                    )
+                    annotations = json.loads(inner_annotations["annotations"])[
+                        "annotations"
+                    ]
+                    customUsageOptions = json.loads(inner_annotations["annotations"])[
+                        "customUsageOptions"
+                    ]
+                    reviews["reviews"].append(
+                        data["metadata"][review]
+                        | {
+                            "review_body": review_bodies[review],
+                            "label": {
+                                "isFlagged": False,
+                                "annotations": annotations[review],
+                                "customUsageOptions": customUsageOptions[review],
+                            },
+                            "inspectionTime": None,
+                        }
+                    )
         with open(output_path, "w") as output_file:
             json.dump(reviews, output_file)
+
 
 def get_run_name(turker_labels):
     data = json.loads(turker_labels.readline())

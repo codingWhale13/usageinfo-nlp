@@ -57,10 +57,7 @@ def parse_args(context):
         description="Generate a manifest file for a labelling job from a sampled file and our golden file. File format can be either tsv or json."
     )
     context.add_argument(
-        "--sample-file",
-        "-s",
-        required=True,
-        help="Sample tsv file name"
+        "--sample-file", "-s", required=True, help="Sample tsv file name"
     )
     context.add_argument(
         "--golden-file",
@@ -111,8 +108,8 @@ def main():
             sample_json = load_from_json(args.sample_file)
         else:
             raise ValueError(
-                "Expected sample dataset file to be in TSV or JSON format\n",
-                help_text)
+                "Expected sample dataset file to be in TSV or JSON format\n", help_text
+            )
 
         if args.golden_file.endswith(".tsv"):
             golden_json = load_from_tsv(args.golden_file)
@@ -120,8 +117,8 @@ def main():
             golden_json = load_from_json(args.golden_file)
         else:
             raise ValueError(
-                "Expected golden dataset file to be in TSV or JSON format\n",
-                help_text)
+                "Expected golden dataset file to be in TSV or JSON format\n", help_text
+            )
         reviews_per_task = args.reviews_per_task
         num_output_reviews = int(args.number_of_tasks) * int(args.reviews_per_task)
 
@@ -152,21 +149,21 @@ def main():
                         datapoint_metadata[column] = review[column]
                 if args.PRE_LABEL != "none":
                     if args.PRE_LABEL == "existing":
-                        datapoint_metadata[
+                        datapoint_metadata["customUsageOptions"] = review["label"][
                             "customUsageOptions"
-                        ] = review["label"]["customUsageOptions"]
-                        datapoint_metadata["annotations"] = review["label"]["annotations"]
+                        ]
+                        datapoint_metadata["annotations"] = review["label"][
+                            "annotations"
+                        ]
                     else:
                         datapoint_metadata[
                             "customUsageOptions"
                         ] = pre_label_format_manifest(review)
                 metadata.append(datapoint_metadata)
 
-            manifest.append(
-                {"source": json.dumps(source), "metadata": metadata})
+            manifest.append({"source": json.dumps(source), "metadata": metadata})
 
-        json_string_dataset = [json.dumps(
-            row, ensure_ascii=False) for row in manifest]
+        json_string_dataset = [json.dumps(row, ensure_ascii=False) for row in manifest]
         formatted_json_string = "\n".join(json_string_dataset)
 
         with open(

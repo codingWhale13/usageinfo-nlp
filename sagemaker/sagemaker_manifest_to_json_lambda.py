@@ -37,7 +37,7 @@ def extract_json_from_manifest(manifest: io.IOBase, run_name: str = None):
                         "label": {
                             "isFlagged": False,
                             "annotations": annotations[review],
-                            "customUsageOptions": custom_usage_options[review]
+                            "customUsageOptions": custom_usage_options[review],
                         },
                         "workerId": worker_id,
                         "workerInspectionTime": worker_inspection_time,

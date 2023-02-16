@@ -1,6 +1,10 @@
 from evaluation.scoring.core import get_most_similar
 from evaluation.scoring.standard_metrics import bleu_score, sacrebleu_score, rouge_score
-from evaluation.scoring.custom_metrics import custom_f1_score, custom_recall, custom_precision
+from evaluation.scoring.custom_metrics import (
+    custom_f1_score,
+    custom_recall,
+    custom_precision,
+)
 from statistics import mean
 
 DEFAULT_STRING_SIMILARITY = "all-mpnet-base-v2"
@@ -95,7 +99,9 @@ class Metrics:
             if metric_name in self.individual_metrics:
                 for idx, label in enumerate(self.labels):
                     label["scores"][metric_name] = metric_results[idx]
-                scores[metric_name] = mean([label["scores"][metric_name] for label in self.labels])
+                scores[metric_name] = mean(
+                    [label["scores"][metric_name] for label in self.labels]
+                )
             else:
                 scores[metric_name] = metric_results
 

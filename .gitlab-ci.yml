@@ -1,0 +1,15 @@
+.install_dependencies:
+  before_script:
+    - pip install black==22.6.0
+
+stages:
+  - linting
+
+black:
+  extends: .install_dependencies
+  stage: linting
+  image: registry.gitlab.com/mafda/python-linting
+  script:
+    - black --check .
+  only:
+    - merge_requests

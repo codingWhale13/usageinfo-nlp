@@ -12,6 +12,7 @@ no_usage_option_string = "No use cases"
 api_failure_count = 0
 MAX_RETRIES = 10
 
+
 def parse_args():
     arg_parser = argparse.ArgumentParser(
         description="Let an OpenAI model pre-label the reviews in a json file."
@@ -26,8 +27,7 @@ def pre_label(review: json, model: str = "text-davinci-003", prompt: str = None)
     if prompt is not None:
         prompt_with_review = eval('f"""' + prompt + '"""')
     else:
-        prompt_with_review = \
-        f"""This is a review for an E-Commerce product by a customer.
+        prompt_with_review = f"""This is a review for an E-Commerce product by a customer.
 
 {review['review_body']}
 
@@ -51,12 +51,14 @@ Summarize the customer's most important use cases for the product in real life, 
             print(f"Waiting {wait_time} seconds and trying again...")
             time.sleep(wait_time)
     if api_failure_count >= MAX_RETRIES:
-        raise Exception(f"Max openai retry counter of {MAX_RETRIES} exceeded with {api_failure_count} retires")
-                  
-    
+        raise Exception(
+            f"Max openai retry counter of {MAX_RETRIES} exceeded with {api_failure_count} retires"
+        )
 
 
-def pre_label_format_manifest(review: json, model: str = "text-davinci-003", prompt: str = None):
+def pre_label_format_manifest(
+    review: json, model: str = "text-davinci-003", prompt: str = None
+):
     output = pre_label(review, model, prompt)
     labels = []
     for label in output.split(","):
@@ -77,9 +79,7 @@ def main():
         review_json = json.load(file)
 
         for review in review_json["reviews"]:
-            review["label"]["customUsageOptions"] = pre_label_format_manifest(
-                review
-            )
+            review["label"]["customUsageOptions"] = pre_label_format_manifest(review)
 
     output_file_name = (
         os.path.dirname(file_name) + "/pre_labelled_" + os.path.basename(file_name)

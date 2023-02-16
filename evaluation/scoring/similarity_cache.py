@@ -6,7 +6,7 @@ class SimilarityScorer:
     def get(self, string1, string2, comparator=None):
         if comparator is None:
             comparator = self.comparator
-        
+
         similarity_cache_key = self.__get_similarity_key(string1, string2)
         return self.cache[similarity_cache_key]
 
@@ -33,4 +33,3 @@ class SimilarityScorer:
     def __calculate_score(self, string1, string2, comparator=None):
         if comparator is None:
             comparator = self.comparator
-        

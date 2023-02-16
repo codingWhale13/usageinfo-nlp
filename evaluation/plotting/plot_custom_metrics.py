@@ -46,9 +46,13 @@ def kde_plot_precision_vs_recall(
 
     if multi_plot:
         g = sns.FacetGrid(df, col="origin", col_wrap=5)
-        g.map(sns.kdeplot, "custom_recall", "custom_precision", fill=True, alpha=1, cut=0)
+        g.map(
+            sns.kdeplot, "custom_recall", "custom_precision", fill=True, alpha=1, cut=0
+        )
     else:
-        sns.kdeplot(df, x="custom_recall", y="custom_precision", fill=True, alpha=1, cut=0)
+        sns.kdeplot(
+            df, x="custom_recall", y="custom_precision", fill=True, alpha=1, cut=0
+        )
 
     if title is not None:
         plt.title(title)
