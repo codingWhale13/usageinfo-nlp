@@ -9,6 +9,8 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
 no_usage_option_string = "No use cases"
 
+api_failure_count = 0
+MAX_RETRIES = 10
 
 def parse_args():
     arg_parser = argparse.ArgumentParser(
@@ -20,6 +22,7 @@ def parse_args():
 
 
 def pre_label(review: json, model: str = "text-davinci-003", prompt: str = None):
+    global api_failure_count
     if prompt is not None:
         prompt_with_review = eval('f"""' + prompt + '"""')
     else:
@@ -32,25 +35,25 @@ Summarize the customer's most important use cases for the product in real life, 
 
     openai.organization = openai_org_id
     openai.api_key = openai_api_key
-
-    try:
-        completion = openai.Completion.create(
-            engine=model,
-            prompt=prompt_with_review,
-            max_tokens=2048,
-        )
-    except openai.OpenAIError as e:
-        print("WARNING: OpenAI API error: " + str(e))
-        print("Waiting 30 seconds and trying again...")
-        time.sleep(30)
-        completion = openai.Completion.create(
-            engine=model,
-            prompt=prompt_with_review,
-            max_tokens=2048,
-        )
-        print("INFO: Retrying successful.")
-
-    return completion.choices[0].text.strip()
+    while api_failure_count < MAX_RETRIES:
+        try:
+            completion = openai.Completion.create(
+                engine=model,
+                prompt=prompt_with_review,
+                max_tokens=2048,
+            )
+            api_failure_count = 0
+            return completion.choices[0].text.strip()
+        except openai.OpenAIError as e:
+            api_failure_count += 1
+            wait_time = 2**api_failure_count
+            print("WARNING: OpenAI API error: " + str(e))
+            print(f"Waiting {wait_time} seconds and trying again...")
+            time.sleep(wait_time)
+    if api_failure_count >= MAX_RETRIES:
+        raise Exception(f"Max openai retry counter of {MAX_RETRIES} exceeded with {api_failure_count} retires")
+                  
+    
 
 
 def pre_label_format_manifest(review: json, model: str = "text-davinci-003", prompt: str = None):

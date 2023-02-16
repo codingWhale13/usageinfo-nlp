@@ -29,8 +29,8 @@ def human_predictions_to_labels(
     golden_data = extract_reviews_with_usage_options_from_json(ground_truth_path)
 
     labels = []
-    for _, predicted_review in predicted_df.iterrows():
-        golden_review = extract_review_with_id(golden_df, predicted_review.review_id)
+    for _, predicted_review in vendor_data.iterrows():
+        golden_review = extract_review_with_id(golden_data, predicted_review.review_id)
         if golden_review is not None:
             labels.append(
                 {
@@ -44,17 +44,31 @@ def human_predictions_to_labels(
     return labels
 
 
-def gpt_predictions_to_labels(path: Union[Path, str]):
-    labels = []
+def gpt_predictions_to_labels_from_file(path: Union[Path, str]):
     with open(path) as json_file:
         data = json.load(json_file)
-        for review in data["reviews"]:
-            references = review["label"]["customUsageOptions"] + [
-                " ".join(j["tokens"]) for j in review["label"]["annotations"]
-            ]
+        return gpt_predictions_to_labels(data['reviews'])
+        
 
+def gpt_predictions_to_labels(reviews: list, prompt_ids=[]):
+    labels = []
+    for review in reviews:
+        references = review["label"]["customUsageOptions"] + [
+            " ".join(j["tokens"]) for j in review["label"]["annotations"]
+        ]
+        if len(prompt_ids) > 0:
+            for prompt_id in prompt_ids:
+                labels.append(
+                        {
+                            "review_id": review["review_id"],
+                            "references": references,
+                            "predictions": review['label'][prompt_id],
+                            "origin": prompt_id,
+                        }
+                    )
+        else:
             for prompt_id, predictions in review["label"].items():
-                if prompt_id not in ["isFlagged", "annotations", "customUsageOptions"]:
+                if prompt_id not in ["isFlagged", "annotations", "customUsageOptions", "replacementClasses"]:
                     labels.append(
                         {
                             "review_id": review["review_id"],
@@ -64,7 +78,6 @@ def gpt_predictions_to_labels(path: Union[Path, str]):
                         }
                     )
     return labels
-
 
 def get_similarity(
     prediction: str,

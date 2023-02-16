@@ -2,8 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
-from core import gpt_predictions_to_labels
-from metrics import Metrics
+from evaluation.scoring.core import gpt_predictions_to_labels_from_file
+from evaluation.scoring.metrics import Metrics
 
 
 if __name__ == "__main__":
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     base_name = Path(args.predictions).stem
 
     # compute scores
-    labels = gpt_predictions_to_labels(args.predictions)
+    labels = gpt_predictions_to_labels_from_file(args.predictions)
     labels, _ = Metrics(labels).calculate()
 
     # save computed scores to file

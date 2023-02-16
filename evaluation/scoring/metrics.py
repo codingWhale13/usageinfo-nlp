@@ -1,10 +1,10 @@
-from core import get_most_similar
-from standard_scores import bleu_score, sacrebleu_score, rouge_score
-from custom_scores import custom_f1_score, custom_recall, custom_precision
-
+from evaluation.scoring.core import get_most_similar
+from evaluation.scoring.standard_metrics import bleu_score, sacrebleu_score, rouge_score
+from evaluation.scoring.custom_metrics import custom_f1_score, custom_recall, custom_precision
+from statistics import mean
 
 DEFAULT_STRING_SIMILARITY = "all-mpnet-base-v2"
-DEFAULT_AGG = min
+DEFAULT_AGG = mean
 DEFAULT_NLP_THRESHOLD = 0.7
 
 
@@ -95,6 +95,7 @@ class Metrics:
             if metric_name in self.individual_metrics:
                 for idx, label in enumerate(self.labels):
                     label["scores"][metric_name] = metric_results[idx]
+                scores[metric_name] = mean([label["scores"][metric_name] for label in self.labels])
             else:
                 scores[metric_name] = metric_results
 
@@ -148,7 +149,7 @@ class Metrics:
                 predictions=label["predictions"],
                 references=label["references"],
                 string_similiarity=self.string_similiarity,
-                agg=self.agg,
+                agg=mean,
             )
             for label in self.labels
         ]
@@ -159,7 +160,18 @@ class Metrics:
                 predictions=label["predictions"],
                 references=label["references"],
                 string_similiarity=self.string_similiarity,
-                agg=self.agg,
+                agg=mean,
+            )
+            for label in self.labels
+        ]
+
+    def custom_min_precision(self):
+        return [
+            custom_precision(
+                predictions=label["predictions"],
+                references=label["references"],
+                string_similiarity=self.string_similiarity,
+                agg=min,
             )
             for label in self.labels
         ]
@@ -170,7 +182,7 @@ class Metrics:
                 predictions=label["predictions"],
                 references=label["references"],
                 string_similiarity=self.string_similiarity,
-                agg=self.agg,
+                agg=mean,
             )
             for label in self.labels
         ]
@@ -188,28 +200,28 @@ class Metrics:
         )
 
     def rouge1(self):
-        return rouge(
+        return rouge_score(
             prediction=[prediction for prediction in self.labels["predictions"]],
             reference=[reference for reference in self.labels["references"]],
             rouge_score="rouge1",
         )
 
     def rouge2(self):
-        return rouge(
+        return rouge_score(
             prediction=[prediction for prediction in self.labels["predictions"]],
             reference=[reference for reference in self.labels["references"]],
             rouge_score="rouge2",
         )
 
     def rougeL(self):
-        return rouge(
+        return rouge_score(
             prediction=[prediction for prediction in self.labels["predictions"]],
             reference=[reference for reference in self.labels["references"]],
             rouge_score="rougeL",
         )
 
     def rougeLsum(self):
-        return rouge(
+        return rouge_score(
             prediction=[prediction for prediction in self.labels["predictions"]],
             reference=[reference for reference in self.labels["references"]],
             rouge_score="rougeLsum",

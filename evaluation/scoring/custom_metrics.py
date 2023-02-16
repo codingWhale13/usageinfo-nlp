@@ -2,7 +2,7 @@ import itertools
 import os
 from statistics import mean
 
-from core import *
+from evaluation.scoring.core import *
 
 
 def custom_precision(

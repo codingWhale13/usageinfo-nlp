@@ -4,8 +4,8 @@ import os
 import sys
 from pathlib import Path
 
-from core import human_predictions_to_labels
-from metrics import Metrics
+from evaluation.scoring.core import human_predictions_to_labels
+from evaluation.scoring.metrics import Metrics
 
 
 if __name__ == "__main__":

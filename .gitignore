@@ -137,3 +137,8 @@ data/
 # data exploration
 data_exploration/queries/
 data_exploration/test_samples/
+
+node_modules
+build_rate
+.next
+.vercel
