@@ -18,6 +18,7 @@ def parse_args():
         description="Let an OpenAI model pre-label the reviews in a json file."
     )
     arg_parser.add_argument("--file", "-f", required=True, help="json file path")
+    arg_parser.add_argument("--save", "-s", choices=range(1,101), type=int, default=5, help="Make an intermediate save every n percent of processed reviews", metavar="[0-100]")
 
     return arg_parser.parse_args(), arg_parser.format_help()
 
@@ -40,7 +41,7 @@ Summarize the customer's most important use cases for the product in real life, 
             completion = openai.Completion.create(
                 engine=model,
                 prompt=prompt_with_review,
-                max_tokens=2048,
+                max_tokens=200,
             )
             api_failure_count = 0
             return completion.choices[0].text.strip()
@@ -74,19 +75,35 @@ def main():
     args, help_text = parse_args()
 
     file_name = os.path.abspath(args.file)
-
-    with open(file_name, "r") as file:
-        review_json = json.load(file)
-
-        for review in review_json["reviews"]:
-            review["label"]["customUsageOptions"] = pre_label_format_manifest(review)
-
     output_file_name = (
         os.path.dirname(file_name) + "/pre_labelled_" + os.path.basename(file_name)
     )
-    with open(output_file_name, "w") as file:
-        json.dump(review_json, file)
 
+    prompt = "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used as / for\"? by only using information from the review author. In case the review author mentions multiple use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc. Here is the review:\n{review['review_body']}\n"
+
+    with open(file_name, "r") as file:
+        review_json = json.load(file)
+        if type(review_json) is dict:
+            review_json = review_json["reviews"]
+        num_reviews = len(review_json)
+
+        intermediate_save_size = max(1, int(num_reviews * (args.save / 100)))
+
+        labelled_review_json = []
+
+        for count, review in enumerate(review_json):
+            review["label"] = {}
+            review["label"]["customUsageOptions"] = pre_label_format_manifest(review, prompt=prompt)
+            labelled_review_json.append(review)
+
+            if count % intermediate_save_size == 0 and count != 0:
+                with open(output_file_name, "w") as file:
+                    json.dump(labelled_review_json, file)
+                print(f"{count} of {num_reviews} reviews processed. Intermediate results saved.")
+
+        with open(output_file_name, "w") as file:
+            json.dump(labelled_review_json, file)
+        print(f"All reviews processed.")
 
 if __name__ == "__main__":
     main()
