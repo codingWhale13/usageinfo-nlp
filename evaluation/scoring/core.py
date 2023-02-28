@@ -6,7 +6,7 @@ import spacy
 from sentence_transformers import SentenceTransformer, util
 import evaluate
 
-from utils.extract_reviews import extract_reviews_with_usage_options_from_json
+from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
 
 
 # models for string similarity will only be loaded when needed

@@ -57,12 +57,6 @@ class ReviewModel(pl.LightningModule):
                 for param in self.model.lm_head.parameters():
                     param.requires_grad = True
 
-        for param in self.model.named_parameters():
-            print(param[0], param[1].requires_grad)
-
-        for param in self.model.lm_head.parameters():
-            print(param.requires_grad)
-
     def forward(
         self,
         input_ids,

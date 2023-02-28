@@ -1,15 +1,9 @@
-import os
-import sys
 import torch
 from typing import Tuple
 
 from torch.utils.data import Dataset
 
-path = os.path.dirname(os.path.realpath(__file__))
-new_path_split = path.split(os.sep)[:-2] + ["utils"]
-path = os.path.join(os.sep, *new_path_split)
-sys.path.append(path)
-from extract_reviews import extract_reviews_with_usage_options_from_json
+from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
 
 
 class ReviewDataset(Dataset):
