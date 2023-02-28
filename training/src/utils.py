@@ -98,6 +98,13 @@ def get_model_config_from_checkpoint(model_name: str, checkpoint: dict) -> tuple
     return model_config
 
 
+def get_model_config_from_model_name(artifact_name: str, checkpoint) -> tuple:
+    checkpoint = torch.load(
+            get_model_path({"name": artifact_name, "checkpoint": checkpoint}),
+        )
+    return get_model_config_from_checkpoint(checkpoint["model"], checkpoint)
+
+
 def get_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
     return optimizers[optimizer_name]
 
