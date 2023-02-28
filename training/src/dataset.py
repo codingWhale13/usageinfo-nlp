@@ -39,11 +39,14 @@ class ReviewDataset(Dataset):
         df = extract_reviews_with_usage_options_from_json(self.file_location)
         df = df[["product_title", "review_body", "usage_options"]]
         df["input"] = df.apply(
-            lambda x: tokenize(f"{x.product_title} || {x.review_body}", is_input=True),
+            lambda x: tokenize(
+                f"Product title: {x.product_title} \n Review body: {x.review_body}",
+                is_input=True,
+            ),
             axis=1,
         )
         df["target"] = df.usage_options.apply(
-            lambda x: tokenize(f"{' || '.join(x)}", is_input=False)
+            lambda x: tokenize(f"{', '.join(x)}", is_input=False)
         )
         df.dropna(inplace=True)
         self.data = [tuple(row) for row in df[["input", "target"]].to_numpy()]
