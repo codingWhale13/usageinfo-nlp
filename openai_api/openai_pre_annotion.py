@@ -23,7 +23,7 @@ def parse_args():
     return arg_parser.parse_args(), arg_parser.format_help()
 
 
-def pre_label(review: json, model: str = "text-davinci-003", prompt: str = None):
+def pre_label(review: json, model: str = "text-davinci-003", prompt: str = None, logprobs: int=None):
     global api_failure_count
     if prompt is not None:
         prompt_with_review = eval('f"""' + prompt + '"""')
@@ -42,9 +42,15 @@ Summarize the customer's most important use cases for the product in real life, 
                 engine=model,
                 prompt=prompt_with_review,
                 max_tokens=200,
+                logprobs=logprobs,
+                temperature=0.7
             )
             api_failure_count = 0
-            return completion.choices[0].text.strip()
+            text_completion = completion.choices[0].text.strip()
+            if logprobs == None:
+                return text_completion
+            else:
+                return {"text": text_completion, "logprobs": completion.choices[0].logprobs}
         except openai.OpenAIError as e:
             api_failure_count += 1
             wait_time = 2**api_failure_count
@@ -58,19 +64,58 @@ Summarize the customer's most important use cases for the product in real life, 
 
 
 def pre_label_format_manifest(
-    review: json, model: str = "text-davinci-003", prompt: str = None
+    review: json, model: str = "text-davinci-003", prompt: str = None, logprobs: int=None
 ):
-    output = pre_label(review, model, prompt)
+    output = pre_label(review, model, prompt, logprobs=logprobs)
+    if type(output) is str:
+        text_completion = output
+    else:
+        text_completion = output['text']
     labels = []
-    for label in output.split(","):
+    for label in text_completion.split(","):
         if label.strip().startswith(no_usage_option_string):
             break
 
         labels.append(label.strip().strip("."))
+    if logprobs is None:
+        return labels
+    else:
+        return {'usageOptions': labels, "logprobs": output['logprobs']}
 
-    return labels
+def pre_label_with_logprobs(
+    review: json, model: str = "text-davinci-003", prompt: str = None, logprobs: int=5
+):
+   
+    
+    output = pre_label(review, model, prompt, logprobs=logprobs)
+    labels = []
+    logprobs = []
+    current_usage_option = ""
+    current_usage_option_logprob = 0
 
+    def add_new_usage_option(current_usage_option, current_usage_option_logprob):
+        if current_usage_option.strip().startswith(no_usage_option_string):
+            labels.append(None)
+            logprobs.append(current_usage_option_logprob)
+        else:
+            labels.append(current_usage_option.strip().replace('.',''))
+            logprobs.append(current_usage_option_logprob)
 
+        current_usage_option = ""
+        current_usage_option_logprob = 0
+    for token, logprob in zip(output['logprobs']['tokens'], output['logprobs']['token_logprobs']):
+        if token == '\n':
+            continue
+        elif token.strip() == ',':
+            add_new_usage_option(current_usage_option, current_usage_option_logprob)  
+        else:
+            current_usage_option += token
+            current_usage_option_logprob += logprob
+    add_new_usage_option(current_usage_option, current_usage_option_logprob)
+
+    
+    return {'usageOptions': labels, "usageOptionsLogprobs": logprobs, "logprobs": output['logprobs']}
+    
 def main():
     args, help_text = parse_args()
 
