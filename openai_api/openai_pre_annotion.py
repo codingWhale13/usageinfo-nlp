@@ -101,17 +101,19 @@ def pre_label_with_logprobs(
             labels.append(current_usage_option.strip().replace('.',''))
             logprobs.append(current_usage_option_logprob)
 
-        current_usage_option = ""
-        current_usage_option_logprob = 0
     for token, logprob in zip(output['logprobs']['tokens'], output['logprobs']['token_logprobs']):
         if token == '\n':
             continue
         elif token.strip() == ',':
-            add_new_usage_option(current_usage_option, current_usage_option_logprob)  
+            add_new_usage_option(current_usage_option, current_usage_option_logprob)
+            current_usage_option = ""
+            current_usage_option_logprob = 0
         else:
             current_usage_option += token
             current_usage_option_logprob += logprob
     add_new_usage_option(current_usage_option, current_usage_option_logprob)
+    current_usage_option = ""
+    current_usage_option_logprob = 0
 
     
     return {'usageOptions': labels, "usageOptionsLogprobs": logprobs, "logprobs": output['logprobs']}
