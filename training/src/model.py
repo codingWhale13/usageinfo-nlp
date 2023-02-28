@@ -26,8 +26,6 @@ class ReviewModel(pl.LightningModule):
         self.optimizer = optimizer
         self.data = data
         self.hparameters = hparameters
-        self.train_loss = torchmetrics.MeanMetric()
-        self.val_loss = torchmetrics.MeanMetric()
         self.active_layers = active_layers
 
         self.val_dataset, self.train_dataset = self._get_dataset()
@@ -82,10 +80,9 @@ class ReviewModel(pl.LightningModule):
 
     def training_step(self, batch, __):
         loss = self._step(batch)
-        self.train_loss(loss)
         self.log(
             "train_loss",
-            self.train_loss,
+            loss,
             on_step=True,
             prog_bar=True,
             logger=True,
@@ -93,11 +90,12 @@ class ReviewModel(pl.LightningModule):
         )
         return loss
 
-    def training_epoch_end(self, __):
+    def training_epoch_end(self, outputs):
         """Logs the average training loss over the epoch"""
+        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
             "epoch_train_loss",
-            self.train_loss,
+            avg_loss,
             on_epoch=True,
             prog_bar=True,
             logger=True,
@@ -107,10 +105,9 @@ class ReviewModel(pl.LightningModule):
 
     def validation_step(self, batch, __):
         loss = self._step(batch)
-        self.val_loss(loss)
         self.log(
             "val_loss",
-            self.val_loss,
+            loss,
             on_step=True,
             prog_bar=True,
             logger=True,
@@ -118,11 +115,12 @@ class ReviewModel(pl.LightningModule):
         )
         return loss
 
-    def validation_epoch_end(self, __):
+    def validation_epoch_end(self, outputs):
         """Logs the average validation loss over the epoch"""
+        avg_loss = torch.stack(outputs).mean()
         self.log(
             "epoch_val_loss",
-            self.val_loss,
+            avg_loss,
             on_epoch=True,
             prog_bar=True,
             logger=True,
