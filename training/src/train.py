@@ -5,7 +5,8 @@ from lightning import pytorch as pl
 import wandb
 import warnings
 
-import model, utils
+from model import ReviewModel
+import utils
 
 # %%
 wandb.login()
@@ -24,29 +25,18 @@ test_run = config["test_run"]
 del config["cluster"], config["test_run"]
 
 hyperparameters = {
-    key: config["optimizer"][key] for key in ["learning_rate", "weight_decay"]
+    "weight_decay": config["optimizer"]["weight_decay"],
+    "batch_size": config["batch_size"],
+    "max_lr": config["max_lr"],
 }
-hyperparameters["batch_size"] = config["batch_size"]
 dataset_parameters = utils.get_dataset_paths(config["dataset"]["version"])
 dataset_parameters["validation_split"] = config["dataset"]["validation_split"]
 
 # %% Initialization
-model = model.ReviewModel(
-    model=model_config[0],
-    model_name=config["model"],
-    tokenizer=model_config[1],
-    max_length=model_config[2],
-    active_layers=active_layers,
-    optimizer=utils.get_optimizer(config["optimizer"]["name"]),
-    hparameters=hyperparameters,
-    data=dataset_parameters,
-)
-
 if not test_run:
     logger = pl.loggers.WandbLogger(
         project="rlp-t2t", entity="bsc2022-usageinfo", config=config
     )
-
     checkpoint_callback = utils.get_checkpoint_callback(logger)
 
 trainer = pl.Trainer(
@@ -58,6 +48,18 @@ trainer = pl.Trainer(
     accelerator="gpu",
     callbacks=[checkpoint_callback] if not test_run else None,
     logger=logger if not test_run else None,
+)
+
+model = ReviewModel(
+    model=model_config[0],
+    model_name=config["model"],
+    tokenizer=model_config[1],
+    max_length=model_config[2],
+    active_layers=active_layers,
+    optimizer=utils.get_optimizer(config["optimizer"]["name"]),
+    hyperparameters=hyperparameters,
+    data=dataset_parameters,
+    trainer=trainer,
 )
 
 # %% Training

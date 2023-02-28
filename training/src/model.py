@@ -1,7 +1,6 @@
 import torch
 from lightning import pytorch as pl
 from torch.utils.data import DataLoader
-import torchmetrics
 
 import dataset as ds
 
@@ -15,8 +14,9 @@ class ReviewModel(pl.LightningModule):
         tokenizer,
         max_length: int,
         optimizer,
-        hparameters: dict,
+        hyperparameters: dict,
         data: dict,
+        trainer: pl.Trainer,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -25,8 +25,9 @@ class ReviewModel(pl.LightningModule):
         self.max_length = max_length
         self.optimizer = optimizer
         self.data = data
-        self.hparameters = hparameters
+        self.hyperparameters = hyperparameters
         self.active_layers = active_layers
+        self.trainer = trainer
 
         self.val_dataset, self.train_dataset = self._get_dataset()
 
@@ -101,6 +102,14 @@ class ReviewModel(pl.LightningModule):
             logger=True,
             sync_dist=True,
         )
+
+        self.log(
+            "epoch_end_lr",
+            self.lr_scheduler.get_last_lr()[0],
+            on_epoch=True,
+            logger=True,
+            sync_dist=True,
+        )
         torch.cuda.empty_cache()
 
     def validation_step(self, batch, __):
@@ -136,18 +145,21 @@ class ReviewModel(pl.LightningModule):
 
     def configure_optimizers(self):
         # Huggingface recommends this optimizer https://github.com/facebookresearch/fairseq/blob/775122950d145382146e9120308432a9faf9a9b8/fairseq/optim/adafactor.py
-        return [
-            self.optimizer(
-                self.parameters(),
-                lr=self.hparameters["learning_rate"],
-                weight_decay=self.hparameters["weight_decay"],
-            )
-        ]
+        optimizer = self.optimizer(
+            self.parameters(),
+            weight_decay=self.hyperparameters["weight_decay"],
+        )
+        self.lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=self.hyperparameters["max_lr"],
+            total_steps=self.trainer.estimated_stepping_batches,
+        )
+        return [optimizer], [self.lr_scheduler]
 
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset,
-            batch_size=self.hparameters["batch_size"],
+            batch_size=self.hyperparameters["batch_size"],
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             shuffle=True,  # Shuffles the training data every epoch.
             num_workers=2,
@@ -156,7 +168,7 @@ class ReviewModel(pl.LightningModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.hparameters["batch_size"],
+            batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
         )
 
@@ -168,7 +180,7 @@ class ReviewModel(pl.LightningModule):
         )
         return DataLoader(
             test_dataset,
-            batch_size=self.hparameters["batch_size"],
+            batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
         )
 

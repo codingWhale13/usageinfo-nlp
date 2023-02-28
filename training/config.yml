@@ -1,16 +1,16 @@
 model: "t5-small"
-active_layers: "encoder_1 decoder_2 lm_head" #Space seperated components, with number of layers backwards after _. E.g. "encoder_1 decoder_2 lm_head"
+active_layers: "encoder_0 decoder_0 lm_head" #Space seperated components, with number of layers backwards after _. E.g. "encoder_1 decoder_2 lm_head"
 artifact:
   name: #"scintillating-mandu-99"
   checkpoint: #9
-epochs: 1
+epochs: 50
 batch_size: 8
 optimizer: 
   name: "AdamW"
-  learning_rate: 0.01
   weight_decay: 0.01
+max_lr: 0.001
 dataset:
-  version: "pipeline_test"
+  version: "purple-frog-69"
   validation_split: 0.10
 cluster:
   devices: 1 #Number of gpus per node

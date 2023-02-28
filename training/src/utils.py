@@ -1,5 +1,6 @@
 import os
 import glob
+import sys
 import yaml
 from transformers import (
     T5Tokenizer,
@@ -76,6 +77,9 @@ def get_config() -> dict:
     config_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), r"../config.yml"
     )
+    if len(sys.argv) > 1:
+        config_path = sys.argv[1]
+
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
