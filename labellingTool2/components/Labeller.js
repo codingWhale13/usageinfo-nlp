@@ -1,8 +1,9 @@
-import { Button, ButtonGroup, Center, Grid, GridItem } from '@chakra-ui/react';
+import { Button, ButtonGroup, Center, Grid, GridItem, Select } from '@chakra-ui/react';
 import { Review } from './Review';
 import { Feature } from 'flagged';
 import { ProgressBar } from './ProgressBar';
 import { downloadBlob, parseJSONReviews } from '../utils/files';
+import { ANNOTATIONS, CUSTOM_USAGE_OPTIONS } from '../utils/labelKeys';
 const React = require('react');
 const { JSONUpload } = require('./JSONUpload');
 const { Timer } = require('timer-node');
@@ -15,6 +16,7 @@ export class Labeller extends React.Component {
       reviews: props.reviews || [],
       reviewIndex: 0,
       maxReviewIndex: 0,
+      selectedLabelId: null,
     };
   }
 
@@ -24,15 +26,29 @@ export class Labeller extends React.Component {
       reviews: jsonData.reviews,
       reviewIndex: 0,
       maxReviewIndex: jsonData.maxReviewIndex,
+      selectedLabelId: this.defaultLabelId(jsonData.reviews)
     });
     timer.start();
   };
 
+  availableLabelIds = (reviews) => {
+    const availableLabelIds = new Set();
+    reviews = reviews ? reviews : this.state.reviews;
+    reviews.forEach(review => {
+      Object.keys(review.labels).forEach(labelId => availableLabelIds.add(labelId))
+    });
+    return Array.from(availableLabelIds);
+  }
+
+  defaultLabelId = (reviews) => {
+    return this.availableLabelIds(reviews)[0];
+  }
   saveLabel = (key, data) => {
     const reviews = [...this.state.reviews];
-    reviews[this.state.reviewIndex].label[key] = data;
+    reviews[this.state.reviewIndex].labels[this.state.selectedLabelId][key] = data;
     this.setState({ reviews: reviews });
   };
+
 
   exportReviewsToJSON = () => {
     const reviewState = {
@@ -76,6 +92,40 @@ export class Labeller extends React.Component {
     }
     console.log(res);
   }
+
+  convertToInternalLabellingFormat = (review) => {
+    if (this.state.selectedLabelId in review.labels === false) {
+      return null;
+    }
+    const singleLabelReview = structuredClone(review);
+    console.log(this.state.selectedLabelId);
+    singleLabelReview.label = review.labels[this.state.selectedLabelId] || {};
+
+    if (CUSTOM_USAGE_OPTIONS in singleLabelReview.label === false) {
+      singleLabelReview.label[CUSTOM_USAGE_OPTIONS] = [...review.labels[this.state.selectedLabelId].usageOptions];
+    }
+    if (ANNOTATIONS in singleLabelReview.label === false) {
+      singleLabelReview.label[ANNOTATIONS] = [];
+    }
+
+    delete singleLabelReview.labels;
+    return singleLabelReview;
+  }
+
+  filteredReviewsByLabelId = (labelId) => {
+    return this.state.reviews.map((review) => {
+      if (labelId in review.labels) {
+        return review.labels[labelId];
+      }
+      else {
+        return null
+      }
+    });
+  }
+
+  onChangeSelectedLabelId = (e) => {
+    this.setState({ selectedLabelId: e.target.value });
+  }
   render() {
     const reviewLabel =
       this.state.reviews.length &&
@@ -83,7 +133,6 @@ export class Labeller extends React.Component {
         ? this.state.reviews[this.state.reviewIndex]
         : {};
     console.log(this.state, reviewLabel);
-
     const exportButton = (
       <>
         <Button colorScheme="teal" size="lg" onClick={this.exportReviewsToJSON}>
@@ -111,6 +160,14 @@ export class Labeller extends React.Component {
               numberOfReviews={this.state.reviews.length}
               extra={
                 <>
+                  <Select value={this.state.selectedLabelId} onChange={this.onChangeSelectedLabelId}>
+                    {this.availableLabelIds().map((labelId) => (
+                      <option value={labelId} key={labelId}>
+                        {labelId}
+                      </option>
+                    ))}
+
+                  </Select>
                   <Feature name="localLabelling">
                     <ButtonGroup gap="2">{exportButton}</ButtonGroup>
                   </Feature>
@@ -126,7 +183,7 @@ export class Labeller extends React.Component {
             />
 
             <Review
-              review={this.state.reviews[this.state.reviewIndex]}
+              review={this.convertToInternalLabellingFormat(this.state.reviews[this.state.reviewIndex])}
               saveLabel={this.saveLabel}
 
               isPreviousDisabled={this.state.reviewIndex === 0}
