@@ -2,10 +2,11 @@ import random
 import os
 from typing import Union
 from pathlib import Path
+import numpy as np
 import argparse
-
 from utils import get_slurm_client
-from data_loading import read_data, review_data_dtypes
+import pandas as pd
+from data_loading import read_data
 
 
 def parse_args():
@@ -24,8 +25,8 @@ def parse_args():
         "--output-type",
         action="store",
         dest="output_type",
-        choices=["parquet", "tsv"],
-        default="parquet",
+        choices=["parquet", "tsv", "json"],
+        default="json",
         help="output type of the sample, for parquet the sample will be split up into multiple files",
     )
     parser.add_argument(
@@ -38,10 +39,20 @@ def parse_args():
         help="size of the sample",
     )
     parser.add_argument(
+        "-n",
+        "--number-of-samples",
+        action="store",
+        dest="n_samples",
+        default=1,
+        type=int,
+        help="Number of samples",
+    )
+    parser.add_argument(
         "-q",
         "--quiet",
         action="store_true",
         dest="quiet",
+        default=True,
         help="suppress SLURM output",
     )
     parser.add_argument(
@@ -65,6 +76,7 @@ def sample_data(
     data_source: Union[Path, str],
     output_dir: Union[Path, str],
     sample_size: int = 1000,
+    n_samples: int = 1,
     input_type="parquet",
     output_type="tsv",
 ):
@@ -73,11 +85,11 @@ def sample_data(
     if input_type not in ["parquet", "tsv"]:
         raise ValueError(f"input type {input_type} not supported")
 
-    if output_type not in ["parquet", "tsv"]:
+    if output_type not in ["parquet", "tsv", "json"]:
         raise ValueError(f"output type {output_type} not supported")
 
     df = read_data(data_source, input_type)
-
+    dummy_df = pd.DataFrame(columns=df.columns)
     assert (
         "product_category" in df.columns
     ), "`product_category` column must be present in dataframe"
@@ -87,39 +99,52 @@ def sample_data(
 
     total_row_count = df.shape[0].compute()
 
+    sample_size = sample_size * n_samples
     # if we use this fraction from each group, there should be roughly `sample_size` many results
     fraction = sample_size / total_row_count
     print(f"Retrieving {fraction * 100}% of all data")
 
-    sample_df = df.groupby("product_category").apply(
-        lambda x: x.sample(
-            frac=fraction, random_state=sampling_random_state, axis="index"
-        ),
-        meta=review_data_dtypes,
+    all_samples_df = (
+        df.groupby("product_category")
+        .apply(
+            lambda x: x.sample(
+                frac=fraction, random_state=sampling_random_state, axis="index"
+            ),
+            meta=dummy_df,
+        )
+        .compute()
     )
+
+    # shuffel by sampling because you can't shuffle a dataframe. TODO: our seed is not respected here
+    all_samples_df = all_samples_df.sample(frac=1).reset_index(drop=True)
+    samples = np.array_split(all_samples_df, n_samples)
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    base_name = f"sample_{sampling_random_state}"
+    for i in range(len(samples)):
+        base_name = f"sample_{sampling_random_state}-{i}"
+        sample_df = samples[i]
 
-    if output_type == "tsv":
-        return sample_df.compute().to_csv(
-            Path(output_dir, f"{base_name}.tsv"),
-            index=False,
-            mode="w",
-            sep="\t",
-        )
-
-    return sample_df.repartition(partition_size="100MB").to_parquet(
-        output_dir,
-        engine="pyarrow",
-        name_function=lambda i: f"{base_name}_part{i}.parquet",
-    )
+        if output_type == "tsv":
+            sample_df.to_csv(
+                Path(output_dir, f"{base_name}.tsv"),
+                index=False,
+                mode="w",
+                sep="\t",
+            )
+        elif output_type == "json":
+            sample_df.to_json(Path(output_dir, f"{base_name}.json"), orient="records")
+        else:
+            sample_df.repartition(partition_size="100MB").to_parquet(
+                output_dir,
+                engine="pyarrow",
+                name_function=lambda i: f"{base_name}_part{i}.parquet",
+            )
 
 
 def main():
-    args, help_text = parse_args()
+    args, _ = parse_args()
 
     get_slurm_client(
         nodes=5,
@@ -133,6 +158,7 @@ def main():
         data_source=args.input_dir,
         output_dir=args.output_dir,
         sample_size=args.sample_size,
+        n_samples=args.n_samples,
         input_type=args.input_type,
         output_type=args.output_type,
     )
