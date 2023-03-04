@@ -58,11 +58,16 @@ def gpt_predictions_to_labels(reviews: list, prompt_ids=[]):
         ]
         if len(prompt_ids) > 0:
             for prompt_id in prompt_ids:
+                if type(review["label"][prompt_id]) is list:
+                    predictions = review["label"][prompt_id]
+                else:
+                    predictions = review["label"][prompt_id]["usageOptions"]
+                predictions = list(filter(lambda x: x is not None, predictions))
                 labels.append(
                     {
                         "review_id": review["review_id"],
                         "references": references,
-                        "predictions": review["label"][prompt_id],
+                        "predictions": predictions,
                         "origin": prompt_id,
                     }
                 )

@@ -6,7 +6,8 @@ import pandas as pd
 
 from evaluation.scoring.metrics import Metrics
 from evaluation.scoring.core import gpt_predictions_to_labels
-from openai_pre_annotion import pre_label_format_manifest
+from openai_pre_annotion import pre_label_with_logprobs
+from openai_api.openai_smart_pre_annotation import pre_label_with_dynamic_samplling
 
 
 def parse_args():
@@ -39,10 +40,9 @@ def label_with_prompts(reviews, prompt):
             f"No existing OpenAI labels for prompt {prompt['name']} found. Starting api querying..."
         )
         for review in reviews:
-            review["label"][prompt["name"]] = pre_label_format_manifest(
+            review["label"][prompt["name"]] = pre_label_with_logprobs(
                 review, prompt=prompt["prompt"]
             )
-            print(review["label"][prompt["name"]])
     else:
         print(
             f"Existing OpenAI labels for prompt {prompt['name']} found. Skipping api querying..."
@@ -73,11 +73,13 @@ def main():
                 print(f"Skipping prompt: {prompt['name']}")
                 continue
             label_with_prompts(reviews, prompt)
+            print(f"Finished labelling for prompt: {prompt['name']}")
 
             labels = gpt_predictions_to_labels(reviews, prompt_ids=[prompt["name"]])
-
-            _, prompt["score"] = Metrics(labels).calculate()
-
+            review_scores, prompt["score"] = Metrics(labels).calculate()
+            for review_score, review in zip(review_scores, reviews):
+                if review_score["review_id"] == review["review_id"]:
+                    review["label"][prompt["name"]]["scores"] = review_score["scores"]
         output_file_name = (
             os.path.dirname(reviews_file_name)
             + f"/prompt_labelled_"
