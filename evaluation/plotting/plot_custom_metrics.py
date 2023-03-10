@@ -7,8 +7,19 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
+def extract_scores(data: dict, ref_id: str, pred_id: str, metric_name: str):
+    scores = []
+    for review in data["reviews"]:
+        if "scores" in review["labels"][pred_id]["metadata"]:
+            scores.append(
+                review["labels"][pred_id]["metadata"]["scores"][ref_id][metric_name]
+            )
+    return scores
+
+
 def plot_f1(
-    labels: list[dict],
+    scores: list[float],
+    score_name="f1 score",
     title: Optional[str] = None,
     save_path: Union[Path, str] = Path().absolute(),
     base_name: Optional[str] = "",
@@ -16,11 +27,8 @@ def plot_f1(
     sns.set_style("darkgrid")
     plt.clf()
 
-    df = pd.DataFrame(labels)
-    df = pd.concat([df, df["scores"].apply(pd.Series)], axis=1)
     sns.violinplot(
-        data=df,
-        x="custom_f1_score",
+        data=scores,
         cut=0,
     )
 
@@ -28,7 +36,7 @@ def plot_f1(
         plt.title(title)
 
     Path(save_path).mkdir(parents=True, exist_ok=True)
-    plt.savefig(Path(save_path, base_name + "f1.png"))
+    plt.savefig(Path(save_path, base_name + f"_{score_name}.png"))
 
 
 def kde_plot_precision_vs_recall(
@@ -90,10 +98,10 @@ def scatter_plot_precision_vs_recall(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--labels",
-        "-l",
+        "--json",
+        "-j",
         required=True,
-        help="JSON file containing labels in the format described in README",
+        help="JSON file in our format v1",
     )
     parser.add_argument(
         "--multi-plot",
@@ -108,29 +116,27 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open(args.labels) as file:
-        labels = json.load(file)
+    with open(args.json) as file:
+        data = json.load(file)
     multi_plot = args.multi_plot
 
-    # check validity of labels
-    if not (isinstance(labels, list) and isinstance(labels[0], dict)):
-        raise ValueError("labels must be a list of dictionaries")
-    if any("references" not in label for label in labels):
-        raise ValueError("missing 'references' in labels")
-    if any("predictions" not in label for label in labels):
-        raise ValueError("missing 'predictions' in labels")
-    if multi_plot and any("origin" not in label for label in labels):
-        raise ValueError("'origin' must be specified in labels for multi-plot")
+    ref_id = "golden_v2"
+    pred_id = "leo_k"
+    metric_name = "custom_f1_score_min"
+    scores = extract_scores(data, ref_id, pred_id, metric_name)
 
     # set save path to current directory if not specified
     save_path = args.save_path if args.save_path is not None else Path().absolute()
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
     # file name without extension will be the prefix for plot file names
-    base_name = Path(args.labels).stem
+    base_name = Path(args.json).stem
 
     # plot
-    plot_f1(labels=labels, save_path=save_path, base_name=base_name)
+    plot_f1(scores, metric_name, save_path=save_path, base_name=base_name)
+
+    exit()  # other plots not updated yet to our JSON format v1...
+
     kde_plot_precision_vs_recall(
         labels=labels,
         save_path=save_path,
