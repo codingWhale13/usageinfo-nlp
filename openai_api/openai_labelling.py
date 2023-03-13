@@ -8,6 +8,12 @@ import openai
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
 no_usage_option_string = "No use cases"
+chat_models = ["gpt-3.5-turbo", "gpt-3.5-turbo-0301"]
+model_name_mapping = {
+    "text-davinci-003": "davinci",
+    "gpt-3.5-turbo": "chat_gpt",
+    "gpt-3.5-turbo-0301": "chat_gpt",
+}
 
 OPENAI_MAX_RETRIES = 10
 
@@ -97,6 +103,41 @@ def get_labels_from_openai(
     )
 
 
+def get_chat_labels_from_openai(
+    review: json, messages: dict(), model: str, temperature: float
+):
+    def helper(message, review):
+        message = message.copy()
+        message["content"] = eval('f"""' + message["content"] + '"""')
+        return message
+
+    messages = [helper(message, review) for message in messages]
+
+    openai.organization = openai_org_id
+    openai.api_key = openai_api_key
+    api_failure_count = 0
+
+    while api_failure_count < OPENAI_MAX_RETRIES:
+        try:
+            completion = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                max_tokens=1024,
+                temperature=temperature,
+            )
+            api_failure_count = 0
+            return completion.choices[0]
+        except openai.OpenAIError as openai_error:
+            api_failure_count += 1
+            wait_time = 2**api_failure_count
+            print("WARNING: OpenAI API error: " + str(openai_error))
+            print(f"Waiting {wait_time} seconds and trying again...")
+            time.sleep(wait_time)
+    raise Exception(
+        f"Max Oopenai retry counter of {OPENAI_MAX_RETRIES} exceeded with {api_failure_count} retires"
+    )
+
+
 def aggregate_logprobs(output: json):
     logprobs = []
     current_usage_option_logprob = 0
@@ -127,23 +168,30 @@ def format_usageOptions(text_completion: str):
 
 def generate_label(
     review: json,
-    prompt: str,
+    prompt: str | list,
     model: str = "text-davinci-003",
     temperature: float = 1,
     logprobs: int = None,
 ):
-    output = get_labels_from_openai(review, prompt, model, temperature, logprobs)
-
-    usageOptions = format_usageOptions(output.text.strip())
-    usageOptions_logprobs = aggregate_logprobs(output)
     metaData = {
         "openai": {
             "model": model,
             "temperature": temperature,
-            "usageOptions_logporbs": usageOptions_logprobs,
-            "logprobs": output.logprobs,
         }
     }
+    if model in chat_models:
+        output = get_chat_labels_from_openai(review, prompt, model, temperature)
+        usageOptions = format_usageOptions(output.message["content"].strip())
+    else:
+        output = get_labels_from_openai(review, prompt, model, temperature, logprobs)
+        usageOptions = format_usageOptions(output.text.strip())
+        usageOptions_logprobs = aggregate_logprobs(output)
+        metaData["openai"].update(
+            {
+                "logprobs": output.logprobs,
+                "usageOptions_logporbs": usageOptions_logprobs,
+            }
+        )
 
     return {"usageOptions": usageOptions, "metaData": metaData}
 
@@ -173,12 +221,18 @@ def main():
     prompt_name = args.prompt
     with open(prompt_file_name, "r") as prompt_file:
         prompts_json = json.load(prompt_file)
-        if prompt_name not in prompts_json.keys():
-            exit(f"Prompt {prompt_name} not found in {prompt_file_name}.")
-        prompt = prompts_json[prompt_name]["prompt"]
+        prompt_type = "chat" if args.model in chat_models else "text"
+        if prompt_name not in prompts_json[prompt_type].keys():
+            exit(
+                f"Prompt {prompt_name} of type {prompt_type} not found in {prompt_file_name}."
+            )
+        prompt = prompts_json[prompt_type][prompt_name]["prompt"]
 
-    label_id = "davinci-{prompt_name}{hyphen}{id}".format(
-        prompt_name=prompt_name, id=args.id, hyphen="-" if args.id != "" else ""
+    label_id = "{model_name}-{prompt_name}{hyphen}{id}".format(
+        model_name=model_name_mapping[args.model],
+        prompt_name=prompt_name,
+        id=args.id,
+        hyphen="-" if args.id != "" else "",
     )
 
     with open(review_file_name, "r+") as review_file:
