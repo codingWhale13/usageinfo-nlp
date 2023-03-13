@@ -32,6 +32,8 @@ LABEL_ATTRIBUTES = [
 
 
 class ReviewSet:
+    newest_version = 3
+
     def __init__(self, data: dict, source_path: Optional[str] = None):
         self.version = data.get("version")
         self.reviews = data["reviews"]
@@ -71,8 +73,11 @@ class ReviewSet:
     def is_valid(self) -> bool:
         """determine if data is tecorrectly structured"""
 
-        if self.version != 2:
-            return False, "only our JSON format v2 is supported for now"
+        if self.version != self.newest_version:
+            return (
+                False,
+                f"only the newest version ({self.newest_version}) of our JSON format is supported",
+            )
 
         for review_id, review in self.reviews.items():
             if sorted(review.keys()) != sorted(REVIEW_ATTRIBUTES):
@@ -106,10 +111,10 @@ class ReviewSet:
                         False,
                         f"scores of '{label_id}' in review '{review_id}' is not a dict but {type(label['scores'])}",
                     )
-                if not isinstance(label["datasets"], list):
+                if not isinstance(label["datasets"], dict):
                     return (
                         False,
-                        f"datasets of '{label_id}' in review '{review_id}' is not a list but {type(label['datasets'])}",
+                        f"datasets of '{label_id}' in review '{review_id}' is not a dict but {type(label['datasets'])}",
                     )
                 try:
                     datetime.fromisoformat(label["createdAt"])
@@ -136,8 +141,8 @@ class ReviewSet:
         """
 
         assert (
-            self.version == review_set.version == 2
-        ), "expected ReviewSets in v2 format"
+            self.version == review_set.version == self.newest_version
+        ), "expected ReviewSets in newest format"
 
         our_reviews = deepcopy(self.reviews)
         foreign_reviews = deepcopy(review_set.reviews)
@@ -215,12 +220,12 @@ class ReviewSet:
             "createdAt": datetime.now().astimezone().isoformat(),  # using ISO 8601
             "usageOptions": usage_options,
             "scores": {},
-            "datasets": [],
+            "datasets": {},
             "metadata": {},
         }
 
     def get_data(self) -> dict:
-        """get data in correct v2 format"""
+        """get data in correct format of the newest version"""
         result = {
             "version": self.version,
             "reviews": self.reviews,

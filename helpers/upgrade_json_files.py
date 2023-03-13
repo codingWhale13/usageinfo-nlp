@@ -91,6 +91,20 @@ def v1_to_v2(data_v1: dict):
     return data_v2
 
 
+def v2_to_v3(data_v2: dict):
+    """Upgrades a review dictionairy in v2 format to the improved v3 format"""
+
+    data_v3 = {"version": 3, "reviews": data_v2["reviews"]}
+
+    for _, review in data_v3["reviews"].items():
+        for label_id in review["labels"]:
+            review["labels"][label_id]["datasets"] = {
+                dataset: "train" for dataset in review["labels"][label_id]["datasets"]
+            }
+
+    return data_v3
+
+
 def upgrade_json_version(
     old_json_path: Union[str, Path], new_json_path: Union[str, Path], label_id=None
 ):
@@ -105,6 +119,9 @@ def upgrade_json_version(
         )
     if data["version"] == 1:
         data = v1_to_v2(data)
+
+    if data["version"] == 2:
+        data = v2_to_v3(data)
 
     with open(new_json_path, "w") as file:
         json.dump(data, file)
