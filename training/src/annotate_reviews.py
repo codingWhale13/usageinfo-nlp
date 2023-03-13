@@ -2,6 +2,7 @@ import argparse
 import os
 
 from generator import Generator
+import utils
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
@@ -28,6 +29,14 @@ def arg_parse():
         default=None,
         help="Checkpoint to use for prediction (default is last)",
     )
+    parser.add_argument(
+        "-g",
+        "--generation_config",
+        type=str,
+        default="generation_config",
+        help="Generation config to use for prediction",
+    )
+
     return parser.parse_args(), parser.format_help()
 
 
@@ -37,7 +46,10 @@ def main():
     artifact_name = args.artifact_name
     checkpoint = args.checkpoint
 
-    generator = Generator(artifact_name, dataset_version, checkpoint)
+    generation_config = utils.get_config(args.generation_config)
+
+    print("Starging generation...")
+    generator = Generator(artifact_name, dataset_version, checkpoint, generation_config)
     generator.generate()
 
 

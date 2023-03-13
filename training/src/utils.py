@@ -73,13 +73,11 @@ def get_model_path(model_artifact: dict) -> str:
     return os.path.join(model_dirs[0], checkpoint_name)
 
 
-def get_config() -> dict:
+def get_config(name: str) -> dict:
     config_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), r"../config.yml"
+        os.path.dirname(os.path.realpath(__file__)), rf"../{name}.yml"
     )
-    if len(sys.argv) > 1:
-        config_path = sys.argv[1]
-
+    print(f"Loading config from {config_path}")
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 

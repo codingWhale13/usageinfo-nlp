@@ -17,7 +17,7 @@ warnings.filterwarnings(
 )
 
 # %% Config
-config = utils.get_config()
+config = utils.get_config("training_config")
 model_config = utils.get_model_config(config["model"], config["artifact"])
 cluster_config = config["cluster"]
 active_layers = config["active_layers"]

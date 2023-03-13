@@ -6,7 +6,13 @@ import utils
 
 
 class Generator:
-    def __init__(self, artifact_name, dataset_version: str, checkpoint=None) -> None:
+    def __init__(
+        self,
+        artifact_name,
+        dataset_version: str,
+        checkpoint: int,
+        generation_config: dict,
+    ) -> None:
         checkpoint = torch.load(
             utils.get_model_path({"name": artifact_name, "checkpoint": checkpoint})
         )
@@ -27,12 +33,14 @@ class Generator:
             batch_size=8,
             num_workers=2,
         )
+        self.generation_config = generation_config
 
     def generate(self) -> None:
         for batch in self.data_loader:
             output = self.model.generate(
                 input_ids=batch[0]["input_ids"],
                 attention_mask=batch[0]["attention_mask"],
+                **self.generation_config,
             )
             predictions = self.tokenizer.batch_decode(output, skip_special_tokens=True)
             texts = self.tokenizer.batch_decode(
