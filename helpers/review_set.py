@@ -7,7 +7,6 @@ import json
 REVIEW_ATTRIBUTES = [
     "marketplace",
     "customer_id",
-    "review_id",
     "product_id",
     "product_parent",
     "product_title",
@@ -34,13 +33,7 @@ LABEL_ATTRIBUTES = [
 
 class ReviewSet:
     def __init__(self, data: dict, source_path: Optional[str] = None):
-        if "version" not in data.keys():
-            raise ValueError("JSON structure v0 not accepted; please upgrade to v2")
-
-        if data["version"] == 1:
-            raise ValueError("JSON structure v1 not accepted; please upgrade to v2")
-
-        self.version = data["version"]
+        self.version = data.get("version")
         self.reviews = data["reviews"]
 
         valid, error_msg = self.is_valid()
@@ -50,11 +43,17 @@ class ReviewSet:
         self.source_path = source_path
 
     @classmethod
-    def from_file(cls, source_path: Union[str, Path]):
-        with open(source_path) as file:
-            data = json.load(file)
+    def from_files(cls, *source_paths: Union[str, Path]):
+        source_paths = list(source_paths)
+        with open(source_paths.pop(0)) as file:
+            reviews = cls(json.load(file))
 
-        return cls(data, source_path)
+        for path in source_paths:
+            with open(path) as file:
+                reviews2 = cls(json.load(file))
+            reviews.merge(reviews2, allow_new_reviews=True, inplace=True)
+
+        return reviews
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -77,7 +76,10 @@ class ReviewSet:
 
         for review_id, review in self.reviews.items():
             if sorted(review.keys()) != sorted(REVIEW_ATTRIBUTES):
-                return False, f"wrong keys for review '{review_id}': {review.keys()}"
+                return (
+                    False,
+                    f"wrong keys for review '{review_id}': {sorted(review.keys())}\n{sorted(REVIEW_ATTRIBUTES)}",
+                )
 
             if not isinstance(review["labels"], dict):
                 return False, "field 'labels' is not dict"
@@ -87,7 +89,7 @@ class ReviewSet:
                 if sorted(label.keys()) != sorted(LABEL_ATTRIBUTES):
                     return (
                         False,
-                        f"wrong keys for label '{label_id}' in review '{review_id}': {label.keys()}",
+                        f"wrong keys for label '{label_id}' in review '{review_id}': {sorted(label.keys())} \n {sorted(LABEL_ATTRIBUTES)}",
                     )
                 if not isinstance(label["usageOptions"], list):
                     return (
@@ -166,6 +168,7 @@ class ReviewSet:
                                 our_scores = set(our_scores + foreign_score_set)
 
                         # merge datasets
+                        datasets = our_label["datasets"]
                         datasets = set(datasets + foreign_label["datasets"])
 
                         # merge metadata
