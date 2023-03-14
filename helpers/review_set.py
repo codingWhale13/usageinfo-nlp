@@ -1,8 +1,9 @@
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List
 import json
+import random
 
 REVIEW_ATTRIBUTES = [
     "marketplace",
@@ -231,6 +232,85 @@ class ReviewSet:
             "reviews": self.reviews,
         }
         return result
+
+    def drop_review(self, id):
+        return self.reviews.pop(id, None)
+
+    def create_dataset(
+        self, dataset_name, label_id, test_split, contains_usage_split=None, seed=None
+    ):
+        def reduce_reviews(l: List[str], target_num: int):
+            if len(l) < target_num:
+                raise ValueError(
+                    f"Can't reduce list with length {len(l)} to {target_num}"
+                )
+            random.shuffle(l)
+            for id in l[target_num:]:
+                self.drop_review(id)
+            return l[:target_num]
+
+        random.seed(seed)
+
+        contains_usage = []
+        contains_no_usage = []
+
+        for id, _ in self.reviews.items():
+            try:
+                label = self.get_label(id, label_id)
+                label["datasets"][dataset_name] = "train"
+                if len(label["usageOptions"]) == 0:
+                    contains_no_usage.append(id)
+                else:
+                    contains_usage.append(id)
+            except KeyError:
+                self.drop_review(id)
+
+        dataset_length = len(contains_usage) + len(contains_no_usage)
+
+        if contains_usage_split is not None:
+            target_usage_split = (
+                contains_usage_split * (1 - test_split) + 0.5 * test_split
+            )
+            target_no_usage_split = 1 - target_usage_split
+
+            dataset_length = min(
+                len(contains_usage) / target_usage_split,
+                len(contains_no_usage) / target_no_usage_split,
+            )
+
+            contains_usage = reduce_reviews(
+                contains_usage, round(dataset_length * target_usage_split)
+            )
+            contains_no_usage = reduce_reviews(
+                contains_no_usage, round(dataset_length * target_no_usage_split)
+            )
+
+        test_ids = random.sample(
+            contains_usage,
+            round(dataset_length * (test_split * 0.5)),
+        ) + random.sample(
+            contains_no_usage,
+            round(dataset_length * (test_split * 0.5)),
+        )
+
+        for id in test_ids:
+            label = self.get_label(id, label_id)
+            label["datasets"][dataset_name] = "test"
+
+        dataset_length = len(self.reviews)
+        return {
+            "num_test_reviews": len(test_ids),
+            "num_train_reviews": dataset_length - len(test_ids),
+            "test_split": round(len(test_ids) / dataset_length, 3),
+            "train_usage_split": round(
+                len(set(contains_usage) - set(test_ids))
+                / (dataset_length - len(test_ids)),
+                3,
+            ),
+            "test_usage_split": round(
+                len(set(contains_usage) & set(test_ids)) / len(test_ids), 3
+            ),
+        }
 
     def save(self) -> None:
         assert (

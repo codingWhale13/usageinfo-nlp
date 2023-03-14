@@ -1,11 +1,10 @@
 import argparse
-import pandas as pd
 import os
-import json
 import yaml
-import random
 from typing import List
 import glob
+
+from review_set import ReviewSet
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
@@ -17,6 +16,9 @@ def arg_parse():
         "dataset_name",
         type=str,
         help="Name of dataset version",
+    )
+    parser.add_argument(
+        "label_id", type=str, help="Label ID to be used for creating the dataset"
     )
     parser.add_argument(
         "files",
@@ -67,56 +69,19 @@ def create_dataset_dir(name: str):
     return dataset_dir
 
 
-def split_usageinfo_reviews(reviews):
-    reviews_with_usage, reviews_without_usage = [], []
-    for review in reviews:
-        label = review["label"]
-        if label["annotations"] or label["customUsageOptions"]:
-            reviews_with_usage.append(review)
-        else:
-            reviews_without_usage.append(review)
-    return reviews_with_usage, reviews_without_usage
-
-
-def filter_merge_reviews(list1, list2, split):
-    target_number = round((len(list1) / split) * (1 - split))
-    random.shuffle(list2)
-    return list1 + list2[:target_number]
-
-
-def create_dataset(files: List[str], usage_split, test_split: float):
-    train_data = {"reviews": [], "maxReviewIndex": 0}
-    test_data = {"reviews": [], "maxReviewIndex": 0}
-    result = list()
-    for file in files:
-        with open(file, "r") as f:
-            result.extend(json.load(f)["reviews"])
-
-    reviews_with_usage, reviews_without_usage = split_usageinfo_reviews(result)
-
-    result = (
-        filter_merge_reviews(reviews_with_usage, reviews_without_usage, usage_split)
-        if len(reviews_with_usage) / len(result) <= usage_split
-        else filter_merge_reviews(
-            reviews_without_usage, reviews_with_usage, 1 - usage_split
-        )
-    )
-
-    random.shuffle(result)
-    split_index = int(len(result) * (1 - test_split))
-    train_data["reviews"] = result[:split_index]
-    test_data["reviews"] = result[split_index:]
-
-    return train_data, test_data
-
-
-def create_yml(dataset_version, usage_split, test_split, files, dataset_dir):
+def create_yml(
+    dataset_version,
+    label_id,
+    files,
+    dataset_dir,
+    **kwargs,
+):
     dict_args = {
         "version": dataset_version,
-        "usage_split": usage_split if usage_split else "original",
-        "test_split": test_split,
+        "label_id": label_id,
         "files": files,
-    }
+    } | kwargs
+
     with open(os.path.join(dataset_dir, "config.yml"), "w") as file:
         config = yaml.dump(dict_args)
         print(config, end="")
@@ -127,28 +92,28 @@ def main():
     args, _ = arg_parse()
     files = get_all_files(args.files)
     dataset_version = args.dataset_name
-    usage_split = args.usage_split
+    label_id = args.label_id
+    contains_usage_split = args.usage_split
     test_split = args.test_split
     seed = args.seed
 
-    random.seed(seed)
-
     dataset_dir = create_dataset_dir(name=dataset_version)
-    train_data, test_data = create_dataset(
-        files=files, usage_split=usage_split, test_split=test_split
+    reviews = ReviewSet.from_files(*files)
+    actual_ratios = reviews.create_dataset(
+        dataset_name=dataset_version,
+        label_id=label_id,
+        test_split=test_split,
+        contains_usage_split=contains_usage_split,
+        seed=seed,
     )
-    with open(os.path.join(dataset_dir, "train_data.json"), "w") as output_file:
-        json.dump(train_data, output_file)
-
-    with open(os.path.join(dataset_dir, "test_data.json"), "w") as output_file:
-        json.dump(test_data, output_file)
+    reviews.save_as(os.path.join(dataset_dir, "reviews.json"))
 
     create_yml(
         dataset_version=dataset_version,
-        usage_split=usage_split,
-        test_split=test_split,
+        label_id=label_id,
         files=files,
         dataset_dir=dataset_dir,
+        **actual_ratios,
     )
 
 
