@@ -86,6 +86,7 @@ def v1_to_v2(data_v1: dict):
             datasets = review_v2["labels"][label_id]["metadata"].pop("datasets", [])
             review_v2["labels"][label_id]["datasets"] = datasets
             review_v2["labels"][label_id]["createdAt"] = timestamp
+            review_v2["labels"][label_id].pop("source", None)
 
         data_v2["reviews"][review_id] = review_v2
     return data_v2
@@ -101,6 +102,7 @@ def v2_to_v3(data_v2: dict):
             review["labels"][label_id]["datasets"] = {
                 dataset: "train" for dataset in review["labels"][label_id]["datasets"]
             }
+            review["labels"][label_id].pop("source", None)
 
     return data_v3
 
