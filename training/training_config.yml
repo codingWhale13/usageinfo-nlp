@@ -5,7 +5,7 @@ artifact:
   checkpoint: #9
 epochs: 50
 batch_size: 8
-optimizer: 
+optimizer:
   name: "AdamW"
   weight_decay: 0.01
 max_lr: 0.001
