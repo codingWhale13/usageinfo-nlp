@@ -3,10 +3,13 @@ import os
 import yaml
 from typing import List
 import glob
+import dotenv
 
 from review_set import ReviewSet
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
+
+dotenv.load_dotenv()
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
 
 
