@@ -29,7 +29,7 @@ hyperparameters = {
     "batch_size": config["batch_size"],
     "max_lr": config["max_lr"],
 }
-dataset_parameters = utils.get_dataset_paths(config["dataset"]["version"])
+dataset_parameters = {"dataset_name": config["dataset"]["version"]}
 dataset_parameters["validation_split"] = config["dataset"]["validation_split"]
 
 # %% Initialization
@@ -45,7 +45,7 @@ trainer = pl.Trainer(
     num_nodes=cluster_config["num_nodes"],
     deterministic=True,
     max_epochs=config["epochs"],
-    accelerator="gpu",
+    accelerator="auto",
     callbacks=[checkpoint_callback] if not test_run else None,
     logger=logger if not test_run else None,
 )

@@ -43,17 +43,13 @@ optimizers = {
 }
 
 
-def get_dataset_paths(dataset: str) -> dict:
+def get_dataset_path(dataset: str) -> dict:
     dotenv.load_dotenv()
     dataset_dir = os.path.join(
         os.getenv("DATASETS", default=ARTIFACT_PATH + "datasets"), dataset
     )
 
-    dataset_paths = {
-        "train_dataset": os.path.join(dataset_dir, "train_data.json"),
-        "test_dataset": os.path.join(dataset_dir, "test_data.json"),
-    }
-    return dataset_paths
+    return os.path.join(dataset_dir, "reviews.json")
 
 
 def get_model_path(model_artifact: dict) -> str:

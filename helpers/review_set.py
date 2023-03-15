@@ -312,6 +312,37 @@ class ReviewSet:
             ),
         }
 
+    def get_dataset(self, dataset_name):
+        def get_label_for_dataset(review_id, dataset_name):
+            for id, label in self.get_labels(review_id=review_id).items():
+                if dataset_name in label["datasets"]:
+                    return label
+            return None
+
+        train_data = {}
+        test_data = {}
+        data = self.reviews.copy()
+        for id, review in data.items():
+            label = get_label_for_dataset(id, dataset_name)
+            if label is None:
+                continue
+
+            data_point = {
+                "product_title": review["product_title"],
+                "review_body": review["review_body"],
+                "usage_options": label["usageOptions"],
+            }
+            if label["datasets"][dataset_name] == "train":
+                train_data[id] = data_point
+            elif label["datasets"][dataset_name] == "test":
+                test_data[id] = data_point
+            else:
+                raise ValueError(
+                    f"Unknown dataset type {label['datasets'][dataset_name]}"
+                )
+
+        return train_data, test_data
+
     def save(self) -> None:
         assert (
             self.source_path is not None

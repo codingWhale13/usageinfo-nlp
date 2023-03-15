@@ -29,7 +29,7 @@ class ReviewModel(pl.LightningModule):
         self.active_layers = active_layers
         self.trainer = trainer
 
-        self.val_dataset, self.train_dataset = self._get_dataset()
+        self._initialize_datasets()
 
         self._freeze_model()
 
@@ -173,24 +173,21 @@ class ReviewModel(pl.LightningModule):
         )
 
     def test_dataloader(self):
-        test_dataset = ds.ReviewDataset(
-            self.data["test_dataset"],
-            self.tokenizer,
-            max_length=self.max_length,
-        )
         return DataLoader(
-            test_dataset,
+            self.test_dataset,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
         )
 
-    def _get_dataset(self):
-        dataset = ds.ReviewDataset(
-            self.data["train_dataset"],
-            self.tokenizer,
+    def _initialize_datasets(self):
+        train_set, self.test_dataset = ds.ReviewDataset.from_dataset_name(
+            dataset_name=self.data["dataset_name"],
+            tokenizer=self.tokenizer,
             max_length=self.max_length,
         )
-        return dataset.split(self.data["validation_split"])
+        self.train_dataset, self.val_dataset = train_set.split(
+            self.data["validation_split"]
+        )
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint["model"] = self.model_name
