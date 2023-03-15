@@ -142,3 +142,5 @@ node_modules
 build_rate
 .next
 .vercel
+
+openai_samples

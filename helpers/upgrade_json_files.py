@@ -53,8 +53,10 @@ def v0_to_v1(
                 }
             else:
                 review_metadata[key] = review_v0[key]
-
-        review_v1["labels"][label_id]["metadata"][source] = review_metadata
+        if "label" not in review_v0:
+            review_v1["labels"] = {}
+        else:
+            review_v1["labels"][label_id]["metadata"][source] = review_metadata
         data_v1["reviews"].append(review_v1)
 
     return data_v1

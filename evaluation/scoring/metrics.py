@@ -1,16 +1,381 @@
-from evaluation.scoring.core import get_most_similar
+from evaluation.scoring.core import get_most_similar, get_similarity
 from evaluation.scoring.standard_metrics import bleu_score, sacrebleu_score, rouge_score
 from evaluation.scoring.custom_metrics import (
     custom_f1_score,
     custom_recall,
     custom_precision,
     custom_f1_score_ak,
+    custom_precision_ak,
+    custom_recall_ak,
 )
 from statistics import mean
+import math
 
 DEFAULT_STRING_SIMILARITY = "all-mpnet-base-v2"
 DEFAULT_AGG = mean
 DEFAULT_NLP_THRESHOLD = 0.7
+
+
+class NoUseCaseOptions:
+    pass
+
+
+class SingleReviewMetrics:
+    def __init__(
+        self,
+        predictions: list,
+        references: list,
+        string_similarity=DEFAULT_STRING_SIMILARITY,
+    ) -> None:
+        self.predictions = predictions
+        self.references = references
+        self.string_similarity = string_similarity
+
+    @classmethod
+    def from_labels(
+        cls, labels: dict[str, dict], prediction_label_id: str, reference_label_id: str
+    ):
+        return cls(
+            labels[prediction_label_id]["usageOptions"],
+            labels[reference_label_id]["usageOptions"],
+        )
+
+    def calculate(
+        self,
+        metric_names=[
+            "custom_weighted_mean_recall",
+            "custom_weighted_mean_precision",
+            "custom_weighted_mean_f1",
+            "custom_min_precision",
+            "custom_min_recall",
+            "custom_min_f1",
+        ],
+    ) -> dict[str, float]:
+        scores = {}
+
+        for metric_name in metric_names:
+            try:
+                metric_result = getattr(self, metric_name)(
+                    self.predictions, self.references
+                )
+            except ZeroDivisionError:
+                metric_result = math.nan
+            scores[metric_name] = metric_result
+
+        return scores
+
+    def custom_mean_recall(self, pred, ref):
+        return custom_recall(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=mean,
+        )
+
+    def custom_mean_precision(self, pred, ref):
+        return custom_precision(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=mean,
+        )
+
+    def custom_mean_f1(self, pred, ref):
+        return custom_f1_score(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=mean,
+        )
+
+    def custom_min_precision(self, pred, ref):
+        return custom_precision(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=min,
+        )
+
+    def custom_min_recall(self, pred, ref):
+        return custom_recall(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=min,
+        )
+
+    def custom_min_f1(self, pred, ref):
+        return custom_f1_score(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+            agg=min,
+        )
+
+    def custom_weighted_mean_f1(self, pred, ref):
+        return custom_f1_score_ak(
+            predictions=pred,
+            references=ref,
+            string_similiarity=self.string_similarity,
+        )
+
+    def custom_weighted_mean_precision(self, pred, ref):
+        return custom_precision_ak(pred, ref, self.string_similarity, mean)
+
+    def custom_weighted_mean_recall(self, pred, ref):
+        return custom_recall_ak(pred, ref, self.string_similarity, mean)
+
+    def custom_classification_score(
+        self, predictions: list[str], references: list[str]
+    ):
+        THRESHOLD = 0.8
+
+        matches = {reference: [] for reference in references}
+        non_matching_predictions = []
+
+        for prediction in predictions:
+            is_prediction_matched = False
+            for reference in references:
+                similarity = get_similarity(
+                    prediction, reference, self.string_similarity
+                )
+                if similarity >= THRESHOLD:
+                    matches[reference].append(prediction)
+                    is_prediction_matched = True
+            if is_prediction_matched == False:
+                non_matching_predictions.append(prediction)
+
+        print(matches, non_matching_predictions)
+        results = dict.fromkeys(["TP", "FP", "TN", "FN"], 0)
+
+        results["TP"] = sum(
+            [
+                1 if len(matched_predictions) > 0 else 0
+                for matched_predictions in matches.values()
+            ]
+        )
+        results["FP"] = len(non_matching_predictions)
+        results["TN"] = int(len(references) == len(predictions) == 0)
+        results["FN"] = sum(
+            [
+                0 if len(matched_predictions) > 0 else 1
+                for matched_predictions in matches.values()
+            ]
+        )
+
+        return results
+
+    def custom_classification_score_with_negative_class(
+        self, predictions: list[str], references: list[str]
+    ):
+        THRESHOLD = 0.85
+
+        matches = {reference: [] for reference in references}
+        non_matching_predictions = []
+
+        print("Starting")
+        for prediction in predictions:
+            is_prediction_matched = False
+            for reference in references:
+                similarity = get_similarity(
+                    prediction, reference, self.string_similarity
+                )
+                if similarity >= THRESHOLD:
+                    print(similarity, prediction, reference)
+                    matches[reference].append(prediction)
+                    is_prediction_matched = True
+            if is_prediction_matched == False:
+                non_matching_predictions.append(prediction)
+
+        print(matches, non_matching_predictions)
+        results = dict.fromkeys(["TP", "FP", "TN", "FN"], 0)
+
+        results["TN"] = math.inf
+        if len(references) == 0:
+            results["TP"] = int(len(references) == len(predictions) == 0)
+            results["FP"] = len(predictions)
+            results["FN"] = int(len(predictions) > 0)
+            return results
+        else:
+            results["TP"] = sum(
+                [
+                    1 if len(matched_predictions) > 0 else 0
+                    for matched_predictions in matches.values()
+                ]
+            )
+            results["FP"] = len(non_matching_predictions)
+            results["FN"] = sum(
+                [
+                    0 if len(matched_predictions) > 0 else 1
+                    for matched_predictions in matches.values()
+                ]
+            )
+
+            return results
+
+    def custom_symmetric_similarity_classification_score_with_negative_class(
+        self, predictions: list[str], references: list[str]
+    ):
+        best_matching_predictions = dict.fromkeys(references, 0)
+        best_matching_references = dict.fromkeys(predictions, 0)
+
+        print("Starting")
+        results = {}
+        for prediction in predictions:
+            similarity, best_matched_reference = get_most_similar(
+                prediction, references, self.string_similarity
+            )
+            best_matching_references[prediction] = (similarity, best_matched_reference)
+
+        for reference in references:
+            similarity, best_matching_prediction = get_most_similar(
+                reference, predictions, self.string_similarity
+            )
+            best_matching_predictions[reference] = (
+                similarity,
+                best_matching_prediction,
+            )
+
+        if len(references) == 0:
+            if len(predictions) == 0:
+                best_matching_predictions[NoUseCaseOptions] = (1.0, NoUseCaseOptions)
+            else:
+                best_matching_predictions[NoUseCaseOptions] = (0.0, None)
+
+        if len(predictions) == 0:
+            if len(references) == 0:
+                best_matching_references[NoUseCaseOptions] = (1.0, NoUseCaseOptions)
+            else:
+                best_matching_references[NoUseCaseOptions] = (0.0, None)
+
+        print(best_matching_predictions, best_matching_references)
+
+        results = {}
+
+        unique_classes = set(best_matching_predictions.keys()).union(
+            set(best_matching_references.keys())
+        )
+
+        for unique_class in unique_classes:
+            if unique_class in best_matching_predictions:
+                results[unique_class] = {
+                    "TP": best_matching_predictions[unique_class][0],
+                    "FN": 1 - best_matching_predictions[unique_class][0],
+                    "best_match": best_matching_predictions[unique_class][1],
+                }
+            elif unique_class in best_matching_references:
+                results[unique_class] = {
+                    "TP": best_matching_references[unique_class][0],
+                    "FP": 1 - best_matching_references[unique_class][0],
+                    "best:match": best_matching_references[unique_class][1],
+                }
+
+        return results
+
+    def custom_similarity_classification_score_with_negative_class(
+        self, predictions: list[str], references: list[str]
+    ):
+        THRESHOLD = 0.8
+
+        best_matching_predictions = dict.fromkeys(references, 0)
+        best_matching_references = dict.fromkeys(predictions, 0)
+
+        print("Starting")
+        for prediction in predictions:
+            similarity, best_matched_reference = get_most_similar(
+                prediction, references, self.string_similarity
+            )
+            best_matching_references[prediction] = (similarity, best_matched_reference)
+        for reference in references:
+            similarity, best_matching_prediction = get_most_similar(
+                reference, predictions, self.string_similarity
+            )
+            best_matching_predictions[reference] = (
+                similarity,
+                best_matching_prediction,
+            )
+
+        if len(references) == 0:
+            if len(predictions) == 0:
+                best_matching_predictions[NoUseCaseOptions] = (1.0, NoUseCaseOptions)
+            else:
+                best_matching_predictions[NoUseCaseOptions] = (0.0, None)
+
+        if len(predictions) == 0:
+            if len(references) == 0:
+                best_matching_references[NoUseCaseOptions] = (1.0, NoUseCaseOptions)
+            else:
+                best_matching_references[NoUseCaseOptions] = (0.0, None)
+
+        print(best_matching_predictions, best_matching_references)
+
+        results = dict.fromkeys(["TP", "FP", "TN", "FN"], 0)
+
+        # results["TP"] = (
+        #     len(
+        #         [
+        #             similarity
+        #             for similarity, _ in best_matching_predictions.values()
+        #             if similarity >= THRESHOLD
+        #         ]
+        #     ),
+        #     mean(
+        #         [
+        #             (1 - similarity)
+        #             for similarity, _ in best_matching_predictions.values()
+        #             if similarity >= THRESHOLD
+        #         ]
+        #     ),
+        # )
+        # results["FP"] = (
+        #     len(
+        #         [
+        #             similarity
+        #             for similarity, _ in best_matching_references.values()
+        #             if similarity < THRESHOLD
+        #         ]
+        #     ),
+        #     mean(
+        #         [
+        #             (similarity)
+        #             for similarity, _ in best_matching_references.values()
+        #             if similarity < THRESHOLD
+        #         ]
+        #     ),
+        # )
+        # results["FN"] = (
+        #     len(
+        #         [
+        #             similarity
+        #             for similarity, _ in best_matching_predictions.values()
+        #             if similarity < THRESHOLD
+        #         ]
+        #     ),
+        #     mean(
+        #         [
+        #             (similarity)
+        #             for similarity, _ in best_matching_predictions.values()
+        #             if similarity < THRESHOLD
+        #         ]
+        #     ),
+        # )
+        results["TN"] = math.inf
+
+        results["TP"] = (
+            sum(
+                [similarity for similarity, _ in best_matching_predictions.values()]
+                + [similarity for similarity, _ in best_matching_references.values()]
+            )
+            / 2
+        )
+        results["FN"] = sum(
+            [1 - similarity for similarity, _ in best_matching_predictions.values()]
+        )
+        results["FP"] = sum(
+            [1 - similarity for similarity, _ in best_matching_references.values()]
+        )
+
+        return results
 
 
 class Metrics:

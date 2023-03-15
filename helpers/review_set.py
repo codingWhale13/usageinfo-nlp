@@ -4,6 +4,17 @@ from pathlib import Path
 from typing import Union, Optional, List
 import json
 import random
+from evaluation.scoring.metrics import SingleReviewMetrics
+from statistics import mean, variance, quantiles
+
+DEFAULT_METRICS = [
+    "custom_weighted_mean_recall",
+    "custom_weighted_mean_precision",
+    "custom_weighted_mean_f1",
+    "custom_min_precision",
+    "custom_min_recall",
+    "custom_min_f1",
+]
 
 REVIEW_ATTRIBUTES = [
     "marketplace",
@@ -48,8 +59,12 @@ class ReviewSet:
     @classmethod
     def from_files(cls, *source_paths: Union[str, Path]):
         source_paths = list(source_paths)
-        with open(source_paths.pop(0)) as file:
-            reviews = cls(json.load(file))
+        first_source_path = source_paths.pop(0)
+        with open(first_source_path) as file:
+            if len(first_source_path) > 0:
+                reviews = cls(json.load(file), first_source_path)
+            else:
+                reviews = cls(json.load(file))
 
         for path in source_paths:
             with open(path) as file:
@@ -70,6 +85,100 @@ class ReviewSet:
 
     def get_label(self, review_id: str, label_id: str) -> dict:
         return self.get_labels(review_id)[label_id]
+
+    def get_label_ids(self, review_id: str) -> set:
+        return set(self.get_labels(review_id).keys())
+
+    def get_all_label_ids(self) -> set:
+        label_ids = set()
+        for review_id in self.reviews.keys():
+            label_ids.update(self.get_label_ids(review_id))
+        return label_ids
+
+    def get_scores(
+        self, label_id: str, reference_label_id: str, metrics=DEFAULT_METRICS
+    ):
+        individual_scores = [
+            self.get_scores_from_review(
+                review_id, label_id, reference_label_id, metrics=metrics
+            )
+            for review_id in self.reviews_with({label_id, reference_label_id}).keys()
+        ]
+        aggregated_scores = {}
+        available_metrics = individual_scores[0].keys()
+
+        aggregations = {
+            "mean": mean,
+            "variance": variance,
+            "quantiles (n=4)": quantiles,
+        }
+
+        for metric in available_metrics:
+            aggregated_scores[metric] = {}
+            for aggregation_name in aggregations:
+                aggregated_scores[metric][aggregation_name] = aggregations[
+                    aggregation_name
+                ]([scores[metric] for scores in individual_scores])
+        return aggregated_scores
+
+    def get_scores_from_review(
+        self,
+        review_id: str,
+        label_id: str,
+        reference_label_id: str,
+        metrics=DEFAULT_METRICS,
+    ):
+        scores = (
+            self.get_label(review_id, label_id)
+            .get("scores", {})
+            .get(reference_label_id, None)
+        )
+        if scores is None:
+            scores = self.__calculate_metrics(
+                review_id, label_id, reference_label_id, metrics
+            )
+        else:
+            missing_metrics = set(metrics).difference(set(scores.keys()))
+            scores = scores | self.__calculate_metrics(
+                review_id, label_id, reference_label_id, missing_metrics
+            )
+        return scores
+
+    def set_scores(
+        self,
+        review_id: str,
+        label_id: str,
+        reference_label_id: str,
+        scores: dict[str, float],
+    ):
+        self.get_label(review_id, label_id)["scores"][
+            reference_label_id
+        ] = scores | self.get_label(review_id, label_id)["scores"].get(
+            reference_label_id, {}
+        )
+
+    def __calculate_metrics(
+        self,
+        review_id,
+        prediction_label_id,
+        reference_label_id,
+        metrics=DEFAULT_METRICS,
+    ):
+        scores = SingleReviewMetrics.from_labels(
+            self.get_labels(review_id), prediction_label_id, reference_label_id
+        ).calculate(metrics)
+        self.set_scores(review_id, prediction_label_id, reference_label_id, scores)
+        return scores
+
+    def reviews_with(self, label_ids: set):
+        relevant_reviews = {}
+        for review_id, review in self.reviews.items():
+            if label_ids.intersection(self.get_label_ids(review_id)) == label_ids:
+                relevant_reviews[review_id] = review
+        return relevant_reviews
+
+    def __len__(self) -> int:
+        return len(self.reviews)
 
     def is_valid(self) -> bool:
         """determine if data is tecorrectly structured"""
@@ -202,7 +311,11 @@ class ReviewSet:
             return self.from_dict(data)
 
     def add_label(
-        self, review_id: str, label_id: str, usage_options: list[str]
+        self,
+        review_id: str,
+        label_id: str,
+        usage_options: list[str],
+        metadata: dict = {},
     ) -> None:
         """Add a new label to a review
 
@@ -210,6 +323,7 @@ class ReviewSet:
             review_id (str): where we want to add the label
             label_id (str): origin of the label
             usage_options (list[str]): labelled data
+            metadata (dict): optional metadata about the label
         """
 
         assert review_id in self.reviews, f"review '{review_id}' not found"
@@ -222,7 +336,7 @@ class ReviewSet:
             "usageOptions": usage_options,
             "scores": {},
             "datasets": {},
-            "metadata": {},
+            "metadata": metadata,
         }
 
     def get_data(self) -> dict:
@@ -351,5 +465,6 @@ class ReviewSet:
             json.dump(self.get_data(), file)
 
     def save_as(self, path: Union[str, Path]) -> None:
+        self.source_path = path
         with open(path, "w") as file:
             json.dump(self.get_data(), file)
