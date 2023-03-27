@@ -1,108 +1,102 @@
 from copy import deepcopy
-from datetime import datetime
+import functools
 from pathlib import Path
-from typing import Union, Optional, List
+from typing import Union, Optional, Iterator
 import json
 import random
-from evaluation.scoring.metrics import SingleReviewMetrics
 from statistics import mean, variance, quantiles
 
-DEFAULT_METRICS = [
-    "custom_weighted_mean_recall",
-    "custom_weighted_mean_precision",
-    "custom_weighted_mean_f1",
-    "custom_min_precision",
-    "custom_min_recall",
-    "custom_min_f1",
-]
-
-REVIEW_ATTRIBUTES = [
-    "marketplace",
-    "customer_id",
-    "product_id",
-    "product_parent",
-    "product_title",
-    "product_category",
-    "star_rating",
-    "helpful_votes",
-    "total_votes",
-    "vine",
-    "verified_purchase",
-    "review_headline",
-    "review_body",
-    "review_date",
-    "labels",
-]
-
-LABEL_ATTRIBUTES = [
-    "datasets",
-    "createdAt",
-    "metadata",
-    "scores",
-    "usageOptions",
-]
+from scoring import DEFAULT_METRICS
+from review import Review
 
 
 class ReviewSet:
-    newest_version = 3
+    """A ReviewSet object holds a set of reviews and makes them easily accessible.
 
-    def __init__(self, data: dict, source_path: Optional[str] = None):
+    Data can be loaded from and saved to JSON files in the appropriate format.
+    """
+
+    latest_version = 3
+
+    def __init__(self, data: dict, source_path: Optional[str] = None) -> None:
+        """load data and make sure it is structured according to our latest JSON format"""
         self.version = data.get("version")
-        self.reviews = data["reviews"]
+        self.validate_version()
 
-        valid, error_msg = self.is_valid()
-        if not valid:
-            raise ValueError(f"JSON is invalid: {error_msg}")
+        self.reviews = {
+            review_id: Review(review_id=review_id, data=review_data)
+            for review_id, review_data in data["reviews"].items()
+        }
+        self.validate_reviews()
 
         self.source_path = source_path
 
+    def __len__(self) -> int:
+        return len(self.reviews)
+
+    def __contains__(self, obj: Union[str, Review]) -> bool:
+        if isinstance(obj, Review):
+            obj = obj.review_id
+        return obj in self.reviews
+
+    def __iter__(self) -> Iterator[Review]:
+        yield from self.reviews.values()
+
+    def __getitem__(self, review_id: str) -> Review:
+        return self.get_review(review_id)
+
+    def __or__(self, other: "ReviewSet") -> "ReviewSet":
+        return self.merge(other, allow_new_reviews=True, inplace=False)
+
+    def __ior__(self, other: "ReviewSet") -> None:
+        return self.merge(other, allow_new_reviews=True, inplace=True)
+
     @classmethod
-    def from_files(cls, *source_paths: Union[str, Path]):
-        source_paths = list(source_paths)
-        first_source_path = source_paths.pop(0)
-        with open(first_source_path) as file:
-            if len(first_source_path) > 0:
-                reviews = cls(json.load(file), first_source_path)
-            else:
-                reviews = cls(json.load(file))
-
-        for path in source_paths:
-            with open(path) as file:
-                reviews2 = cls(json.load(file))
-            reviews.merge(reviews2, allow_new_reviews=True, inplace=True)
-
-        return reviews
-
-    @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict) -> "ReviewSet":
         return cls(data)
 
-    def get_review(self, review_id: str) -> dict:
+    @classmethod
+    def from_reviews(cls, *reviews: Review) -> "ReviewSet":
+        return cls(
+            {
+                "version": cls.latest_version,
+                "reviews": {review.review_id: review for review in reviews},
+            }
+        )
+
+    @classmethod
+    def from_files(cls, *source_paths: Union[str, Path]) -> "ReviewSet":
+        if len(source_paths) == 0:
+            raise ValueError("Expected at least one source path argument")
+
+        def get_review_set(path: Union[str, Path]):
+            with open(path) as file:
+                return cls(json.load(file))
+
+        review_sets = (get_review_set(path) for path in source_paths)
+
+        return functools.reduce(
+            lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
+        )
+
+    def items(self):
+        return self.reviews.items()
+
+    def get_review(self, review_id: str) -> Review:
         return self.reviews[review_id]
-
-    def get_labels(self, review_id: str) -> dict:
-        return self.get_review(review_id)["labels"]
-
-    def get_label(self, review_id: str, label_id: str) -> dict:
-        return self.get_labels(review_id)[label_id]
-
-    def get_label_ids(self, review_id: str) -> set:
-        return set(self.get_labels(review_id).keys())
 
     def get_all_label_ids(self) -> set:
         label_ids = set()
-        for review_id in self.reviews.keys():
-            label_ids.update(self.get_label_ids(review_id))
+        for review in self:
+            label_ids |= review.get_label_ids()
         return label_ids
 
     def get_scores(
         self, label_id: str, reference_label_id: str, metrics=DEFAULT_METRICS
     ):
         individual_scores = [
-            self.get_scores_from_review(
-                review_id, label_id, reference_label_id, metrics=metrics
-            )
-            for review_id in self.reviews_with({label_id, reference_label_id}).keys()
+            review.get_scores(label_id, reference_label_id, metrics=metrics)
+            for review in self.reviews_with({label_id, reference_label_id})
         ]
         aggregated_scores = {}
         available_metrics = individual_scores[0].keys()
@@ -121,127 +115,32 @@ class ReviewSet:
                 ]([scores[metric] for scores in individual_scores])
         return aggregated_scores
 
-    def get_scores_from_review(
-        self,
-        review_id: str,
-        label_id: str,
-        reference_label_id: str,
-        metrics=DEFAULT_METRICS,
-    ):
-        scores = (
-            self.get_label(review_id, label_id)
-            .get("scores", {})
-            .get(reference_label_id, None)
-        )
-        if scores is None:
-            scores = self.__calculate_metrics(
-                review_id, label_id, reference_label_id, metrics
-            )
-        else:
-            missing_metrics = set(metrics).difference(set(scores.keys()))
-            scores = scores | self.__calculate_metrics(
-                review_id, label_id, reference_label_id, missing_metrics
-            )
-        return scores
-
-    def set_scores(
-        self,
-        review_id: str,
-        label_id: str,
-        reference_label_id: str,
-        scores: dict[str, float],
-    ):
-        self.get_label(review_id, label_id)["scores"][
-            reference_label_id
-        ] = scores | self.get_label(review_id, label_id)["scores"].get(
-            reference_label_id, {}
-        )
-
-    def __calculate_metrics(
-        self,
-        review_id,
-        prediction_label_id,
-        reference_label_id,
-        metrics=DEFAULT_METRICS,
-    ):
-        scores = SingleReviewMetrics.from_labels(
-            self.get_labels(review_id), prediction_label_id, reference_label_id
-        ).calculate(metrics)
-        self.set_scores(review_id, prediction_label_id, reference_label_id, scores)
-        return scores
-
     def reviews_with(self, label_ids: set):
-        relevant_reviews = {}
-        for review_id, review in self.reviews.items():
-            if label_ids.intersection(self.get_label_ids(review_id)) == label_ids:
-                relevant_reviews[review_id] = review
-        return relevant_reviews
+        relevant_reviews = [
+            review for review in self if label_ids <= review.get_label_ids()
+        ]
+        return self.from_reviews(*relevant_reviews)
 
     def __len__(self) -> int:
         return len(self.reviews)
 
-    def is_valid(self) -> bool:
-        """determine if data is tecorrectly structured"""
-
-        if self.version != self.newest_version:
-            return (
-                False,
-                f"only the newest version ({self.newest_version}) of our JSON format is supported",
+    def validate_version(self) -> None:
+        if self.version != self.latest_version:
+            raise ValueError(
+                f"only the latest format (v{self.latest_version})"
+                "of our JSON format is supported"
             )
 
-        for review_id, review in self.reviews.items():
-            if sorted(review.keys()) != sorted(REVIEW_ATTRIBUTES):
-                return (
-                    False,
-                    f"wrong keys for review '{review_id}': {sorted(review.keys())}\n{sorted(REVIEW_ATTRIBUTES)}",
-                )
-
-            if not isinstance(review["labels"], dict):
-                return False, "field 'labels' is not dict"
-            for label_id, label in review["labels"].items():
-                if not isinstance(label, dict):
-                    return False, f"label '{label_id}' is not dict"
-                if sorted(label.keys()) != sorted(LABEL_ATTRIBUTES):
-                    return (
-                        False,
-                        f"wrong keys for label '{label_id}' in review '{review_id}': {sorted(label.keys())} \n {sorted(LABEL_ATTRIBUTES)}",
-                    )
-                if not isinstance(label["usageOptions"], list):
-                    return (
-                        False,
-                        f"usage options of '{label_id}' in review '{review_id}' is not a list but {type(label['usageOptions'])}",
-                    )
-                if not isinstance(label["metadata"], dict):
-                    return (
-                        False,
-                        f"metadata of '{label_id}' in review '{review_id}' is not a dict but {type(label['metadata'])}",
-                    )
-                if not isinstance(label["scores"], dict):
-                    return (
-                        False,
-                        f"scores of '{label_id}' in review '{review_id}' is not a dict but {type(label['scores'])}",
-                    )
-                if not isinstance(label["datasets"], dict):
-                    return (
-                        False,
-                        f"datasets of '{label_id}' in review '{review_id}' is not a dict but {type(label['datasets'])}",
-                    )
-                try:
-                    datetime.fromisoformat(label["createdAt"])
-                except Exception as e:
-                    return (
-                        False,
-                        f"createdAt timestamp of '{label_id}' in review '{review_id}' is not ISO 8601",
-                    )
-
-        return True, ""
+    def validate_reviews(self) -> None:
+        for review in self:
+            review.validate()
 
     def merge(
         self,
         review_set: "ReviewSet",
         allow_new_reviews: bool = False,
         inplace=False,
-    ):
+    ) -> Optional["ReviewSet"]:
         """Merges foreign ReviewSet into this ReviewSet
 
         Args:
@@ -251,133 +150,79 @@ class ReviewSet:
         """
 
         assert (
-            self.version == review_set.version == self.newest_version
-        ), "expected ReviewSets in newest format"
+            self.version == review_set.version == self.latest_version
+        ), f"expected ReviewSets in latest format (v{self.latest_version})"
 
-        our_reviews = deepcopy(self.reviews)
-        foreign_reviews = deepcopy(review_set.reviews)
+        existing_reviews = deepcopy(self.reviews)
+        additional_reviews = deepcopy(review_set.reviews)
 
-        # add labels and metadata that is missing in this object's data
-        for review_id, our_review in our_reviews.items():
-            if review_id in foreign_reviews:
-                for label_id, foreign_label in foreign_reviews[review_id][
-                    "labels"
-                ].items():
-                    if label_id not in our_review["labels"]:
-                        our_review["labels"][label_id] = foreign_label
-                    else:
-                        our_label = our_review["labels"][label_id]
-                        # validate same usage options
-                        assert (
-                            our_label["usageOptions"] == foreign_label["usageOptions"]
-                        ), f"'{label_id}' in '{review_id}' has inconsistent usage options"
+        for review_id, review in additional_reviews.items():
+            if review in existing_reviews:
+                existing_reviews[
+                    review_id
+                ] |= review  # merge labels of existing reviews
+            elif allow_new_reviews:
+                existing_reviews[review_id] = review  # add new reviews
 
-                        # merge scores
-                        for ref_id, foreign_score_set in foreign_label[
-                            "scores"
-                        ].items():
-                            if ref_id not in our_label["scores"]:
-                                our_label["scores"][ref_id] = foreign_score_set
-                            else:
-                                our_scores = our_label["scores"][ref_id]
-                                our_scores = set(our_scores + foreign_score_set)
+        if not inplace:
+            return ReviewSet.from_dict(
+                {"version": self.version, "reviews": existing_reviews}
+            )
 
-                        # merge datasets
-                        datasets = our_label["datasets"]
-                        datasets = set(datasets + foreign_label["datasets"])
-
-                        # merge metadata
-                        our_metadata = our_label["metadata"]
-                        for metadata_id, foreign_metadatum in foreign_label[
-                            "metadata"
-                        ].items():
-                            if metadata_id not in our_metadata:
-                                our_metadata[metadata_id] = foreign_metadatum
-
-        if allow_new_reviews:
-            our_review_ids = our_reviews.keys()
-            for review_id, foreign_review in foreign_reviews.items():
-                if review_id not in our_review_ids:
-                    our_reviews[review_id] = foreign_review
-
-        if inplace:
-            self.reviews = our_reviews
-            return self
-        else:
-            data = {
-                "version": self.version,
-                "reviews": our_reviews,
-            }
-            return self.from_dict(data)
-
-    def add_label(
-        self,
-        review_id: str,
-        label_id: str,
-        usage_options: list[str],
-        metadata: dict = {},
-    ) -> None:
-        """Add a new label to a review
-
-        Args:
-            review_id (str): where we want to add the label
-            label_id (str): origin of the label
-            usage_options (list[str]): labelled data
-            metadata (dict): optional metadata about the label
-        """
-
-        assert review_id in self.reviews, f"review '{review_id}' not found"
-        assert label_id not in self.get_labels(
-            review_id
-        ), f"label '{label_id}' already exists in review '{review_id}'"
-
-        self.reviews[review_id]["labels"][label_id] = {
-            "createdAt": datetime.now().astimezone().isoformat(),  # using ISO 8601
-            "usageOptions": usage_options,
-            "scores": {},
-            "datasets": {},
-            "metadata": metadata,
-        }
+        self.reviews = existing_reviews
 
     def get_data(self) -> dict:
-        """get data in correct format of the newest version"""
+        """get data in correct format of the latest version"""
         result = {
             "version": self.version,
-            "reviews": self.reviews,
+            "reviews": {review_id: review.data for review_id, review in self.items()},
         }
         return result
 
-    def drop_review(self, id):
-        return self.reviews.pop(id, None)
+    def drop_review(self, obj: Union[str, Review], inplace=True) -> Optional[Review]:
+        if isinstance(obj, Review):
+            obj = obj.review_id
+
+        if not inplace:
+            reviews = deepcopy(self.reviews)
+            reviews.pop(obj, None)
+            return ReviewSet.from_dict({"version": self.version, "reviews": reviews})
+
+        self.reviews.pop(obj, None)
 
     def create_dataset(
-        self, dataset_name, label_id, test_split, contains_usage_split=None, seed=None
-    ):
-        def reduce_reviews(l: List[str], target_num: int):
-            if len(l) < target_num:
+        self,
+        dataset_name: str,
+        label_id: str,
+        test_split: float,
+        contains_usage_split: Optional[float] = None,
+        seed: int = None,
+    ) -> dict:
+        def reduce_reviews(reviews: list[Review], target_num: int):
+            if len(reviews) < target_num:
                 raise ValueError(
-                    f"Can't reduce list with length {len(l)} to {target_num}"
+                    f"Can't reduce list with length {len(reviews)} to {target_num}"
                 )
-            random.shuffle(l)
-            for id in l[target_num:]:
-                self.drop_review(id)
-            return l[:target_num]
+            random.shuffle(reviews)
+            for review in reviews[target_num:]:
+                self.drop_review(review)
+            return reviews[:target_num]
 
         random.seed(seed)
 
         contains_usage = []
         contains_no_usage = []
 
-        for id, _ in self.reviews.items():
+        for review in self:
             try:
-                label = self.get_label(id, label_id)
+                label = review.get_label(label_id)
                 label["datasets"][dataset_name] = "train"
                 if len(label["usageOptions"]) == 0:
-                    contains_no_usage.append(id)
+                    contains_no_usage.append(review)
                 else:
-                    contains_usage.append(id)
+                    contains_usage.append(review)
             except KeyError:
-                self.drop_review(id)
+                self.drop_review(review)
 
         dataset_length = len(contains_usage) + len(contains_no_usage)
 
@@ -399,7 +244,7 @@ class ReviewSet:
                 contains_no_usage, round(dataset_length * target_no_usage_split)
             )
 
-        test_ids = random.sample(
+        test_reviews = random.sample(
             contains_usage,
             round(dataset_length * (test_split * 0.5)),
         ) + random.sample(
@@ -407,37 +252,31 @@ class ReviewSet:
             round(dataset_length * (test_split * 0.5)),
         )
 
-        for id in test_ids:
-            label = self.get_label(id, label_id)
+        for review in test_reviews:
+            label = review.get_label(label_id)
             label["datasets"][dataset_name] = "test"
 
-        dataset_length = len(self.reviews)
+        dataset_length = len(self)
         return {
-            "num_test_reviews": len(test_ids),
-            "num_train_reviews": dataset_length - len(test_ids),
-            "test_split": round(len(test_ids) / dataset_length, 3),
+            "num_test_reviews": len(test_reviews),
+            "num_train_reviews": dataset_length - len(test_reviews),
+            "test_split": round(len(test_reviews) / dataset_length, 3),
             "train_usage_split": round(
-                len(set(contains_usage) - set(test_ids))
-                / (dataset_length - len(test_ids)),
+                len(set(contains_usage) - set(test_reviews))
+                / (dataset_length - len(test_reviews)),
                 3,
             ),
             "test_usage_split": round(
-                len(set(contains_usage) & set(test_ids)) / len(test_ids), 3
+                len(set(contains_usage) & set(test_reviews)) / len(test_reviews), 3
             ),
         }
 
-    def get_dataset(self, dataset_name):
-        def get_label_for_dataset(review_id, dataset_name):
-            for id, label in self.get_labels(review_id=review_id).items():
-                if dataset_name in label["datasets"]:
-                    return label
-            return None
-
+    def get_dataset(self, dataset_name: str) -> tuple[dict, dict]:
         train_data = {}
         test_data = {}
         data = self.reviews.copy()
-        for id, review in data.items():
-            label = get_label_for_dataset(id, dataset_name)
+        for review_id, review in data.items():
+            label = review.get_label_for_dataset(dataset_name)
             if label is None:
                 continue
 
@@ -447,9 +286,9 @@ class ReviewSet:
                 "usage_options": label["usageOptions"],
             }
             if label["datasets"][dataset_name] == "train":
-                train_data[id] = data_point
+                train_data[review_id] = data_point
             elif label["datasets"][dataset_name] == "test":
-                test_data[id] = data_point
+                test_data[review_id] = data_point
             else:
                 raise ValueError(
                     f"Unknown dataset type {label['datasets'][dataset_name]}"
@@ -460,7 +299,7 @@ class ReviewSet:
     def save(self) -> None:
         assert (
             self.source_path is not None
-        ), "ReviewSet has no source path; use save_as method instead"
+        ), "ReviewSet has no source path; use 'save_as' method instead"
         with open(self.source_path, "w") as file:
             json.dump(self.get_data(), file)
 
