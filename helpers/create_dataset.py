@@ -41,7 +41,7 @@ def arg_parse():
         "--usage-split",
         type=float,
         default=None,
-        help="Percentage of the data containing usage options (default: original)",
+        help="Percentage of the training/validation data containing usage options (default: original)",
     )
     parser.add_argument(
         "-s",
