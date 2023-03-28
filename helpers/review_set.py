@@ -6,7 +6,6 @@ import json
 import random
 from statistics import mean, variance, quantiles
 
-from evaluation.scoring import DEFAULT_METRICS
 from helpers.review import Review
 
 
@@ -18,15 +17,14 @@ class ReviewSet:
 
     latest_version = 3
 
-    def __init__(self, data: dict, source_path: Optional[str] = None) -> None:
+    def __init__(
+        self, version: str, reviews: dict, source_path: Optional[str] = None
+    ) -> "ReviewSet":
         """load data and make sure it is structured according to our latest JSON format"""
-        self.version = data.get("version")
+        self.version = version
         self.validate_version()
 
-        self.reviews = {
-            review_id: Review(review_id=review_id, data=review_data)
-            for review_id, review_data in data["reviews"].items()
-        }
+        self.reviews = reviews
         self.validate_reviews()
 
         self.source_path = source_path
@@ -53,16 +51,15 @@ class ReviewSet:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ReviewSet":
-        return cls(data)
+        reviews = {
+            review_id: Review(review_id=review_id, data=review_data)
+            for review_id, review_data in data.get("reviews", {}).items()
+        }
+        return cls(data.get("version"), reviews)
 
     @classmethod
     def from_reviews(cls, *reviews: Review) -> "ReviewSet":
-        return cls(
-            {
-                "version": cls.latest_version,
-                "reviews": {review.review_id: review for review in reviews},
-            }
-        )
+        return cls(cls.latest_version, {review.review_id: review for review in reviews})
 
     @classmethod
     def from_files(cls, *source_paths: Union[str, Path]) -> "ReviewSet":
@@ -71,7 +68,7 @@ class ReviewSet:
 
         def get_review_set(path: Union[str, Path]):
             with open(path) as file:
-                return cls(json.load(file))
+                return cls.from_dict(json.load(file))
 
         review_sets = (get_review_set(path) for path in source_paths)
 
@@ -91,9 +88,12 @@ class ReviewSet:
             label_ids |= review.get_label_ids()
         return label_ids
 
-    def get_scores(
-        self, label_id: str, reference_label_id: str, metrics=DEFAULT_METRICS
-    ):
+    def get_scores(self, label_id: str, reference_label_id: str, metrics=None):
+        if metrics is None:
+            from evaluation.scoring import DEFAULT_METRICS
+
+            metrics = DEFAULT_METRICS
+
         individual_scores = [
             review.get_scores(label_id, reference_label_id, metrics=metrics)
             for review in self.reviews_with({label_id, reference_label_id})
@@ -157,7 +157,7 @@ class ReviewSet:
         additional_reviews = deepcopy(review_set.reviews)
 
         for review_id, review in additional_reviews.items():
-            if review in existing_reviews:
+            if review_id in existing_reviews:
                 existing_reviews[
                     review_id
                 ] |= review  # merge labels of existing reviews
@@ -165,9 +165,7 @@ class ReviewSet:
                 existing_reviews[review_id] = review  # add new reviews
 
         if not inplace:
-            return ReviewSet.from_dict(
-                {"version": self.version, "reviews": existing_reviews}
-            )
+            return ReviewSet.from_reviews(*existing_reviews.values())
 
         self.reviews = existing_reviews
 

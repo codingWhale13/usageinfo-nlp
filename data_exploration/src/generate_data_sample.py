@@ -146,7 +146,7 @@ def sample_data(
                 review_data = {
                     k: v
                     for k, v in review_data.items()
-                    if k in list(Review.REVIEW_ATTRIBUTES)
+                    if k in list(Review.review_attributes)
                 }
                 # dump review_data dict at the review_id key
                 json_v3["reviews"][row["review_id"]] = review_data

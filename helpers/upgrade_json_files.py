@@ -3,10 +3,10 @@ from datetime import datetime
 import json
 from typing import Union
 from pathlib import Path
-from review_set import REVIEW_ATTRIBUTES
+from review import Review
 import sys, os
 
-review_fields_other_than_labels = REVIEW_ATTRIBUTES + ["review_id"]
+review_fields_other_than_labels = Review.review_attributes + ["review_id"]
 review_fields_other_than_labels.remove("labels")
 
 

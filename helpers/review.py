@@ -1,12 +1,10 @@
 from copy import deepcopy
 from datetime import datetime
 from typing import Union, Optional
-from evaluation.scoring.metrics import SingleReviewMetrics
-from evaluation.scoring import DEFAULT_METRICS
 
 
 class Review:
-    REVIEW_ATTRIBUTES = {
+    review_attributes = {
         "customer_id",
         "helpful_votes",
         "labels",
@@ -24,7 +22,7 @@ class Review:
         "vine",
     }
 
-    LABEL_ATTRIBUTES = {
+    label_attributes = {
         "createdAt",
         "datasets",
         "metadata",
@@ -44,6 +42,12 @@ class Review:
 
     def __eq__(self, other) -> bool:
         return self.review_id == other.review_id
+
+    def __key(self):
+        return self.review_id
+
+    def __hash__(self):
+        return hash(self.__key())
 
     def __or__(self, other) -> "Review":
         return self.merge_labels(other, inplace=False)
@@ -88,8 +92,13 @@ class Review:
         self,
         label_id: str,
         reference_label_id: str,
-        metric_ids=DEFAULT_METRICS,
+        metric_ids=None,
     ):
+        if metric_ids is None:
+            from evaluation.scoring import DEFAULT_METRICS
+
+            metric_ids = DEFAULT_METRICS
+
         metrics = (
             self.get_label(label_id).get("scores", {}).get(reference_label_id, None)
         )
@@ -121,8 +130,15 @@ class Review:
         self,
         prediction_label_id,
         reference_label_id,
-        metric_ids=DEFAULT_METRICS,
+        metric_ids=None,
     ):
+        if metric_ids is None:
+            from evaluation.scoring import DEFAULT_METRICS
+
+            metric_ids = DEFAULT_METRICS
+
+        from evaluation.scoring.metrics import SingleReviewMetrics
+
         metrics = SingleReviewMetrics.from_labels(
             self.get_labels(), prediction_label_id, reference_label_id
         ).calculate(metric_ids)
@@ -172,10 +188,10 @@ class Review:
         error_msg_prefix = f"encountered error in review '{self.review_id}':"
 
         data_keys_set = set(self.data.keys())
-        if data_keys_set != self.REVIEW_ATTRIBUTES:
+        if data_keys_set != self.review_attributes:
             raise ValueError(
                 f"{error_msg_prefix} wrong attribute names\n"
-                f"got: {data_keys_set}\nexpected: {self.REVIEW_ATTRIBUTES}"
+                f"got: {data_keys_set}\nexpected: {self.review_attributes}"
             )
 
         labels = self.get_labels()
@@ -190,10 +206,10 @@ class Review:
                     f"{error_msg_prefix} label '{label_id}' is not of type dict but {type(label)}"
                 )
             label_keys_set = set(label.keys())
-            if label_keys_set != self.LABEL_ATTRIBUTES:
+            if label_keys_set != self.label_attributes:
                 raise ValueError(
                     f"{error_msg_prefix} wrong keys in label '{label_id}'\n"
-                    f"got: {label_keys_set}\nexpected: {self.LABEL_ATTRIBUTES}",
+                    f"got: {label_keys_set}\nexpected: {self.label_attributes}",
                 )
             if not isinstance(label["usageOptions"], list):
                 raise ValueError(
