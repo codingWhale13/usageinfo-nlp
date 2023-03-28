@@ -149,12 +149,13 @@ class ReviewModel(pl.LightningModule):
             self.parameters(),
             weight_decay=self.hyperparameters["weight_decay"],
         )
-        self.lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             max_lr=self.hyperparameters["max_lr"],
             total_steps=self.trainer.estimated_stepping_batches,
         )
-        return [optimizer], [self.lr_scheduler]
+        self.lr_scheduler = lr_scheduler
+        return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]
 
     def train_dataloader(self):
         return DataLoader(
