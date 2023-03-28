@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Union, Optional
 from evaluation.scoring.metrics import SingleReviewMetrics
-from scoring import DEFAULT_METRICS
+from evaluation.scoring import DEFAULT_METRICS
 
 
 class Review:
@@ -190,10 +190,10 @@ class Review:
                     f"{error_msg_prefix} label '{label_id}' is not of type dict but {type(label)}"
                 )
             label_keys_set = set(label.keys())
-            if label_keys_set != LABEL_ATTRIBUTES:
+            if label_keys_set != self.LABEL_ATTRIBUTES:
                 raise ValueError(
                     f"{error_msg_prefix} wrong keys in label '{label_id}'\n"
-                    f"got: {label_keys_set}\nexpected: {LABEL_ATTRIBUTES}",
+                    f"got: {label_keys_set}\nexpected: {self.LABEL_ATTRIBUTES}",
                 )
             if not isinstance(label["usageOptions"], list):
                 raise ValueError(

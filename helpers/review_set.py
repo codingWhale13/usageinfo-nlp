@@ -6,8 +6,8 @@ import json
 import random
 from statistics import mean, variance, quantiles
 
-from scoring import DEFAULT_METRICS
-from review import Review
+from evaluation.scoring import DEFAULT_METRICS
+from helpers.review import Review
 
 
 class ReviewSet:

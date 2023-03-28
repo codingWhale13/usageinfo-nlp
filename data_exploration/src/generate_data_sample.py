@@ -1,4 +1,5 @@
 import random
+import json
 import os
 from typing import Union
 from pathlib import Path
@@ -7,6 +8,8 @@ import argparse
 from utils import get_slurm_client
 import pandas as pd
 from data_loading import read_data
+from helpers.review import Review
+from helpers.review_set import ReviewSet
 
 
 def parse_args():
@@ -134,7 +137,22 @@ def sample_data(
                 sep="\t",
             )
         elif output_type == "json":
-            sample_df.to_json(Path(output_dir, f"{base_name}.json"), orient="records")
+            # Create empty json to insert Reviews
+            json_v3 = {"version": ReviewSet.latest_version, "reviews": {}}
+            # iterate through all rows to insert data into json
+            for index, row in sample_df.iterrows():
+                review_data = row.to_dict()
+                review_data["labels"] = {}
+                review_data = {
+                    k: v
+                    for k, v in review_data.items()
+                    if k in list(Review.REVIEW_ATTRIBUTES)
+                }
+                # dump review_data dict at the review_id key
+                json_v3["reviews"][row["review_id"]] = review_data
+            with open(Path(output_dir, f"{base_name}.json"), "w") as file:
+                json.dump(json_v3, file)
+
         else:
             sample_df.repartition(partition_size="100MB").to_parquet(
                 output_dir,
