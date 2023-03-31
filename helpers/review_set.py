@@ -18,7 +18,7 @@ class ReviewSet:
     latest_version = 3
 
     def __init__(
-        self, version: str, reviews: dict, source_path: Optional[str] = None
+        self, version: int, reviews: dict, source_path: Optional[str] = None
     ) -> "ReviewSet":
         """load data and make sure it is structured according to our latest JSON format"""
         self.version = version
@@ -49,6 +49,12 @@ class ReviewSet:
     def __ior__(self, other: "ReviewSet") -> None:
         return self.merge(other, allow_new_reviews=True, inplace=True)
 
+    def __copy__(self):
+        return self.from_reviews(*self)
+
+    def __deepcopy__(self, memo):
+        return self.from_reviews(*deepcopy(list(self), memo))
+
     @classmethod
     def from_dict(cls, data: dict) -> "ReviewSet":
         reviews = {
@@ -78,6 +84,12 @@ class ReviewSet:
 
     def items(self):
         return self.reviews.items()
+
+    def add(self, review: Review, add_new=True) -> None:
+        if review in self:
+            self[review.review_id] |= review
+        elif add_new:
+            self.reviews[review.review_id] = review
 
     def get_review(self, review_id: str) -> Review:
         return self.reviews[review_id]
@@ -153,21 +165,15 @@ class ReviewSet:
             self.version == review_set.version == self.latest_version
         ), f"expected ReviewSets in latest format (v{self.latest_version})"
 
-        existing_reviews = deepcopy(self.reviews)
-        additional_reviews = deepcopy(review_set.reviews)
+        existing_reviews = self
+        if not inplace:
+            existing_reviews = deepcopy(self)
 
-        for review_id, review in additional_reviews.items():
-            if review_id in existing_reviews:
-                existing_reviews[
-                    review_id
-                ] |= review  # merge labels of existing reviews
-            elif allow_new_reviews:
-                existing_reviews[review_id] = review  # add new reviews
+        for review in review_set:
+            existing_reviews.add(review, add_new=allow_new_reviews)
 
         if not inplace:
-            return ReviewSet.from_reviews(*existing_reviews.values())
-
-        self.reviews = existing_reviews
+            return existing_reviews
 
     def get_data(self) -> dict:
         """get data in correct format of the latest version"""

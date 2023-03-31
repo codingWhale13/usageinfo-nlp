@@ -55,6 +55,9 @@ class Review:
     def __ior__(self, other) -> None:
         return self.merge_labels(other, inplace=True)
 
+    def __copy__(self):
+        return Review(self.review_id, deepcopy(self.data))
+
     def get_labels(self) -> dict:
         return self.data.get("labels", {})
 
@@ -151,7 +154,9 @@ class Review:
         This method is used to merge labels of the same review into this object.
         """
         assert self == other_review, "cannot merge labels of different reviews"
-        existing_labels = deepcopy(self.get_labels())
+        existing_labels = self.get_labels()
+        if not inplace:
+            existing_labels = deepcopy(existing_labels)
         additional_labels = deepcopy(other_review.get_labels())
 
         for label_id, other_label in additional_labels:
@@ -229,7 +234,7 @@ class Review:
                 )
             try:
                 datetime.fromisoformat(label["createdAt"])
-            except Exception as e:
+            except Exception:
                 raise ValueError(
                     f"{error_msg_prefix} 'createdAt' timestamp in label '{label_id}' is not ISO 8601",
                 )

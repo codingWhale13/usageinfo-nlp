@@ -43,7 +43,7 @@ optimizers = {
 }
 
 
-def get_dataset_path(dataset: str) -> dict:
+def get_dataset_path(dataset: str) -> str:
     dotenv.load_dotenv()
     dataset_dir = os.path.join(
         os.getenv("DATASETS", default=ARTIFACT_PATH + "datasets"), dataset
