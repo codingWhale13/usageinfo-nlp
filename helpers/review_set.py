@@ -1,12 +1,13 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 import functools
 from pathlib import Path
-from typing import Union, Optional, Iterator
+from typing import Union, Optional, Iterator, Callable
 import json
 import random
 from statistics import mean, variance, quantiles
 
 from helpers.review import Review
+import label_selection as ls
 
 
 class ReviewSet:
@@ -54,6 +55,10 @@ class ReviewSet:
 
     def __deepcopy__(self, memo):
         return self.from_reviews(*deepcopy(list(self), memo))
+
+    def __str__(self) -> str:
+        reviews = "{\n" + ",\n".join([str(review) for review in self]) + "}"
+        return f"ReviewSet version {self.version}, reviews: {reviews}"
 
     @classmethod
     def from_dict(cls, data: dict) -> "ReviewSet":
@@ -183,7 +188,9 @@ class ReviewSet:
         }
         return result
 
-    def drop_review(self, obj: Union[str, Review], inplace=True) -> Optional[Review]:
+    def drop_review(
+        self, obj: Union[str, Review], inplace=True
+    ) -> Optional["ReviewSet"]:
         if isinstance(obj, Review):
             obj = obj.review_id
 
@@ -193,6 +200,25 @@ class ReviewSet:
             return ReviewSet.from_dict({"version": self.version, "reviews": reviews})
 
         self.reviews.pop(obj, None)
+
+    def filter(
+        self, filter_function: Callable[[Review], bool], inplace=True
+    ) -> Optional["ReviewSet"]:
+        reviews = self if inplace else deepcopy(self)
+        for review in copy(reviews):
+            if not filter_function(review):
+                reviews.drop_review(review)
+
+        if not inplace:
+            return reviews
+
+    def filter_with_label_strategy(
+        self, selection_strategy: ls.LabelSelectionStrategyInterface, inplace=True
+    ) -> Optional["ReviewSet"]:
+        return self.filter(
+            lambda review: review.get_label_from_strategy(selection_strategy),
+            inplace=inplace,
+        )
 
     def create_dataset(
         self,

@@ -2,6 +2,8 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Union, Optional
 
+import label_selection as ls
+
 
 class Review:
     review_attributes = {
@@ -58,6 +60,9 @@ class Review:
     def __copy__(self):
         return Review(self.review_id, deepcopy(self.data))
 
+    def __str__(self):
+        return f"Review '{self.review_id}'\t-> Label IDs: {list(self.data['labels'].keys())}"
+
     def get_labels(self) -> dict:
         return self.data.get("labels", {})
 
@@ -66,6 +71,13 @@ class Review:
 
     def get_label(self, label_id: str) -> dict:
         return self.get_labels().get(label_id, {})
+
+    def get_label_from_strategy(self, strategy) -> Optional[dict]:
+        if not isinstance(strategy, ls.LabelSelectionStrategyInterface):
+            raise ValueError(
+                f"strategy '{type(strategy)}' doesn't implement LabelSelectionStrategyInterface"
+            )
+        return strategy.retreive_label(self)
 
     def get_label_for_dataset(self, dataset_name):
         for label in self.get_labels().values():
