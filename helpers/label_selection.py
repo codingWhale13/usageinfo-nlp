@@ -2,7 +2,7 @@ import abc
 import fnmatch
 from typing import Optional
 
-from review import Review
+from helpers.review import Review
 
 
 class LabelSelectionStrategyInterface(metaclass=abc.ABCMeta):

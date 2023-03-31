@@ -1,5 +1,6 @@
 from evaluation.scoring.core import get_most_similar, get_similarity
 from evaluation.scoring.standard_metrics import bleu_score, sacrebleu_score, rouge_score
+from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.custom_metrics import (
     custom_f1_score,
     custom_recall,
@@ -42,25 +43,18 @@ class SingleReviewMetrics:
 
     def calculate(
         self,
-        metric_names=[
-            "custom_weighted_mean_recall",
-            "custom_weighted_mean_precision",
-            "custom_weighted_mean_f1",
-            "custom_min_precision",
-            "custom_min_recall",
-            "custom_min_f1",
-        ],
+        metric_ids=DEFAULT_METRICS,
     ) -> dict[str, float]:
         scores = {}
 
-        for metric_name in metric_names:
+        for metric_id in metric_ids:
             try:
-                metric_result = getattr(self, metric_name)(
+                metric_result = getattr(self, metric_id)(
                     self.predictions, self.references
                 )
             except ZeroDivisionError:
                 metric_result = math.nan
-            scores[metric_name] = metric_result
+            scores[metric_id] = metric_result
 
         return scores
 

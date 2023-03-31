@@ -6,15 +6,16 @@ from pathlib import Path
 from review import Review
 import sys, os
 
-review_fields_other_than_labels = Review.review_attributes + ["review_id"]
-review_fields_other_than_labels.remove("labels")
+review_fields_other_than_labels = Review.review_attributes.union(
+    {"review_id"}
+).difference({"labels"})
 
 
 def v0_to_v1(
     data_v0: dict,
     label_id: str,
     source: str = "labellingTool",
-):
+) -> dict:
     """Upgrades a JSON file in "v0" format (pre March 2023) to our more consistent v1 format
 
     Args:
@@ -62,7 +63,7 @@ def v0_to_v1(
     return data_v1
 
 
-def v1_to_v2(data_v1: dict):
+def v1_to_v2(data_v1: dict) -> dict:
     """Upgrades a review dictionairy in v1 format to the improved v2 format"""
 
     timestamp = datetime.now().astimezone().isoformat()  # using ISO 8601
@@ -94,7 +95,7 @@ def v1_to_v2(data_v1: dict):
     return data_v2
 
 
-def v2_to_v3(data_v2: dict):
+def v2_to_v3(data_v2: dict) -> dict:
     """Upgrades a review dictionairy in v2 format to the improved v3 format"""
 
     data_v3 = {"version": 3, "reviews": data_v2["reviews"]}
@@ -111,7 +112,7 @@ def v2_to_v3(data_v2: dict):
 
 def upgrade_json_version(
     old_json_path: Union[str, Path], new_json_path: Union[str, Path], label_id=None
-):
+) -> None:
     with open(old_json_path, "r") as file:
         data = json.load(file)
 

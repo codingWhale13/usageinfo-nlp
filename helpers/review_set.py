@@ -1,13 +1,14 @@
 from copy import copy, deepcopy
 import functools
 from pathlib import Path
-from typing import Union, Optional, Iterator, Callable
+from typing import Union, Optional, Iterator, ItemsView, Callable
 import json
 import random
+from evaluation.scoring import DEFAULT_METRICS
 from statistics import mean, variance, quantiles
 
 from helpers.review import Review
-import label_selection as ls
+import helpers.label_selection as ls
 
 
 class ReviewSet:
@@ -19,7 +20,7 @@ class ReviewSet:
     latest_version = 3
 
     def __init__(
-        self, version: int, reviews: dict, source_path: Optional[str] = None
+        self, version: str, reviews: dict, source_path: Optional[str] = None
     ) -> "ReviewSet":
         """load data and make sure it is structured according to our latest JSON format"""
         self.version = version
@@ -28,10 +29,24 @@ class ReviewSet:
         self.reviews = reviews
         self.validate_reviews()
 
-        self.source_path = source_path
+        self.save_path = None  # will be set in `save_as()`
 
     def __len__(self) -> int:
         return len(self.reviews)
+
+    def __eq__(self, other: "ReviewSet") -> bool:
+        if self.version != other.version:
+            return False
+
+        for review in self:
+            if review not in other:
+                return False
+
+        for review in other:
+            if review not in self:
+                return False
+
+        return True
 
     def __contains__(self, obj: Union[str, Review]) -> bool:
         if isinstance(obj, Review):
@@ -93,7 +108,7 @@ class ReviewSet:
             lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
         )
 
-    def items(self):
+    def items(self) -> ItemsView[str, Review]:
         return self.reviews.items()
 
     def add(self, review: Review, add_new=True) -> None:
@@ -111,41 +126,55 @@ class ReviewSet:
             label_ids |= review.get_label_ids()
         return label_ids
 
-    def get_scores(self, label_id: str, reference_label_id: str, metrics=None):
-        if metrics is None:
-            from evaluation.scoring import DEFAULT_METRICS
+    def score(
+        self,
+        label_id: str,
+        reference_label_id: str,
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ):
+        for review in self.reviews_with({label_id, reference_label_id}):
+            review.score(label_id, reference_label_id, metric_ids)
 
-            metrics = DEFAULT_METRICS
+    def get_scores(
+        self,
+        label_id: str,
+        reference_label_id: str,
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ) -> list[dict[str, float]]:
+        result = []
+        for review in self.reviews_with({label_id, reference_label_id}):
+            result.append(review.get_scores(label_id, reference_label_id, metric_ids))
 
-        individual_scores = [
-            review.get_scores(label_id, reference_label_id, metrics=metrics)
-            for review in self.reviews_with({label_id, reference_label_id})
-        ]
-        aggregated_scores = {}
-        available_metrics = individual_scores[0].keys()
+        return result
 
+    def get_agg_scores(
+        self,
+        label_id: str,
+        reference_label_id: str,
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ) -> dict[str, float]:
+        agg_scores = {}
         aggregations = {
             "mean": mean,
             "variance": variance,
             "quantiles (n=4)": quantiles,
         }
 
-        for metric in available_metrics:
-            aggregated_scores[metric] = {}
-            for aggregation_name in aggregations:
-                aggregated_scores[metric][aggregation_name] = aggregations[
-                    aggregation_name
-                ]([scores[metric] for scores in individual_scores])
-        return aggregated_scores
+        scores_per_review = self.get_scores(label_id, reference_label_id, metric_ids)
+        for metric_id in metric_ids:
+            agg_scores[metric_id] = {}
+            for agg_name, agg_func in aggregations.items():
+                agg_scores[metric_id][agg_name] = agg_func(
+                    [scores[metric_id] for scores in scores_per_review]
+                )
 
-    def reviews_with(self, label_ids: set):
+        return agg_scores
+
+    def reviews_with(self, label_ids: set[str]) -> list[Review]:
         relevant_reviews = [
             review for review in self if label_ids <= review.get_label_ids()
         ]
         return self.from_reviews(*relevant_reviews)
-
-    def __len__(self) -> int:
-        return len(self.reviews)
 
     def validate_version(self) -> None:
         if self.version != self.latest_version:
@@ -339,14 +368,14 @@ class ReviewSet:
 
         return train_data, test_data
 
-    def save(self) -> None:
-        assert (
-            self.source_path is not None
-        ), "ReviewSet has no source path; use 'save_as' method instead"
-        with open(self.source_path, "w") as file:
+    def save_as(self, path: Union[str, Path]) -> None:
+        self.save_path = path
+        with open(path, "w") as file:
             json.dump(self.get_data(), file)
 
-    def save_as(self, path: Union[str, Path]) -> None:
-        self.source_path = path
-        with open(path, "w") as file:
+    def save(self) -> None:
+        assert (
+            self.save_path is not None
+        ), "ReviewSet has no `save_path`; use 'save_as' method instead"
+        with open(self.save_path, "w") as file:
             json.dump(self.get_data(), file)

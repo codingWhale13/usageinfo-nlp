@@ -13,7 +13,7 @@ dotenv.load_dotenv()
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
 
 
-def arg_parse():
+def arg_parse() -> tuple[argparse.Namespace, str]:
     parser = argparse.ArgumentParser(description="Create a new training dataset.")
     parser.add_argument(
         "dataset_name",
@@ -53,7 +53,7 @@ def arg_parse():
     return parser.parse_args(), parser.format_help()
 
 
-def get_all_files(paths: List[str]):
+def get_all_files(paths: list[str]) -> list[str]:
     files = []
     for path in paths:
         files.extend(glob.glob(path))
@@ -78,7 +78,7 @@ def create_yml(
     files,
     dataset_dir,
     **kwargs,
-):
+) -> None:
     dict_args = {
         "name": dataset_name,
         "label_id": label_id,
