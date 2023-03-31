@@ -41,9 +41,6 @@ class ReviewSet:
     def __iter__(self) -> Iterator[Review]:
         yield from self.reviews.values()
 
-    def __getitem__(self, review_id: str) -> Review:
-        return self.get_review(review_id)
-
     def __or__(self, other: "ReviewSet") -> "ReviewSet":
         return self.merge(other, allow_new_reviews=True, inplace=False)
 
@@ -59,6 +56,15 @@ class ReviewSet:
     def __str__(self) -> str:
         reviews = "{\n" + ",\n".join([str(review) for review in self]) + "}"
         return f"ReviewSet version {self.version}, reviews: {reviews}"
+
+    def __getitem__(self, review_id: str) -> Review:
+        return self.reviews[review_id]
+
+    def __delitem__(self, review_id: str):
+        del self.reviews[review_id]
+
+    def __setitem__(self, review_id: str, review: Review):
+        self.reviews[review_id] = review
 
     @classmethod
     def from_dict(cls, data: dict) -> "ReviewSet":
@@ -246,11 +252,17 @@ class ReviewSet:
         for review in self:
             try:
                 label = review.get_label(label_id)
-                label["datasets"][dataset_name] = "train"
+                # when creating a dataset the datasets field in a review will only contain the dataset that is currently being created, same for test
+                label["datasets"] = {dataset_name: "train"}
                 if len(label["usageOptions"]) == 0:
                     contains_no_usage.append(review)
                 else:
                     contains_usage.append(review)
+
+                for label in review.get_label_ids():
+                    if label != label_id:
+                        del review["labels"][label]
+
             except KeyError:
                 self.drop_review(review)
 
@@ -284,9 +296,10 @@ class ReviewSet:
 
         for review in test_reviews:
             label = review.get_label(label_id)
-            label["datasets"][dataset_name] = "test"
+            label["datasets"] = {dataset_name: "test"}
 
         dataset_length = len(self)
+
         return {
             "num_test_reviews": len(test_reviews),
             "num_train_reviews": dataset_length - len(test_reviews),

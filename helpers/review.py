@@ -43,7 +43,10 @@ class Review:
         raise ValueError(f"review '{self.review_id}' does not contain key '{key}'")
 
     def __eq__(self, other) -> bool:
-        return self.review_id == other.review_id
+        if isinstance(other, Review):
+            return self.__key() == other.__key()
+        else:
+            return False
 
     def __key(self):
         return self.review_id

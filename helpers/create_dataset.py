@@ -18,7 +18,7 @@ def arg_parse():
     parser.add_argument(
         "dataset_name",
         type=str,
-        help="Name of dataset version",
+        help="Name of dataset",
     )
     parser.add_argument(
         "label_id", type=str, help="Label ID to be used for creating the dataset"
@@ -60,8 +60,8 @@ def get_all_files(paths: List[str]):
     return files
 
 
-def create_dataset_dir(name: str):
-    dataset_dir = os.path.join(DATASETS_DIR, name)
+def create_dataset_dir(dataset_name: str):
+    dataset_dir = os.path.join(DATASETS_DIR, dataset_name)
     print(f"Creating dataset at {dataset_dir}...")
     if os.path.exists(dataset_dir):
         if input("Dataset already exists. Overwrite? (y/N): ").lower() != "y":
@@ -73,14 +73,14 @@ def create_dataset_dir(name: str):
 
 
 def create_yml(
-    dataset_version,
+    dataset_name,
     label_id,
     files,
     dataset_dir,
     **kwargs,
 ):
     dict_args = {
-        "version": dataset_version,
+        "name": dataset_name,
         "label_id": label_id,
         "files": files,
     } | kwargs
@@ -94,25 +94,26 @@ def create_yml(
 def main():
     args, _ = arg_parse()
     files = get_all_files(args.files)
-    dataset_version = args.dataset_name
+    dataset_name = args.dataset_name
     label_id = args.label_id
     contains_usage_split = args.usage_split
     test_split = args.test_split
     seed = args.seed
 
-    dataset_dir = create_dataset_dir(name=dataset_version)
+    dataset_dir = create_dataset_dir(dataset_name=dataset_name)
     reviews = ReviewSet.from_files(*files)
     actual_ratios = reviews.create_dataset(
-        dataset_name=dataset_version,
+        dataset_name=dataset_name,
         label_id=label_id,
         test_split=test_split,
         contains_usage_split=contains_usage_split,
         seed=seed,
     )
+
     reviews.save_as(os.path.join(dataset_dir, "reviews.json"))
 
     create_yml(
-        dataset_version=dataset_version,
+        dataset_name=dataset_name,
         label_id=label_id,
         files=files,
         dataset_dir=dataset_dir,
