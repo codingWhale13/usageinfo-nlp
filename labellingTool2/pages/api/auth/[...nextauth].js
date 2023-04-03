@@ -8,17 +8,17 @@ export default NextAuth({
   providers: [
     GitHubProvider({
       clientId: process.env.NEXTGITHUB_ID,
-      clientSecret: process.env.NEXTGITHUB_SECRET
-    })
+      clientSecret: process.env.NEXTGITHUB_SECRET,
+    }),
   ],
   callbacks: {
     async signIn({ user, account, profile, email, credentials }) {
       let isAllowedToSignIn = false;
-      if(account.provider === 'github'){
+      if (account.provider === "github") {
         isAllowedToSignIn = ALLOWED_GITHUB_LOGINS.includes(profile.login);
       }
-      
+
       return isAllowedToSignIn;
-    }
-  }
+    },
+  },
 });

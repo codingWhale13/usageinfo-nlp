@@ -32,10 +32,7 @@ import { CustomUsageOptionsEditor } from './Editors/CustomUsageOptionsEditor';
 import { UsageOptionsRatingEditor } from './Editors/UsageOptionsRatingEditor';
 import { getFeatureFlags } from '../featureFlags';
 import { ToggleButton } from './Editors/UsageOptionsRatingEditor';
-import {
-  FaThumbsDown,
-  FaThumbsUp,
-} from 'react-icons/fa';
+import { FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 
 const React = require('react');
 

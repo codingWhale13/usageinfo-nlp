@@ -13,35 +13,35 @@ export function UsageOptionTag({
   onDeleteUsageOption,
   onUpdateUsageOption,
 }) {
+  const formRef = React.createRef();
+  const [value, setValue] = React.useState(usageOption);
+  const handleChange = event => setValue(event.target.value);
 
-    const formRef = React.createRef();
-    const [value, setValue] = React.useState(usageOption)
-    const handleChange = (event) => setValue(event.target.value)
+  const updateUsageOptionSubmission = e => {
+    e.preventDefault();
+    const newCustomUsageOption = e.target.custom_usage_option.value;
+    if (newCustomUsageOption !== usageOption) {
+      onUpdateUsageOption(newCustomUsageOption);
+    }
+  };
 
-    const updateUsageOptionSubmission = (e) => {
-        e.preventDefault();
-        const newCustomUsageOption = e.target.custom_usage_option.value;
-        if (newCustomUsageOption !== usageOption) {
-            onUpdateUsageOption(newCustomUsageOption);
-        }
-      };
-  
   return (
     <form onSubmit={updateUsageOptionSubmission} ref={formRef}>
-    <Tag colorScheme="green" variant='solid' size="sm" p={0}>
-    <InputGroup size="sm">
-        <Input type='text'
+      <Tag colorScheme="green" variant="solid" size="sm" p={0}>
+        <InputGroup size="sm">
+          <Input
+            type="text"
             name="custom_usage_option"
             fontWeight={500}
             value={value}
             onChange={handleChange}
-            onBlur={(e) => setValue(usageOption)}
-            />
-        <InputRightElement
+            onBlur={e => setValue(usageOption)}
+          />
+          <InputRightElement
             children={
               <IconButton
-              m={0}
-              colorScheme={'green'}
+                m={0}
+                colorScheme={'green'}
                 color="black"
                 h="1.5rem"
                 size="xs"
@@ -50,13 +50,14 @@ export function UsageOptionTag({
               ></IconButton>
             }
           />
-    </InputGroup>
-    </Tag>
-    </form>);
+        </InputGroup>
+      </Tag>
+    </form>
+  );
 }
 
 export function CustomUsageOptionFormTag({ onSave }) {
-  const saveNewCustomUsageOption = (e) => {
+  const saveNewCustomUsageOption = e => {
     e.preventDefault();
     const newCustomUsageOption = e.target.custom_usage_option.value;
     if (newCustomUsageOption) {

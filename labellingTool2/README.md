@@ -9,6 +9,8 @@ npm install --legacy-peer-deps
 npm start
 ```
 
+Or alternatively: `npm run dev`
+
 ## Available Scripts
 
 In the project directory, you can run:

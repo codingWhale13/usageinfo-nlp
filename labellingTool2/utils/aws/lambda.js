@@ -1,5 +1,8 @@
-import { LambdaClient, AddLayerVersionPermissionCommand } from "@aws-sdk/client-lambda";
+import {
+  LambdaClient,
+  AddLayerVersionPermissionCommand,
+} from "@aws-sdk/client-lambda";
 
 module.exports.init = function () {
-    const client = new LambdaClient({ region: "REGION" });
-  };
+  const client = new LambdaClient({ region: "REGION" });
+};

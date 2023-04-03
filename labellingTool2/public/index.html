@@ -33,7 +33,9 @@
     <script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
 
     <div id="source" style="display: none">{{ task.input.source }}</div>
-    <div id="metadata" style="display: none">{{ task.input.metadata | to_json }}</div>
+    <div id="metadata" style="display: none">
+      {{ task.input.metadata | to_json }}
+    </div>
 
     <crowd-form>
       <input name="annotations" id="annotations" type="hidden" />
@@ -41,16 +43,14 @@
       <!-- Prevent crowd-form from creating its own button -->
       <crowd-button form-action="submit" style="display: none"></crowd-button>
     </crowd-form>
-    <div id="root">
-
-    </div>
+    <div id="root"></div>
 
     <!-- Custom annotation user interface is rendered here -->
 
     <script>
-      document.querySelector('crowd-form').onsubmit = function () {
-        document.getElementById('annotations').value = JSON.stringify(
-          JSON.parse(document.querySelector('pre').innerText)
+      document.querySelector("crowd-form").onsubmit = function () {
+        document.getElementById("annotations").value = JSON.stringify(
+          JSON.parse(document.querySelector("pre").innerText)
         );
       };
     </script>

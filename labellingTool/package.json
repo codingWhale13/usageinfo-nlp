@@ -37,12 +37,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy_to_s3_annotate": "aws s3 sync build_annotate/ s3://bsc2022-usageinfo-labelling-tool --acl public-read",
-    "deploy_to_s3_rate" : "aws s3 sync build_rate/ s3://bsc2022-usageinfo-labelling-tool-ratings --acl public-read",
+    "deploy_to_s3_rate": "aws s3 sync build_rate/ s3://bsc2022-usageinfo-labelling-tool-ratings --acl public-read",
     "build_sagemaker_annotate": "PUBLIC_URL=https://bsc2022-usageinfo-labelling-tool.s3.eu-central-1.amazonaws.com/ REACT_APP_MTURK=1 BUILD_PATH=./build_annotate npm run build",
     "build_sagemaker_rate": "PUBLIC_URL=https://bsc2022-usageinfo-labelling-tool-ratings.s3.eu-central-1.amazonaws.com/ REACT_APP_MTURK=1 REACT_APP_RATE=1 BUILD_PATH=./build_rate npm run build",
     "deploy_sagemaker_annotate": "npm run build_sagemaker_annotate && npm run deploy_to_s3_annotate",
     "deploy_sagemaker_rate": "npm run build_sagemaker_rate && npm run deploy_to_s3_rate"
-
   },
   "eslintConfig": {
     "extends": "react-app"

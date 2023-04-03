@@ -6,15 +6,19 @@ import {
   CardBody,
   CardFooter,
   Button,
-  ButtonGroup
-} from '@chakra-ui/react';
-import { FaThumbsUp, FaThumbsDown, FaQuestionCircle } from 'react-icons/fa';
+  ButtonGroup,
+} from "@chakra-ui/react";
+import { FaThumbsUp, FaThumbsDown, FaQuestionCircle } from "react-icons/fa";
 import {
   PREDICTED_USAGE_OPTIONS,
   PREDICTED_USAGE_OPTIONS_VOTE,
-} from '../../utils/labelKeys';
+} from "../../utils/labelKeys";
 
-import { GOOD_VOTE, BAD_VOTE, QUESTION_VOTE } from '../../utils/voteDefinitions';
+import {
+  GOOD_VOTE,
+  BAD_VOTE,
+  QUESTION_VOTE,
+} from "../../utils/voteDefinitions";
 function updateArrayAtIndex(list, index, newValue) {
   const newList = [...list];
   newList[index] = newValue;
@@ -25,8 +29,6 @@ function updateArrayAtIndexAtKey(array, index, key, newValue) {
   return updateArrayAtIndex(array, index, { ...array[index], [key]: newValue });
 }
 
-
-
 export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
   return (
     <Wrap spacing={2} pt="2">
@@ -35,7 +37,12 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
       </Heading>
 
       {predictedUsageOptions.map(({ label, vote }, i) => (
-        <Card maxW="100%" variant="outline" sx={{ '--card-padding': '0.5rem' }} key={({ label, vote }, i)}>
+        <Card
+          maxW="100%"
+          variant="outline"
+          sx={{ "--card-padding": "0.5rem" }}
+          key={({ label, vote }, i)}
+        >
           <CardBody>
             <Text>{label}</Text>
           </CardBody>
@@ -44,18 +51,18 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
             justify="space-between"
             flexWrap="wrap"
             sx={{
-              '& > button': {
-                minW: '136px',
+              "& > button": {
+                minW: "136px",
               },
             }}
           >
-            <ButtonGroup direction='row' spacing={3} align='center' size={"md"}>
+            <ButtonGroup direction="row" spacing={3} align="center" size={"md"}>
               <ToggleButton
-                text={'Upvote'}
+                text={"Upvote"}
                 isOn={vote === GOOD_VOTE}
-                onColor={'green'}
+                onColor={"green"}
                 leftIcon={<FaThumbsUp />}
-                onClick={e =>
+                onClick={(e) =>
                   saveLabel(
                     PREDICTED_USAGE_OPTIONS,
                     updateArrayAtIndexAtKey(
@@ -70,9 +77,9 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
 
               <ToggleButton
                 isOn={vote === QUESTION_VOTE}
-                onColor={'yellow'}
+                onColor={"yellow"}
                 text={<FaQuestionCircle />}
-                onClick={e =>
+                onClick={(e) =>
                   saveLabel(
                     PREDICTED_USAGE_OPTIONS,
                     updateArrayAtIndexAtKey(
@@ -86,11 +93,11 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
               />
 
               <ToggleButton
-                text={'Downvote'}
+                text={"Downvote"}
                 isOn={vote === BAD_VOTE}
-                onColor={'red'}
+                onColor={"red"}
                 leftIcon={<FaThumbsDown />}
-                onClick={e =>
+                onClick={(e) =>
                   saveLabel(
                     PREDICTED_USAGE_OPTIONS,
                     updateArrayAtIndexAtKey(

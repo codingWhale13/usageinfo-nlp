@@ -1,4 +1,4 @@
-const { Box } = require('@chakra-ui/react');
+const { Box } = require("@chakra-ui/react");
 
 export function CustomCard(props) {
   return (

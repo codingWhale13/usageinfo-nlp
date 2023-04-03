@@ -1,11 +1,11 @@
-import { FlagsProvider } from 'flagged';
-import { localLabelling } from '../featureFlags';
-import { Labeller } from '../components/Labeller';
+import { FlagsProvider } from "flagged";
+import { localLabelling } from "../featureFlags";
+import { Labeller } from "../components/Labeller";
 
-function App(){
+function App() {
   return (
     <FlagsProvider features={localLabelling()}>
-        <Labeller />
+      <Labeller />
     </FlagsProvider>
   );
 }

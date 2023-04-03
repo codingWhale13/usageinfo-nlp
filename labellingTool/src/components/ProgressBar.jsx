@@ -1,38 +1,36 @@
 import {
-    Progress,
-    Heading,
-    Stat,
-    StatNumber,
-    Spacer,
-    Box,
-    Flex
-  } from '@chakra-ui/react';
-import { CustomCard } from './Elements'
+  Progress,
+  Heading,
+  Stat,
+  StatNumber,
+  Spacer,
+  Box,
+  Flex,
+} from '@chakra-ui/react';
+import { CustomCard } from './Elements';
 
-
-export function ProgressBar({numberOfReviews, currentReviewIndex, extra}){
-    return (<CustomCard spacing={2} mb={2}>
-        <Flex>
+export function ProgressBar({ numberOfReviews, currentReviewIndex, extra }) {
+  return (
+    <CustomCard spacing={2} mb={2}>
+      <Flex>
         <Box>
-        <Heading as="h5" size="md">
+          <Heading as="h5" size="md">
             Label reviews
-        </Heading>
-        <Stat>
+          </Heading>
+          <Stat>
             <StatNumber>
-            {currentReviewIndex + 1}/{numberOfReviews}
+              {currentReviewIndex + 1}/{numberOfReviews}
             </StatNumber>
-        </Stat>
+          </Stat>
         </Box>
         <Spacer />
         {extra}
-    </Flex>
+      </Flex>
 
-    <Progress
+      <Progress
         mt={1}
-        value={
-        ((currentReviewIndex + 1) / numberOfReviews) *
-        100
-        }
-    />
-    </CustomCard>);
+        value={((currentReviewIndex + 1) / numberOfReviews) * 100}
+      />
+    </CustomCard>
+  );
 }

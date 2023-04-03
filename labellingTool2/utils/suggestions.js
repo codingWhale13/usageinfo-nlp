@@ -1,6 +1,6 @@
 class Suggestions {
-  classesFor = usageOption => {
-    return ['Fishing', 'eTrade', 'Hiking'];
+  classesFor = (usageOption) => {
+    return ["Fishing", "eTrade", "Hiking"];
   };
 }
 

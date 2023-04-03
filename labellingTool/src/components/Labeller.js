@@ -19,7 +19,7 @@ export class Labeller extends React.Component {
     };
   }
 
-  loadJSONReviews = async (e) => {
+  loadJSONReviews = async e => {
     const jsonData = await parseJSONReviews(e);
     this.setState({
       reviews: jsonData.reviews,
@@ -98,9 +98,7 @@ export class Labeller extends React.Component {
             <Review
               review={this.state.reviews[this.state.reviewIndex]}
               saveLabel={this.saveLabel}
-              
               isPreviousDisabled={this.state.reviewIndex === 0}
-              
               navigateToNext={() => {
                 this.updateInspectionTime();
 
@@ -118,7 +116,6 @@ export class Labeller extends React.Component {
                   this.setState({ reviewIndex: this.state.reviewIndex - 1 });
                 }
               }}
-
             />
           </>
         )}

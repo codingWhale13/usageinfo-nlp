@@ -6,7 +6,7 @@ export function CSVUpload({ onUpload }) {
         name="file"
         accept=".tsv"
         onChange={onUpload}
-        style={{ display: 'block', margin: '10px auto' }}
+        style={{ display: "block", margin: "10px auto" }}
       />
     </>
   );

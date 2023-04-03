@@ -11,12 +11,8 @@ function App() {
   return (
     <FlagsProvider features={getFeatureFlags()}>
       <ChakraProvider>
-       <Container maxWidth="1300px" p='3'>
-        {features.mTurk ? (
-            <MTurkReview />
-        ) : (
-            <Labeller />
-        )}
+        <Container maxWidth="1300px" p="3">
+          {features.mTurk ? <MTurkReview /> : <Labeller />}
         </Container>
       </ChakraProvider>
     </FlagsProvider>

@@ -6,7 +6,7 @@ import {
   CardBody,
   CardFooter,
   Button,
-  ButtonGroup
+  ButtonGroup,
 } from '@chakra-ui/react';
 import { FaThumbsUp, FaThumbsDown, FaQuestionCircle } from 'react-icons/fa';
 import {
@@ -14,7 +14,11 @@ import {
   PREDICTED_USAGE_OPTIONS_VOTE,
 } from '../../utils/labelKeys';
 
-import { GOOD_VOTE, BAD_VOTE, QUESTION_VOTE } from '../../utils/voteDefinitions';
+import {
+  GOOD_VOTE,
+  BAD_VOTE,
+  QUESTION_VOTE,
+} from '../../utils/voteDefinitions';
 function updateArrayAtIndex(list, index, newValue) {
   const newList = [...list];
   newList[index] = newValue;
@@ -25,8 +29,6 @@ function updateArrayAtIndexAtKey(array, index, key, newValue) {
   return updateArrayAtIndex(array, index, { ...array[index], [key]: newValue });
 }
 
-
-
 export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
   return (
     <Wrap spacing={2} pt="2">
@@ -35,7 +37,12 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
       </Heading>
 
       {predictedUsageOptions.map(({ label, vote }, i) => (
-        <Card maxW="100%" variant="outline" sx={{ '--card-padding': '0.5rem' }} key={({ label, vote }, i)}>
+        <Card
+          maxW="100%"
+          variant="outline"
+          sx={{ '--card-padding': '0.5rem' }}
+          key={({ label, vote }, i)}
+        >
           <CardBody>
             <Text>{label}</Text>
           </CardBody>
@@ -49,7 +56,7 @@ export function UsageOptionsRatingEditor({ predictedUsageOptions, saveLabel }) {
               },
             }}
           >
-            <ButtonGroup direction='row' spacing={3} align='center' size={"md"}>
+            <ButtonGroup direction="row" spacing={3} align="center" size={'md'}>
               <ToggleButton
                 text={'Upvote'}
                 isOn={vote === GOOD_VOTE}

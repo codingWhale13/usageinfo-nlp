@@ -15,8 +15,8 @@ export default function Home() {
     setUploadingStatus("Uploading the file to AWS S3");
 
     let { data } = await fetch("/api/upload", {
-        method: 'POST',
-        body: file
+      method: "POST",
+      body: file,
     });
 
     console.log(data);
@@ -39,12 +39,9 @@ export default function Home() {
             >
               Upload a File!
             </button>
-            <button onClick={() => fetch('/api/list')}>Hello</button>
-            <button onClick={() => fetch('/api/get')}>Get</button>
-
+            <button onClick={() => fetch("/api/list")}>Hello</button>
+            <button onClick={() => fetch("/api/get")}>Get</button>
           </>
-
-         
         )}
         {uploadingStatus && <p>{uploadingStatus}</p>}
         {uploadedFile && <img src={uploadedFile} />}
