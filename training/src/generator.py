@@ -36,17 +36,13 @@ class Generator:
         )
 
         outputs = self.model.generate(**batch[0], **self.generation_config)
-        probabilities = outputs["sequences_scores"]
-        print(f"Sequences scores are:")
-        print(outputs["sequences_scores"][0])
-        print(f"Scores are:")
-        print((outputs["scores"][0]).size())
+        print(outputs["scores"][0][0])
         predictions = self.tokenizer.batch_decode(outputs["sequences"], skip_special_tokens=True)
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions
         ]
 
-        return zip(review_ids, model_inputs, predictions, probabilities)
+        return zip(review_ids, model_inputs, predictions)
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
@@ -77,7 +73,7 @@ class Generator:
 
         for batch in dataloader:
             usage_options_batch = self.generate_usage_options(batch)
-            for review_id, model_input, usage_options, probability in usage_options_batch:
+            for review_id, model_input, usage_options in usage_options_batch:
                 if label_id is not None:
                     reviews[review_id].add_label(
                         label_id=label_id,
@@ -87,5 +83,4 @@ class Generator:
                 if verbose:
                     print(f"Review {review_id}")
                     print(f"Model input:\n{model_input}")
-                    print(f"Probability: {probability} ")
                     print(f"Usage options:\n\t{usage_options}", end="\n\n")
