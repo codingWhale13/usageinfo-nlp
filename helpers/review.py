@@ -123,7 +123,7 @@ class Review:
         return tokens if len(tokens["input_ids"]) <= max_length else None
 
     def get_tokenized_datapoint(self, selection_strategy=None, **tokenization_kwargs):
-        model_input = f'Product title: {self["product_title"]} \nReview body: {self["review_body"]}'
+        model_input = f'Product title: {self["product_title"]} \nReview body: {self["review_body"]}\n'
         model_input = self.tokenize(
             text=model_input, is_input=True, **tokenization_kwargs
         )
