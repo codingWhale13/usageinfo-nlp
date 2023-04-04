@@ -2,7 +2,7 @@
 do_sample: False
 temperature: 1.0
 top_p: 1.0
-num_beams: 4
+num_beams: 1
 repetition_penalty: 1.2
 length_penalty: 1.0
 num_beam_groups: 1
