@@ -239,7 +239,7 @@ class ReviewSet:
     def filter(
         self, filter_function: Callable[[Review], bool], inplace=True
     ) -> Optional["ReviewSet"]:
-        reviews = self if inplace else deepcopy(self)
+        reviews = self if inplace else copy(self)
         for review in copy(reviews):
             if not filter_function(review):
                 reviews.drop_review(review)
@@ -253,6 +253,47 @@ class ReviewSet:
         return self.filter(
             lambda review: review.get_label_from_strategy(selection_strategy),
             inplace=inplace,
+        )
+
+    def get_dataloader(
+        self,
+        tokenizer,
+        model_max_length: int,
+        for_training: bool,
+        selection_strategy: ls.LabelSelectionStrategyInterface = None,
+        **dataloader_args: dict,
+    ):
+        from torch.utils.data import DataLoader
+
+        tokenized_reviews = (
+            review.get_tokenized_datapoint(
+                selection_strategy=selection_strategy,
+                tokenizer=tokenizer,
+                max_length=model_max_length,
+                for_training=for_training,
+            )
+            for review in self
+        )
+        # If selection_strategy is specified only reviews without a suitable label contain 0 otherwise 0 is the intended output
+        if selection_strategy:
+            tokenized_reviews = filter(
+                lambda datapoint: 0 not in datapoint, tokenized_reviews
+            )
+
+        return DataLoader(list(tokenized_reviews), **dataloader_args)
+
+    def split(
+        self, fraction: float, seed: int = None
+    ) -> tuple["ReviewSet", "ReviewSet"]:
+        random.seed(seed)
+
+        reviews = copy(list(self))
+        random.shuffle(reviews)
+        split_index = int(len(reviews) * fraction)
+
+        return (
+            ReviewSet.from_reviews(*reviews[:split_index]),
+            ReviewSet.from_reviews(*reviews[split_index:]),
         )
 
     def create_dataset(
@@ -280,7 +321,7 @@ class ReviewSet:
 
         for review in self:
             try:
-                label = review.get_label(label_id)
+                label = review.get_label_for_id(label_id)
                 # when creating a dataset the datasets field in a review will only contain the dataset that is currently being created, same for test
                 label["datasets"] = {dataset_name: "train"}
                 if len(label["usageOptions"]) == 0:
@@ -324,7 +365,7 @@ class ReviewSet:
         )
 
         for review in test_reviews:
-            label = review.get_label(label_id)
+            label = review.get_label_for_id(label_id)
             label["datasets"] = {dataset_name: "test"}
 
         dataset_length = len(self)

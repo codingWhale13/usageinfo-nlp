@@ -1,8 +1,11 @@
 import torch
 from lightning import pytorch as pl
 from torch.utils.data import DataLoader
+from copy import copy
 
-import dataset as ds
+import utils
+from helpers.review_set import ReviewSet
+from helpers.label_selection import DatasetSelectionStrategy
 
 
 class ReviewModel(pl.LightningModule):
@@ -28,6 +31,12 @@ class ReviewModel(pl.LightningModule):
         self.hyperparameters = hyperparameters
         self.active_layers = active_layers
         self.trainer = trainer
+
+        self.tokenization_args = {
+            "tokenizer": tokenizer,
+            "max_length": max_length,
+            "for_training": True,
+        }
 
         self._initialize_datasets()
 
@@ -158,8 +167,9 @@ class ReviewModel(pl.LightningModule):
         return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]
 
     def train_dataloader(self):
-        return DataLoader(
-            self.train_dataset,
+        return self.train_reviews.get_dataloader(
+            tokenization_args=self.tokenization_args,
+            selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             shuffle=True,  # Shuffles the training data every epoch.
@@ -167,26 +177,36 @@ class ReviewModel(pl.LightningModule):
         )
 
     def val_dataloader(self):
-        return DataLoader(
-            self.val_dataset,
+        return self.val_reviews.get_dataloader(
+            tokenization_args=self.tokenization_args,
+            selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
         )
 
     def test_dataloader(self):
-        return DataLoader(
-            self.test_dataset,
+        return self.test_reviews.get_dataloader(
+            tokenization_args=self.tokenization_args,
+            selection_strategy=self.test_reviews_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
         )
 
     def _initialize_datasets(self):
-        train_set, self.test_dataset = ds.ReviewDataset.from_dataset_name(
-            dataset_name=self.data["dataset_name"],
-            tokenizer=self.tokenizer,
-            max_length=self.max_length,
+        dataset_name = self.data["dataset_name"]
+        self.test_reviews_strategy = DatasetSelectionStrategy((dataset_name, "test"))
+        self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
+
+        reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
+
+        self.test_reviews = reviews.filter_with_label_strategy(
+            self.test_reviews_strategy, inplace=False
         )
-        self.train_dataset, self.val_dataset = train_set.split(
+
+        train_reviews = reviews.filter_with_label_strategy(
+            self.train_review_strategy, inplace=False
+        )
+        self.train_reviews, self.val_reviews = train_reviews.split(
             self.data["validation_split"]
         )
 

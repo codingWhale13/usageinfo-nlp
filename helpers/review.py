@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Union, Optional
 
 from evaluation.scoring import DEFAULT_METRICS
+import helpers.label_selection as ls
 
 
 class Review:
@@ -72,21 +73,20 @@ class Review:
     def get_label_ids(self) -> set[str]:
         return set(self.get_labels().keys())
 
-    def get_label(self, label_id: str) -> dict:
-        return self.get_labels().get(label_id, {})
-
     def get_label_from_strategy(self, strategy) -> Optional[dict]:
         if not isinstance(strategy, ls.LabelSelectionStrategyInterface):
             raise ValueError(
                 f"strategy '{type(strategy)}' doesn't implement LabelSelectionStrategyInterface"
             )
-        return strategy.retreive_label(self)
+        return strategy.retrieve_label(self)
 
-    def get_label_for_dataset(self, dataset_name: str) -> Optional[dict]:
-        for label in self.get_labels().values():
-            if dataset_name in label["datasets"]:
-                return label
-        return None
+    def get_label_for_dataset(
+        self, *dataset_names: Union[str, tuple[str, str]]
+    ) -> Optional[dict]:
+        return self.get_label_from_strategy(ls.DatasetSelectionStrategy(*dataset_names))
+
+    def get_label_for_id(self, *label_ids: str) -> Optional[dict]:
+        return self.get_label_from_strategy(ls.LabelIDSelectionStrategy(*label_ids))
 
     def add_label(
         self,
@@ -106,6 +106,38 @@ class Review:
             "metadata": metadata,
         }
 
+    def tokenize(
+        self, tokenizer, max_length: int, text: str, for_training: bool, is_input: bool
+    ):
+        tokens = tokenizer(text, return_tensors="pt", padding="max_length")
+
+        # Remove batch dimension, since we only have one example
+        tokens["input_ids"] = tokens["input_ids"][0]
+        tokens["attention_mask"] = tokens["attention_mask"][0]
+
+        if not is_input and for_training:
+            ids = tokens["input_ids"]
+            # You need to set the pad tokens for the input to -100 for some Transformers (https://github.com/huggingface/transformers/issues/9770)>
+            tokens["input_ids"][ids[:] == tokenizer.pad_token_id] = -100
+
+        return tokens if len(tokens["input_ids"]) <= max_length else None
+
+    def get_tokenized_datapoint(self, selection_strategy=None, **tokenization_kwargs):
+        model_input = f'Product title: {self["product_title"]} \nReview body: {self["review_body"]}'
+        model_input = self.tokenize(
+            text=model_input, is_input=True, **tokenization_kwargs
+        )
+
+        # Returns 0 if when no selection strategy. We are using 0 instead of None because of the dataloader
+        output = 0
+        if selection_strategy:
+            label = ", ".join(
+                self.get_label_from_strategy(selection_strategy)["usageOptions"]
+            )
+            output = self.tokenize(text=label, is_input=False, **tokenization_kwargs)
+
+        return model_input, output, self.review_id
+
     def score(
         self,
         label_id: str,
@@ -113,13 +145,15 @@ class Review:
         metric_ids: Union[set, list] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
-        if "scores" not in self.get_label(label_id):
-            self.get_label(label_id)["scores"] = {}  # sanity check for JSON v3 format
+        if "scores" not in self.get_label_for_id(label_id):
+            self.get_label_for_id(label_id)[
+                "scores"
+            ] = {}  # sanity check for JSON v3 format
 
-        if reference_label_id not in self.get_label(label_id)["scores"]:
-            self.get_label(label_id)["scores"][reference_label_id] = {}
+        if reference_label_id not in self.get_label_for_id(label_id)["scores"]:
+            self.get_label_for_id(label_id)["scores"][reference_label_id] = {}
 
-        available_metrics = self.get_label(label_id)["scores"].get(
+        available_metrics = self.get_label_for_id(label_id)["scores"].get(
             reference_label_id, {}
         )
 
@@ -133,7 +167,7 @@ class Review:
         ).calculate(missing_metric_ids)
 
         for metric_id, metric_value in new_metrics.items():
-            self.get_label(label_id)["scores"][reference_label_id][
+            self.get_label_for_id(label_id)["scores"][reference_label_id][
                 metric_id
             ] = metric_value
 
@@ -146,7 +180,9 @@ class Review:
         """return specified scores (and calculate them internally, if missing)"""
         self.score(label_id, reference_label_id, metric_ids)
         return {
-            metric_id: self.get_label(label_id)["scores"][reference_label_id][metric_id]
+            metric_id: self.get_label_for_id(label_id)["scores"][reference_label_id][
+                metric_id
+            ]
             for metric_id in metric_ids
         }
 
