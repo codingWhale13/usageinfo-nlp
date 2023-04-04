@@ -1,6 +1,5 @@
 import os
 import glob
-import sys
 import yaml
 from transformers import (
     T5Tokenizer,
@@ -35,6 +34,11 @@ models = {
         BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
         BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
         1024,
+    ),
+    "flan-t5-base": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/flan-t5-base"),
+        T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
+        512,
     ),
 }
 
@@ -110,4 +114,6 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger):
         save_last=True,
         filename="{epoch}",
         save_weights_only=True,
+        save_top_k=2,
+        monitor="epoch_val_loss",
     )
