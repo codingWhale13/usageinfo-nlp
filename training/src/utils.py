@@ -62,7 +62,7 @@ def get_model_path(model_artifact: dict) -> str:
     else:
         checkpoint_name = f"epoch={model_artifact['checkpoint']}.ckpt"
 
-    return os.path.join(get_checkpoint_dir(model_artifact["name"]), checkpoint_name)
+    return os.path.join(get_model_dir(model_artifact["name"]), checkpoint_name)
 
 
 def get_config(name: str) -> dict:
@@ -87,7 +87,7 @@ def get_model_dir(artifact_name: dict) -> str:
 
 
 def get_config_from_artifact(artifact_name: str) -> dict:
-    model_dir = get_checkpoint_dir(artifact_name)
+    model_dir = get_model_dir(artifact_name)
     with open(os.path.join(model_dir, "config.yml"), "r") as file:
         return yaml.safe_load(file)
 
