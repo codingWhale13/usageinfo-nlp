@@ -237,22 +237,27 @@ class ReviewSet:
         self.reviews.pop(obj, None)
 
     def filter(
-        self, filter_function: Callable[[Review], bool], inplace=True
+        self, filter_function: Callable[[Review], bool], inplace=True, invert=False
     ) -> Optional["ReviewSet"]:
         reviews = self if inplace else copy(self)
         for review in copy(reviews):
-            if not filter_function(review):
+            # if invert is True, we want to drop all reviews that match the filter function. Otherwise, we want to drop all reviews that do not match the filter function.
+            if invert == bool(filter_function(review)):
                 reviews.drop_review(review)
 
         if not inplace:
             return reviews
 
     def filter_with_label_strategy(
-        self, selection_strategy: ls.LabelSelectionStrategyInterface, inplace=True
+        self,
+        selection_strategy: ls.LabelSelectionStrategyInterface,
+        inplace=True,
+        invert=False,
     ) -> Optional["ReviewSet"]:
         return self.filter(
             lambda review: review.get_label_from_strategy(selection_strategy),
             inplace=inplace,
+            invert=invert,
         )
 
     def get_dataloader(

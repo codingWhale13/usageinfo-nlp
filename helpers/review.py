@@ -120,10 +120,13 @@ class Review:
             # You need to set the pad tokens for the input to -100 for some Transformers (https://github.com/huggingface/transformers/issues/9770)>
             tokens["input_ids"][ids[:] == tokenizer.pad_token_id] = -100
 
-        return tokens if len(tokens["input_ids"]) <= max_length else None
+        return {
+            "input_ids": tokens["input_ids"][:max_length],
+            "attention_mask": tokens["attention_mask"][:max_length],
+        }
 
     def get_tokenized_datapoint(self, selection_strategy=None, **tokenization_kwargs):
-        model_input = f'Product title: {self["product_title"]} \nReview body: {self["review_body"]}\n'
+        model_input = f"Product title: {self['product_title']} \nReview body: {self['review_body']}\n"
         model_input = self.tokenize(
             text=model_input, is_input=True, **tokenization_kwargs
         )

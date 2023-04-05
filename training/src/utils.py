@@ -57,20 +57,12 @@ def get_dataset_path(dataset: str) -> str:
 
 
 def get_model_path(model_artifact: dict) -> str:
-    model_dirs = glob.glob(
-        os.path.join(ARTIFACT_PATH, "models", f"*{model_artifact['name']}")
-    )
-    if len(model_dirs) == 0:
-        raise ValueError("No model found with the given name")
-    if len(model_dirs) > 1:
-        raise ValueError("Multiple models found with the given name")
-
     if model_artifact["checkpoint"] is None:
         checkpoint_name = "last.ckpt"
     else:
         checkpoint_name = f"epoch={model_artifact['checkpoint']}.ckpt"
 
-    return os.path.join(model_dirs[0], checkpoint_name)
+    return os.path.join(get_checkpoint_dir(model_artifact["name"]), checkpoint_name)
 
 
 def get_config(name: str) -> dict:
@@ -82,6 +74,22 @@ def get_config(name: str) -> dict:
         config = yaml.safe_load(file)
 
     return config
+
+
+def get_model_dir(artifact_name: dict) -> str:
+    model_dirs = glob.glob(os.path.join(ARTIFACT_PATH, "models", f"*{artifact_name}"))
+    if len(model_dirs) == 0:
+        raise ValueError("No model found with the given name")
+    if len(model_dirs) > 1:
+        raise ValueError("Multiple models found with the given name")
+    # We know there is only one model dir, so we take the first one
+    return model_dirs[0]
+
+
+def get_config_from_artifact(artifact_name: str) -> dict:
+    model_dir = get_checkpoint_dir(artifact_name)
+    with open(os.path.join(model_dir, "config.yml"), "r") as file:
+        return yaml.safe_load(file)
 
 
 def get_model_config(model_name: str, model_artifact: dict) -> tuple:
@@ -108,9 +116,15 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger):
     time = datetime.datetime.now().strftime("%m_%d_%H_%M")
 
     run_name = f"{time}_{logger.experiment.name}"
+    dirpath = f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/models/{run_name}"
+
+    config = get_config("training_config")
+    os.mkdir(dirpath)
+    with open(os.path.join(dirpath, "config.yml"), "w+") as file:
+        yaml.dump(config, file)
 
     return pl.callbacks.ModelCheckpoint(
-        dirpath=f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/models/{run_name}",
+        dirpath=dirpath,
         save_last=True,
         filename="{epoch}",
         save_weights_only=True,
