@@ -1,5 +1,6 @@
 import torch
 from typing import List
+from typing import Union
 
 from training.src import utils
 from helpers.review_set import ReviewSet
@@ -36,13 +37,39 @@ class Generator:
         )
 
         outputs = self.model.generate(**batch[0], **self.generation_config)
-        print(outputs["scores"][0][0])
+        print(outputs)
         predictions = self.tokenizer.batch_decode(outputs["sequences"], skip_special_tokens=True)
+        print(predictions)
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions
         ]
+        logprobs = self.get_logprobs(outputs)
+        return zip(review_ids, model_inputs, predictions, logprobs)
+    
+    def get_logprobs(self, outputs):
+        predicted_tokens = [[self.tokenizer.decode(token) for token in review[1:]] for review in outputs["sequences"]]
+        token_probs = [[outputs["scores"][token_number][review_number, token] for token_number, token in enumerate(review[1:])] for review_number, review in enumerate(outputs["sequences"])]
+        
+        for i in range(len(predicted_tokens)):
+            for j in range(len(predicted_tokens[i])):
+                if predicted_tokens[i][j] == "<pad>":
+                    predicted_tokens[i] = predicted_tokens[i][:j]
+                    token_probs[i] = token_probs[i][:j]
+                    break
+        print(predicted_tokens)
+        print(token_probs)
 
-        return zip(review_ids, model_inputs, predictions)
+
+        
+
+
+
+
+
+    
+
+
+
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
@@ -73,12 +100,12 @@ class Generator:
 
         for batch in dataloader:
             usage_options_batch = self.generate_usage_options(batch)
-            for review_id, model_input, usage_options in usage_options_batch:
+            for review_id, model_input, usage_options, logprobs in usage_options_batch:
                 if label_id is not None:
                     reviews[review_id].add_label(
                         label_id=label_id,
                         usage_options=usage_options,
-                        metadata=label_metadata,
+                        metadata=label_metadata.update({"logprobs": logprobs}),
                     )
                 if verbose:
                     print(f"Review {review_id}")

@@ -9,3 +9,8 @@ num_beam_groups: 1
 max_new_tokens: 512
 return_dict_in_generate: True
 output_scores: True
+
+# do_sample: False and num_beams: 1 -> GreedySearchEncoderDecoderOutput -> scores for every token before softmax
+# do_sample: False and num_beams: 2 -> BeamSearchEncoderDecoderOutput -> Beam transition scores for each vocabulary token at each generation step
+# do_sample: True and num_beams: 2 -> BeamSampleEncoderDecoderOutput -> Beam transition scores for each vocabulary token at each generation step
+# do_sample: True and num_beams: 1 -> SampleEncoderDecoderOutput -> scores for every token before softmax
