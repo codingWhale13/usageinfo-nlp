@@ -88,7 +88,70 @@ class ReviewModel(pl.LightningModule):
         )
 
         # outputs is a SequenceClassifierOutput object, which has a loss attribute at the first place (https://huggingface.co/docs/transformers/main_classes/output)
+        # if self.custom_loss_function:
+        if True:
+            loss = self.compute_loss(outputs, batch[1]["input_ids"])
+            assert 0 <= loss <= outputs.loss
+            print(f"Custom loss: {loss}, original loss: {outputs.loss}")
+            return loss
+
+    def compute_loss(self, outputs, labels):
+        logits = outputs.logits
+        loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-100)
+        seperator_token_id = self.tokenizer(",", return_tensors="pt")["input_ids"][0][
+            :2
+        ].tolist()
+        losses = []
+
+        for review_number, label in enumerate(labels):
+            label_list = self._get_individual_labels(label, seperator_token_id)
+            print(label_list)
+            if len(label_list) <= 1:
+                losses.append(loss_fct(logits[review_number], label))
+            elif len(label_list) == 2:
+                print(f"Label 1: {label_list[0]}, Label 2: {label_list[1]}")
+                print(loss_fct(logits[review_number], label))
+                print(
+                    loss_fct(
+                        logits[review_number],
+                        self._restore_label(label_list[::-1], seperator_token_id),
+                    )
+                )
+                losses.append(
+                    min(
+                        loss_fct(logits[review_number], label),
+                        loss_fct(
+                            logits[review_number],
+                            self._restore_label(label_list[::-1], seperator_token_id),
+                        ),
+                    )
+                )
+            else:
+                # get logits via teacher forcing for all labels
+                pass
+
         return outputs.loss
+
+    def _restore_label(self, label_list, seperator_token_id):
+        label = seperator_token_id.join(label_list)
+        label = label + [-100] * (self.max_length - len(label))
+        print(f"Label: {label}")
+        return label
+
+    def _get_individual_labels(self, label, seperator_token_id):
+        label_list = []
+        pointer = 0
+        end_pointer = len(label)
+        for token_number, token in enumerate(label):
+            if token == 1:
+                end_pointer = token_number
+                break
+            if [label[token_number - 1], token] == seperator_token_id:
+                label_list.append(label[pointer:token_number])
+                pointer = token_number + 1
+
+        label_list.append(label[pointer:end_pointer])
+        return label_list
 
     def training_step(self, batch, __):
         loss = self._step(batch)
