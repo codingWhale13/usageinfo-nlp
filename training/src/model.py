@@ -34,7 +34,7 @@ class ReviewModel(pl.LightningModule):
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
-            "max_length": max_length,
+            "model_max_length": max_length,
             "for_training": True,
         }
 
@@ -168,7 +168,7 @@ class ReviewModel(pl.LightningModule):
 
     def train_dataloader(self):
         return self.train_reviews.get_dataloader(
-            tokenization_args=self.tokenization_args,
+            **self.tokenization_args,
             selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
@@ -178,7 +178,7 @@ class ReviewModel(pl.LightningModule):
 
     def val_dataloader(self):
         return self.val_reviews.get_dataloader(
-            tokenization_args=self.tokenization_args,
+            **self.tokenization_args,
             selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
@@ -186,7 +186,7 @@ class ReviewModel(pl.LightningModule):
 
     def test_dataloader(self):
         return self.test_reviews.get_dataloader(
-            tokenization_args=self.tokenization_args,
+            **self.tokenization_args,
             selection_strategy=self.test_reviews_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
