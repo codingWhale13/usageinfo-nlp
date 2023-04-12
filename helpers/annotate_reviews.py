@@ -104,7 +104,6 @@ def main():
         filtered_reviewset = reviewset
     else:
         dataset_paths = [utils.get_dataset_path(dataset[0]) for dataset in datasets]
-        print(dataset_paths)
         reviewset = ReviewSet.from_files(*dataset_paths)
         filtered_reviewset = reviewset.filter_with_label_strategy(
             DatasetSelectionStrategy(*datasets), inplace=False
