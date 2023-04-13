@@ -1,7 +1,7 @@
 from copy import copy, deepcopy
 import functools
 from pathlib import Path
-from typing import Union, Optional, Iterator, ItemsView, Callable
+from typing import Union, Optional, Iterator, Iterable, ItemsView, Callable
 import json
 import random
 from evaluation.scoring import DEFAULT_METRICS
@@ -20,7 +20,7 @@ class ReviewSet:
     latest_version = 3
 
     def __init__(
-        self, version: str, reviews: dict, source_path: Optional[str] = None
+        self, version: str, reviews: dict, save_path: Optional[str] = None
     ) -> "ReviewSet":
         """load data and make sure it is structured according to our latest JSON format"""
         self.version = version
@@ -29,7 +29,7 @@ class ReviewSet:
         self.reviews = reviews
         self.validate_reviews()
 
-        self.save_path = None  # will be set in `save_as()`
+        self.save_path = save_path
 
     def __len__(self) -> int:
         return len(self.reviews)
@@ -59,8 +59,9 @@ class ReviewSet:
     def __or__(self, other: "ReviewSet") -> "ReviewSet":
         return self.merge(other, allow_new_reviews=True, inplace=False)
 
-    def __ior__(self, other: "ReviewSet") -> None:
-        return self.merge(other, allow_new_reviews=True, inplace=True)
+    def __ior__(self, other: "ReviewSet") -> "ReviewSet":
+        self.merge(other, allow_new_reviews=True, inplace=True)
+        return self
 
     def __copy__(self):
         return self.from_reviews(*self)
@@ -82,19 +83,27 @@ class ReviewSet:
         self.reviews[review_id] = review
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ReviewSet":
+    def from_dict(cls, data: dict, save_path: Optional[str] = None) -> "ReviewSet":
         reviews = {
             review_id: Review(review_id=review_id, data=review_data)
             for review_id, review_data in data.get("reviews", {}).items()
         }
-        return cls(data.get("version"), reviews)
+        return cls(data.get("version"), reviews, save_path)
 
     @classmethod
-    def from_reviews(cls, *reviews: Review) -> "ReviewSet":
-        return cls(cls.latest_version, {review.review_id: review for review in reviews})
+    def from_reviews(
+        cls, *reviews: Review, save_path: Optional[str] = None
+    ) -> "ReviewSet":
+        return cls(
+            cls.latest_version,
+            {review.review_id: review for review in reviews},
+            save_path,
+        )
 
     @classmethod
-    def from_files(cls, *source_paths: Union[str, Path]) -> "ReviewSet":
+    def from_files(
+        cls, *source_paths: Union[str, Path], save_path: Optional[str] = None
+    ) -> "ReviewSet":
         if len(source_paths) == 0:
             raise ValueError("Expected at least one source path argument")
 
@@ -103,10 +112,12 @@ class ReviewSet:
                 return cls.from_dict(json.load(file))
 
         review_sets = (get_review_set(path) for path in source_paths)
-
-        return functools.reduce(
+        review_set = functools.reduce(
             lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
         )
+        review_set.save_path = source_paths[0] if len(source_paths) == 1 else save_path
+
+        return review_set
 
     def items(self) -> ItemsView[str, Review]:
         return self.reviews.items()
@@ -126,11 +137,19 @@ class ReviewSet:
             label_ids |= review.get_label_ids()
         return label_ids
 
+    def remove_label(self, label_id: str, inplace=True) -> Optional["ReviewSet"]:
+        review_set = self if inplace else deepcopy(self)
+        for review in review_set:
+            review.remove_label(label_id, inplace=True)
+
+        if not inplace:
+            return review_set
+
     def score(
         self,
         label_id: str,
         reference_label_id: str,
-        metric_ids: Union[set, list] = DEFAULT_METRICS,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
     ):
         for review in self.reviews_with({label_id, reference_label_id}):
             review.score(label_id, reference_label_id, metric_ids)
@@ -139,11 +158,14 @@ class ReviewSet:
         self,
         label_id: str,
         reference_label_id: str,
-        metric_ids: Union[set, list] = DEFAULT_METRICS,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> list[dict[str, float]]:
-        result = []
+        result = {metric_id: [] for metric_id in metric_ids}
+
         for review in self.reviews_with({label_id, reference_label_id}):
-            result.append(review.get_scores(label_id, reference_label_id, metric_ids))
+            review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
+            for metric_id, value in review_scores.items():
+                result[metric_id].append(value)
 
         return result
 
@@ -152,8 +174,7 @@ class ReviewSet:
         label_id: str,
         reference_label_id: str,
         metric_ids: Union[set, list] = DEFAULT_METRICS,
-    ) -> dict[str, float]:
-        agg_scores = {}
+    ) -> dict[dict[str, float]]:
         aggregations = {
             "mean": mean,
             "variance": variance,
@@ -161,12 +182,13 @@ class ReviewSet:
         }
 
         scores_per_review = self.get_scores(label_id, reference_label_id, metric_ids)
-        for metric_id in metric_ids:
-            agg_scores[metric_id] = {}
-            for agg_name, agg_func in aggregations.items():
-                agg_scores[metric_id][agg_name] = agg_func(
-                    [scores[metric_id] for scores in scores_per_review]
-                )
+
+        agg_scores = {}
+        for metric_id, metric_results in scores_per_review.items():
+            agg_scores[metric_id] = {
+                agg_name: agg_func(metric_results)
+                for agg_name, agg_func in aggregations.items()
+            }
 
         return agg_scores
 
@@ -205,15 +227,13 @@ class ReviewSet:
             self.version == review_set.version == self.latest_version
         ), f"expected ReviewSets in latest format (v{self.latest_version})"
 
-        existing_reviews = self
-        if not inplace:
-            existing_reviews = deepcopy(self)
+        merged_review_set = self if inplace else copy(self)
 
         for review in review_set:
-            existing_reviews.add(review, add_new=allow_new_reviews)
+            merged_review_set.add(review, add_new=allow_new_reviews)
 
         if not inplace:
-            return existing_reviews
+            return merged_review_set
 
     def get_data(self) -> dict:
         """get data in correct format of the latest version"""

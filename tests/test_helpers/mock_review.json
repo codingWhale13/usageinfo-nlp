@@ -17,7 +17,7 @@
             "review_date": "2015-03-30",
             "review_body": "goooood for going crazy",
             "labels": {
-                "openai-chat_gpt_4_matthisv1-cluster_test": {
+                "openai-chat_gpt_4_matthisv1-test": {
                     "createdAt": "2023-03-10T14:37:03.833023+01:00",
                     "usageOptions": [
                         "going crazy"
@@ -60,7 +60,7 @@
                     "scores": {},
                     "datasets": {}
                 },
-                "openai-chat_gpt_4_matthisv1-cluster_test": {
+                "openai-chat_gpt_4_matthisv1-test": {
                     "scores": {},
                     "usageOptions": [
                         "sleeping"

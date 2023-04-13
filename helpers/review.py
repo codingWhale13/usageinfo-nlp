@@ -1,6 +1,6 @@
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime
-from typing import Union, Optional
+from typing import Union, Optional, Iterable
 
 from evaluation.scoring import DEFAULT_METRICS
 import helpers.label_selection as ls
@@ -59,10 +59,14 @@ class Review:
         return self.merge_labels(other, inplace=False)
 
     def __ior__(self, other: "Review") -> None:
-        return self.merge_labels(other, inplace=True)
+        self.merge_labels(other, inplace=True)
+        return self
 
     def __copy__(self):
-        return Review(self.review_id, deepcopy(self.data))
+        return Review(self.review_id, copy(self.data))
+
+    def __deepcopy__(self, memo):
+        return Review(self.review_id, deepcopy(self.data, memo))
 
     def __str__(self):
         return f"Review '{self.review_id}'\t-> Label IDs: {list(self.data['labels'].keys())}"
@@ -141,52 +145,55 @@ class Review:
 
         return model_input, output, self.review_id
 
+    def remove_label(self, label_id: str, inplace=True) -> Optional["Review"]:
+        review_without_label = (
+            self if inplace else Review(self.review_id, deepcopy(self.data))
+        )
+        review_without_label.data["labels"].pop(label_id, None)
+
+        if not inplace:
+            return review_without_label
+
     def score(
         self,
         label_id: str,
         reference_label_id: str,
-        metric_ids: Union[set, list] = DEFAULT_METRICS,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
         if "scores" not in self.get_label_for_id(label_id):
-            self.get_label_for_id(label_id)[
-                "scores"
-            ] = {}  # sanity check for JSON v3 format
+            self.get_label_for_id(label_id)["scores"] = {}  # comply with JSON v3
 
-        if reference_label_id not in self.get_label_for_id(label_id)["scores"]:
-            self.get_label_for_id(label_id)["scores"][reference_label_id] = {}
+        scores = self.get_label_for_id(label_id)["scores"]  # use reference from here
 
-        available_metrics = self.get_label_for_id(label_id)["scores"].get(
-            reference_label_id, {}
-        )
+        if reference_label_id not in scores:
+            scores[reference_label_id] = {}
 
+        available_metrics = scores.get(reference_label_id, {})
         missing_metric_ids = set(metric_ids).difference(set(available_metrics.keys()))
 
-        # calculate missing metrics
-        from evaluation.scoring.metrics import SingleReviewMetrics
+        if len(missing_metric_ids) > 0:
+            # calculate missing metrics
+            from evaluation.scoring.metrics import SingleReviewMetrics
 
-        new_metrics = SingleReviewMetrics.from_labels(
-            self.get_labels(), label_id, reference_label_id
-        ).calculate(missing_metric_ids)
+            new_metrics = SingleReviewMetrics.from_labels(
+                self.get_labels(), label_id, reference_label_id
+            ).calculate(missing_metric_ids)
 
-        for metric_id, metric_value in new_metrics.items():
-            self.get_label_for_id(label_id)["scores"][reference_label_id][
-                metric_id
-            ] = metric_value
+            for metric_id, metric_value in new_metrics.items():
+                scores[reference_label_id][metric_id] = metric_value
 
     def get_scores(
         self,
         label_id: str,
         reference_label_id: str,
-        metric_ids: Union[set, list] = DEFAULT_METRICS,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> dict[str, float]:
         """return specified scores (and calculate them internally, if missing)"""
         self.score(label_id, reference_label_id, metric_ids)
         return {
-            metric_id: self.get_label_for_id(label_id)["scores"][reference_label_id][
-                metric_id
-            ]
-            for metric_id in metric_ids
+            m_id: self.get_label_for_id(label_id)["scores"][reference_label_id][m_id]
+            for m_id in metric_ids
         }
 
     def merge_labels(
@@ -202,7 +209,7 @@ class Review:
             existing_labels = deepcopy(existing_labels)
         additional_labels = deepcopy(other_review.get_labels())
 
-        for label_id, other_label in additional_labels:
+        for label_id, other_label in additional_labels.items():
             if label_id not in existing_labels:
                 existing_labels[label_id] = other_label
             else:
@@ -221,9 +228,9 @@ class Review:
                         merged_score_set = set(own_label["scores"][ref_id] + score_set)
                         own_label["scores"][ref_id] = list(merged_score_set)
 
-            # merge datasets and metadata
-            own_label["datasets"] |= other_label["datasets"]
-            own_label["metadata"] |= other_label["metadata"]
+                # merge datasets and metadata
+                own_label["datasets"] |= other_label["datasets"]
+                own_label["metadata"] |= other_label["metadata"]
 
         if not inplace:
             return Review(
