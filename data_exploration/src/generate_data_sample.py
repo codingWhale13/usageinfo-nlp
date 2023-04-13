@@ -118,7 +118,7 @@ def sample_data(
         .compute()
     )
 
-    # shuffel by sampling because you can't shuffle a dataframe. TODO: our seed is not respected here
+    # shuffle by sampling because you can't shuffle a dataframe. TODO: our seed is not respected here
     all_samples_df = all_samples_df.sample(frac=1).reset_index(drop=True)
     samples = np.array_split(all_samples_df, n_samples)
 
