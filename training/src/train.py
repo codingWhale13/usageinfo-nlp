@@ -60,6 +60,7 @@ model = ReviewModel(
     hyperparameters=hyperparameters,
     data=dataset_parameters,
     trainer=trainer,
+    flat=config["flat"],
 )
 
 # %% Training

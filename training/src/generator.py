@@ -30,12 +30,12 @@ class Generator:
 
     def generate_usage_options(self, batch) -> None:
         # batch is Iterable containing [List of model inputs, List of labels, List of review_ids]
-        review_ids = list(batch[2])
+        review_ids = list(batch["review_id"])
         model_inputs = self.tokenizer.batch_decode(
-            batch[0]["input_ids"], skip_special_tokens=True
+            batch["input"]["input_ids"], skip_special_tokens=True
         )
 
-        outputs = self.model.generate(**batch[0], **self.generation_config)
+        outputs = self.model.generate(**batch["input"], **self.generation_config)
         predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions

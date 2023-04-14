@@ -129,21 +129,57 @@ class Review:
             "attention_mask": tokens["attention_mask"][:max_length],
         }
 
-    def get_tokenized_datapoint(self, selection_strategy=None, **tokenization_kwargs):
+    def get_flat_tokenized_datapoint_generator(
+        self, selection_strategy=None, **tokenization_kwargs
+    ):
         model_input = f"Product title: {self['product_title']} \nReview body: {self['review_body']}\n"
         model_input = self.tokenize(
             text=model_input, is_input=True, **tokenization_kwargs
         )
 
         # Returns 0 if when no selection strategy. We are using 0 instead of None because of the dataloader
-        output = 0
-        if selection_strategy:
-            label = ", ".join(
-                self.get_label_from_strategy(selection_strategy)["usageOptions"]
-            )
-            output = self.tokenize(text=label, is_input=False, **tokenization_kwargs)
+        if not selection_strategy:
+            yield self.make_dict(model_input, 0, self.review_id)
 
-        return model_input, output, self.review_id
+        else:
+            labels = self.get_label_from_strategy(selection_strategy)
+            if not labels:
+                yield None
+            else:
+                labels = labels["usageOptions"]
+                if len(labels) == 0:
+                    labels = ""
+                    output = self.tokenize(
+                        text=labels, is_input=False, **tokenization_kwargs
+                    )
+                    yield self.make_dict(model_input, output, self.review_id)
+                else:
+                    for label in labels:
+                        output = self.tokenize(
+                            text=label, is_input=False, **tokenization_kwargs
+                        )
+                        yield self.make_dict(model_input, output, self.review_id)
+
+    def get_tokenized_datapoint(self, selection_strategy=None, **tokenization_kwargs):
+        model_input = f"Product title: {self['product_title']} \nReview body: {self['review_body']}\n"
+        model_input = self.tokenize(
+            text=model_input, is_input=True, **tokenization_kwargs
+        )
+        # Returns 0 if when no selection strategy. We are using 0 instead of None because of the dataloader
+        if not selection_strategy:
+            return self.make_dict(model_input, 0, self.review_id)
+        labels = self.get_label_from_strategy(selection_strategy)
+        if not labels:
+            return None
+        output = self.tokenize(
+            text=", ".join(labels["usageOptions"]),
+            is_input=False,
+            **tokenization_kwargs,
+        )
+        return self.make_dict(model_input, output, self.review_id)
+
+    def make_dict(self, model_input, output, review_id):
+        return {"input": model_input, "output": output, "review_id": review_id}
 
     def remove_label(self, label_id: str, inplace=True) -> Optional["Review"]:
         review_without_label = (

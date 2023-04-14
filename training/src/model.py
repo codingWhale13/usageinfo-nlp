@@ -20,6 +20,7 @@ class ReviewModel(pl.LightningModule):
         hyperparameters: dict,
         data: dict,
         trainer: pl.Trainer,
+        flat: bool,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -31,6 +32,7 @@ class ReviewModel(pl.LightningModule):
         self.hyperparameters = hyperparameters
         self.active_layers = active_layers
         self.trainer = trainer
+        self.flat = flat
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
@@ -80,9 +82,9 @@ class ReviewModel(pl.LightningModule):
     def _step(self, batch):
         # self() calls self.forward(), but should be preferred (https://github.com/Lightning-AI/lightning/issues/1209)
         outputs = self(
-            input_ids=batch[0]["input_ids"],
-            attention_mask=batch[0]["attention_mask"],
-            labels=batch[1]["input_ids"],
+            input_ids=batch["input"]["input_ids"],
+            attention_mask=batch["input"]["attention_mask"],
+            labels=batch["output"]["input_ids"],
         )
 
         # outputs is a SequenceClassifierOutput object, which has a loss attribute at the first place (https://huggingface.co/docs/transformers/main_classes/output)
@@ -174,6 +176,7 @@ class ReviewModel(pl.LightningModule):
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             shuffle=True,  # Shuffles the training data every epoch.
             num_workers=2,
+            flat=self.flat,
         )
 
     def val_dataloader(self):
@@ -182,6 +185,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
+            flat=self.flat,
         )
 
     def test_dataloader(self):
@@ -190,6 +194,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.test_reviews_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
+            flat=self.flat,
         )
 
     def _initialize_datasets(self):

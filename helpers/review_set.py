@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 import functools
 from pathlib import Path
 from typing import Union, Optional, Iterator, Iterable, ItemsView, Callable
+import numpy as np
 import json
 import random
 from evaluation.scoring import DEFAULT_METRICS
@@ -286,26 +287,41 @@ class ReviewSet:
         model_max_length: int,
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
+        flat=False,
         **dataloader_args: dict,
     ):
         from torch.utils.data import DataLoader
 
-        tokenized_reviews = (
-            review.get_tokenized_datapoint(
-                selection_strategy=selection_strategy,
-                tokenizer=tokenizer,
-                max_length=model_max_length,
-                for_training=for_training,
-            )
-            for review in self
-        )
-        # If selection_strategy is specified only reviews without a suitable label contain 0 otherwise 0 is the intended output
-        if selection_strategy:
-            tokenized_reviews = filter(
-                lambda datapoint: 0 not in datapoint, tokenized_reviews
-            )
+        if flat:
+            tokenized_reviews = [
+                list(data_point_generator)
+                for data_point_generator in (
+                    review.get_flat_tokenized_datapoint_generator(
+                        selection_strategy=selection_strategy,
+                        tokenizer=tokenizer,
+                        max_length=model_max_length,
+                        for_training=for_training,
+                    )
+                    for review in self
+                )
+            ]
 
-        return DataLoader(list(tokenized_reviews), **dataloader_args)
+            tokenized_reviews = np.concatenate(tokenized_reviews).ravel().tolist()
+        else:
+            tokenized_reviews = [
+                review.get_tokenized_datapoint(
+                    selection_strategy=selection_strategy,
+                    tokenizer=tokenizer,
+                    max_length=model_max_length,
+                    for_training=for_training,
+                )
+                for review in self
+            ]
+        # If selection_strategy is specified only reviews without a suitable label are None otherwise 0 is the intended output
+        if selection_strategy:
+            tokenized_reviews = list(filter(lambda x: x is not None, tokenized_reviews))
+
+        return DataLoader(tokenized_reviews, **dataloader_args)
 
     def split(
         self, fraction: float, seed: int = None

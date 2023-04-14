@@ -10,9 +10,10 @@ optimizer:
   weight_decay: 0.01
 max_lr: 0.001
 dataset:
-  version: "purple-frog-69"
+  version: "bumsebiene-69"
   validation_split: 0.10
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
 test_run: False
+flat: False
