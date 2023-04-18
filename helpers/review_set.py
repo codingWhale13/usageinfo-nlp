@@ -292,34 +292,27 @@ class ReviewSet:
     ):
         from torch.utils.data import DataLoader
 
-        if flat:
-            tokenized_reviews = [
-                list(data_point_generator)
-                for data_point_generator in (
-                    review.get_flat_tokenized_datapoint_generator(
-                        selection_strategy=selection_strategy,
-                        tokenizer=tokenizer,
-                        max_length=model_max_length,
-                        for_training=for_training,
-                    )
-                    for review in self
-                )
-            ]
-
-            tokenized_reviews = np.concatenate(tokenized_reviews).ravel().tolist()
-        else:
-            tokenized_reviews = [
-                review.get_tokenized_datapoint(
+        tokenized_reviews = (
+            data_point
+            for data_points in (
+                review.get_tokenized_datapoints(
                     selection_strategy=selection_strategy,
                     tokenizer=tokenizer,
                     max_length=model_max_length,
                     for_training=for_training,
+                    flat=flat,
                 )
                 for review in self
-            ]
-        # If selection_strategy is specified only reviews without a suitable label are None otherwise 0 is the intended output
+            )
+            for data_point in data_points
+            if None not in data_point.values()
+        )
+
+        # If selection_strategy is specified the output should not be 0 which is used as the default value
         if selection_strategy:
-            tokenized_reviews = list(filter(lambda x: x is not None, tokenized_reviews))
+            tokenized_reviews = list(
+                filter(lambda x: 0 not in x.values(), tokenized_reviews)
+            )
 
         return DataLoader(tokenized_reviews, **dataloader_args)
 
