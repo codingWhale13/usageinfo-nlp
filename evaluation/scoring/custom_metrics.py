@@ -10,14 +10,14 @@ from evaluation.scoring.core import *
 def custom_precision(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
     if len(predictions) == 0:
         return int(len(references) == 0)
     else:
         similarities = [
-            get_most_similar(prediction, references, string_similiarity)[0]
+            get_most_similar(prediction, references, string_similarity)[0]
             for prediction in predictions
         ]
         return agg(similarities)
@@ -26,14 +26,14 @@ def custom_precision(
 def custom_recall(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
     if len(references) == 0:
         return int(len(predictions) == 0)
     else:
         similarities = [
-            get_most_similar(reference, predictions, string_similiarity)[0]
+            get_most_similar(reference, predictions, string_similarity)[0]
             for reference in references
         ]
         return agg(similarities)
@@ -42,11 +42,11 @@ def custom_recall(
 def custom_f1_score(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
-    precision = custom_precision(predictions, references, string_similiarity, agg)
-    recall = custom_recall(predictions, references, string_similiarity, agg)
+    precision = custom_precision(predictions, references, string_similarity, agg)
+    recall = custom_recall(predictions, references, string_similarity, agg)
 
     if precision == recall == 0:
         return 0
@@ -60,7 +60,7 @@ def custom_f1_score(
 def custom_precision_ak(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
     if len(predictions) == 0:
@@ -70,7 +70,7 @@ def custom_precision_ak(
             set([prediction.lower() for prediction in predictions])
         )  # remove duplicates
         similarities = [
-            get_most_similar(prediction, references, string_similiarity)[0]
+            get_most_similar(prediction, references, string_similarity)[0]
             for prediction in predictions
         ]
         if len(predictions) == 1:
@@ -89,19 +89,13 @@ def custom_precision_ak(
                 ]
             )
 
-            # print("matrix", similarity_matrix)
-            # print("weights", weights)
-            # print("sim", similarities)
-            # print("agg", agg(similarities))
-            # print("result without softmax", np.dot(similarities, weights) / sum(weights))
-
         return np.dot(similarities, weights) / sum(weights)
 
 
 def custom_recall_ak(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
     if len(references) == 0:
@@ -111,7 +105,7 @@ def custom_recall_ak(
             set([reference.lower() for reference in references])
         )  # remove duplicates
         similarities = [
-            get_most_similar(reference, predictions, string_similiarity)[0]
+            get_most_similar(reference, predictions, string_similarity)[0]
             for reference in references
         ]
         if len(references) == 1:
@@ -130,23 +124,17 @@ def custom_recall_ak(
                 ]
             )
 
-            # print("matrix", similarity_matrix)
-            # print("weights", weights)
-            # print("sim", similarities)
-            # print("agg", agg(similarities))
-            # print("result without softmax", np.dot(similarities, weights) / sum(weights))
-
         return np.dot(similarities, weights) / sum(weights)
 
 
 def custom_f1_score_ak(
     predictions: list[str],
     references: list[str],
-    string_similiarity: str = "all-mpnet-base-v2",
+    string_similarity: str = "all-mpnet-base-v2",
     agg: callable = mean,
 ) -> float:
-    precision = custom_precision_ak(predictions, references, string_similiarity, agg)
-    recall = custom_recall_ak(predictions, references, string_similiarity, agg)
+    precision = custom_precision_ak(predictions, references, string_similarity, agg)
+    recall = custom_recall_ak(predictions, references, string_similarity, agg)
 
     if precision == recall == 0:
         return 0
