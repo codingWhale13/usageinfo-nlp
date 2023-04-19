@@ -20,7 +20,7 @@ class ReviewModel(pl.LightningModule):
         hyperparameters: dict,
         data: dict,
         trainer: pl.Trainer,
-        flat: bool,
+        multiple_usage_options_strategy: str,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -32,7 +32,7 @@ class ReviewModel(pl.LightningModule):
         self.hyperparameters = hyperparameters
         self.active_layers = active_layers
         self.trainer = trainer
-        self.flat = flat
+        self.multiple_usage_options_strategy = multiple_usage_options_strategy
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
@@ -176,7 +176,7 @@ class ReviewModel(pl.LightningModule):
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             shuffle=True,  # Shuffles the training data every epoch.
             num_workers=2,
-            flat=self.flat,
+            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
     def val_dataloader(self):
@@ -185,7 +185,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.train_review_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
-            flat=self.flat,
+            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
     def test_dataloader(self):
@@ -194,7 +194,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.test_reviews_strategy,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
-            flat=self.flat,
+            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
     def _initialize_datasets(self):

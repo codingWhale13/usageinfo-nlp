@@ -287,7 +287,7 @@ class ReviewSet:
         model_max_length: int,
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
-        flat=False,
+        multiple_usage_options_strategy: str = None,
         **dataloader_args: dict,
     ):
         from torch.utils.data import DataLoader
@@ -300,7 +300,7 @@ class ReviewSet:
                     tokenizer=tokenizer,
                     max_length=model_max_length,
                     for_training=for_training,
-                    flat=flat,
+                    multiple_usage_options_strategy=multiple_usage_options_strategy,
                 )
                 for review in self
             )

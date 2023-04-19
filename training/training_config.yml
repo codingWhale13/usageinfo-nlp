@@ -16,4 +16,4 @@ cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
 test_run: False
-flat: False
+multiple_usage_options_strategy: "default"

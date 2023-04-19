@@ -1,3 +1,5 @@
+import itertools
+import random
 from copy import copy, deepcopy
 from datetime import datetime
 from typing import Union, Optional, Iterable
@@ -132,10 +134,47 @@ class Review:
         return tokens if len(tokens["input_ids"]) <= max_length else None
 
     def get_tokenized_datapoints(
-        self, selection_strategy=None, flat=False, **tokenization_kwargs
+        self,
+        selection_strategy: ls.LabelSelectionStrategyInterface = None,
+        multiple_usage_options_strategy: str = None,
+        **tokenization_kwargs,
     ):
         def format_dict(model_input, output, review_id):
             return {"input": model_input, "output": output, "review_id": review_id}
+
+        def get_output_texts_from_strategy(
+            usage_options: list[str], strategy: str = None
+        ):
+            if not strategy or strategy == "default":
+                return [", ".join(usage_options)]
+            elif strategy == "flat":
+                return usage_options or [""]
+            elif strategy.startswith("shuffle"):
+                if strategy.startswith("shuffle-"):
+                    try:
+                        permutation_limit = int(strategy.split("-")[1])
+                        if permutation_limit < 1:
+                            raise ValueError(
+                                "Number of permutations must be greater than 0"
+                            )
+                    except (IndexError, ValueError) as e:
+                        if str(e) == "Number of permutations must be greater than 0":
+                            raise e
+                        raise ValueError(
+                            f"Could not parse number of permutations for shuffle strategy '{strategy}'",
+                            "Please use 'shuffle-<number_of_permutations>'",
+                        )
+                else:
+                    permutation_limit = 4
+
+                all_permutations = [
+                    ", ".join(permutation)
+                    for permutation in itertools.permutations(usage_options)
+                ]
+                random.shuffle(all_permutations)
+                return all_permutations[:permutation_limit]
+            else:
+                raise ValueError(f"strategy '{strategy}' not supported")
 
         model_input = f"Product title: {self['product_title']} \nReview body: {self['review_body']}\n"
         model_input = self.tokenize(
@@ -152,10 +191,8 @@ class Review:
             yield format_dict(model_input, 0, self.review_id)
             return
 
-        output_texts = (
-            label["usageOptions"] or [""]
-            if flat
-            else [", ".join(label["usageOptions"])]
+        output_texts = get_output_texts_from_strategy(
+            label["usageOptions"], strategy=multiple_usage_options_strategy
         )
         for output_text in output_texts:
             yield format_dict(
