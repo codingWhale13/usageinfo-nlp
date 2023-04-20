@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausa
 from transformers.utils import logging
 import torch.nn.functional as f
 import torch
-from training.src import utils
+from training import utils
 
 logging.set_verbosity_error()
 num_token_options = 4

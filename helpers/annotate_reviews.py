@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import argparse
 
-from training.src.generator import Generator
-from training.src import utils
+from training.generator import Generator
+from training import utils
 from helpers.review_set import ReviewSet
 from helpers.label_selection import DatasetSelectionStrategy
 

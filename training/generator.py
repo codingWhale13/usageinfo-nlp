@@ -1,7 +1,7 @@
 import torch
 from typing import List
 
-from training.src import utils
+from training import utils
 from helpers.review_set import ReviewSet
 
 
