@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForCausalLM
 from transformers.utils import logging
 import torch.nn.functional as f

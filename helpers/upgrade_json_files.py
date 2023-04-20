@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import copy
 from datetime import datetime
 import json
