@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import dotenv
 import argparse
 import json
 from helpers.review_set import ReviewSet
@@ -9,6 +10,9 @@ from openai_api.openai_labelling_backend import (
     model_name_mapping,
 )
 import asyncio
+
+
+dotenv.load_dotenv()
 
 
 def parse_args():
@@ -131,7 +135,7 @@ async def main():
                 logprobs=args.logprobs,
                 prompt_id=prompt_id,
             )
-            review_set.add_label(review_id, label_id, usageOptions, metadata)
+            review_set[review_id].add_label(label_id, usageOptions, metadata)
 
             if count % intermediate_save_size == 0 and count != 0:
                 review_set.save()
