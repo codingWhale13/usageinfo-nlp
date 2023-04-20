@@ -17,3 +17,10 @@ cluster:
   num_nodes: 1 #Number of nodes
 test_run: False
 multiple_usage_options_strategy: "default"
+
+# Options for 'multiple_usage_options_strategy':
+#   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
+#   - "flat" -> ein Datapoint für jede usage option
+#   - "shuffle" -> wie bei "default" ein Datapoint, aber mit zufälliger Reihenfolge
+#   - "shuffle-n" -> n zufällige Datapoints mit jeweils unterschiedlichen zufälligen Permutationen
+#   - "shuffle-all" -> alle Permutationen als separate Datapoints

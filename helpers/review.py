@@ -119,7 +119,7 @@ class Review:
         for_training: bool,
         is_input: bool,
         max_length: int = float("inf"),
-    ):
+    ) -> Optional[dict]:
         tokens = tokenizer(text, return_tensors="pt", padding="max_length")
 
         # Remove batch dimension, since we only have one example
@@ -138,40 +138,48 @@ class Review:
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
         **tokenization_kwargs,
-    ):
-        def format_dict(model_input, output, review_id):
+    ) -> Iterable[dict]:
+        def format_dict(model_input, output, review_id) -> dict:
             return {"input": model_input, "output": output, "review_id": review_id}
 
         def get_output_texts_from_strategy(
             usage_options: list[str], strategy: str = None
-        ):
+        ) -> list[str]:
             if not strategy or strategy == "default":
                 return [", ".join(usage_options)]
             elif strategy == "flat":
                 return usage_options or [""]
             elif strategy.startswith("shuffle"):
-                permutation_limit = None
-                if strategy.startswith("shuffle-"):
+                usage_options = copy(usage_options)
+                random.shuffle(usage_options)
+                if not strategy.startswith("shuffle-"):
+                    return [", ".join(usage_options)]
+
+                permutation_limit = strategy.split("-")[1]
+                if permutation_limit == "all":
+                    permutation_limit = None
+                else:
                     try:
-                        permutation_limit = int(strategy.split("-")[1])
+                        permutation_limit = int(permutation_limit)
                         if permutation_limit < 1:
                             raise ValueError(
                                 "Number of permutations must be greater than 0"
                             )
-                    except (IndexError, ValueError) as e:
+                    except ValueError as e:
                         if str(e) == "Number of permutations must be greater than 0":
                             raise e
                         raise ValueError(
                             f"Could not parse number of permutations for shuffle strategy '{strategy}'",
-                            "Please use 'shuffle-<number_of_permutations>'",
+                            "Please use 'shuffle-<number_of_permutations>' or 'shuffle-all'",
                         )
 
-                all_permutations = [
+                permutations = [
                     ", ".join(permutation)
-                    for permutation in itertools.permutations(usage_options)
+                    for permutation in itertools.islice(
+                        itertools.permutations(usage_options), permutation_limit
+                    )
                 ]
-                random.shuffle(all_permutations)
-                return all_permutations[:permutation_limit]
+                return permutations
             else:
                 raise ValueError(f"strategy '{strategy}' not supported")
 
