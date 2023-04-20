@@ -150,6 +150,7 @@ class Review:
             elif strategy == "flat":
                 return usage_options or [""]
             elif strategy.startswith("shuffle"):
+                permutation_limit = None
                 if strategy.startswith("shuffle-"):
                     try:
                         permutation_limit = int(strategy.split("-")[1])
@@ -164,8 +165,6 @@ class Review:
                             f"Could not parse number of permutations for shuffle strategy '{strategy}'",
                             "Please use 'shuffle-<number_of_permutations>'",
                         )
-                else:
-                    permutation_limit = 4
 
                 all_permutations = [
                     ", ".join(permutation)
