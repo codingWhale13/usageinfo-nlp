@@ -157,7 +157,7 @@ export class Labeller extends React.Component {
             // update usageOptions list
             if (CUSTOM_USAGE_OPTIONS in label) {
               label[CUSTOM_USAGE_OPTIONS].forEach((customUsageOption) => {
-                if (label["usageOptions"].includes(customUsageOption) === false) {
+                if (!label["usageOptions"].includes(customUsageOption)) {
                   label["usageOptions"].push(customUsageOption);
                 }
               });
@@ -172,10 +172,7 @@ export class Labeller extends React.Component {
             }
             if ("metadata" in label === false) {
               // add fields required in v3 format for this newly created label
-              var date = new Date();
-              label["createdAt"] = new Date(
-                date.getTime() - date.getTimezoneOffset() * 60000
-              ).toISOString();
+              label["createdAt"] = new Date().toISOString();
               label["scores"] = {};
               label["datasets"] = {};
               label[METADATA] = { labellingTool: {} };
@@ -209,8 +206,8 @@ export class Labeller extends React.Component {
         return review;
       });
 
-      return reviewsDict
-    }
+      return reviewsDict;
+    };
     const toJsonBlob = (data) => {
       return new Blob(
         [
@@ -218,9 +215,10 @@ export class Labeller extends React.Component {
           JSON.stringify(data, (key, value) =>
             typeof value === "string"
               ? value.replace(
-                /[\u007f-\uffff]/g,
-                (c) => "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4)
-              )
+                  /[\u007f-\uffff]/g,
+                  (c) =>
+                    "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4)
+                )
               : value
           ).replace(/\\\\u/g, "\\u"),
         ],
@@ -228,15 +226,16 @@ export class Labeller extends React.Component {
           type: "text/plain;charset=utf-8",
         }
       );
-    }
+    };
     const reviews = formatReviewsJSONV3(this.state.reviews);
 
-    downloadBlob(toJsonBlob(
-      {
+    downloadBlob(
+      toJsonBlob({
         version: this.state.version,
         reviews: reviews,
-      }
-    ), "my_data.json");
+      }),
+      "my_data.json"
+    );
   };
 
   updateInspectionTime = () => {
@@ -347,7 +346,7 @@ export class Labeller extends React.Component {
   render() {
     const reviewLabel =
       this.state.reviews.length &&
-        this.state.reviewIndex < this.state.reviews.length
+      this.state.reviewIndex < this.state.reviews.length
         ? this.state.reviews[this.state.reviewIndex]
         : {};
     console.log(this.state, reviewLabel);
