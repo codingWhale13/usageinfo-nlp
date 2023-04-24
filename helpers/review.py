@@ -1,7 +1,8 @@
 import itertools
 import random
 from copy import copy, deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
+import dateutil.parser
 from typing import Union, Optional, Iterable
 
 from evaluation.scoring import DEFAULT_METRICS
@@ -105,7 +106,8 @@ class Review:
         ), f"label '{label_id}' already exists in review '{self.review_id}'"
 
         self.data["labels"][label_id] = {
-            "createdAt": datetime.now().astimezone().isoformat(),  # using ISO 8601
+            # using ISO 8601 with UTC timezone, https://stackoverflow.com/a/63731605
+            "createdAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "usageOptions": usage_options,
             "scores": {},
             "datasets": {},
@@ -350,7 +352,7 @@ class Review:
                     f"{error_msg_prefix} 'datasets' in label '{label_id}' is not of type dict but {type(label['datasets'])}",
                 )
             try:
-                datetime.fromisoformat(label["createdAt"])
+                dateutil.parser.isoparse(label["createdAt"])
             except Exception:
                 raise ValueError(
                     f"{error_msg_prefix} 'createdAt' timestamp in label '{label_id}' is not ISO 8601",
