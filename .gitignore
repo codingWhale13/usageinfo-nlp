@@ -144,3 +144,5 @@ build_rate
 .vercel
 
 openai_samples
+
+ec2_ssh_key_pair*
