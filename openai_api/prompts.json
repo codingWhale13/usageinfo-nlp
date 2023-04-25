@@ -8,7 +8,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be to big."
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was surprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be to big."
                 },
                 {
                     "role": "assistant",
@@ -24,7 +24,79 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\n{review['review_body']}"
+                    "content": "Here is another review:\n{{review_body}}"
+                }
+            ]
+        },
+        "with_explanation_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. Make sure each use case is understandable without context to the other use cases. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases, gifting as a use case or further product information like product quality, attributes, target audiences, etc. \n\nHere is a review: \"This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be to big.\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: The review author likes his grill. He finds it perfect for home BBQ and to smoke vegetables but it is too big for camping trips.\nSentiment: Positive\nResult: home BBQ, smoking vegetables\nConfidence: 100%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review: \"This was a perfect gift for my 10 year old daughter.\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: Because gifts are excluded as usage options in the rules there are no use cases.\nSentiment: Positive\nResult: No use cases\nConfidence: 98%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review: \"In the product description they say this pan is perfect for cooking eggs. I can not say the same. This pan is not non stick!\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: The reviewer is not happy with his pan because it was false advertised as non stick and perfect for cooking eggs. The reviewer would not recommend this pan.\nSentiment: Negative\nResult: No use cases\nConfidence: 99%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\n{{review_body}}"
+                }
+            ]
+        },
+        "with_explanation_v2": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for or as?\" by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. Make sure each use case is understandable without context to the other use cases. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases, gifting as a use case or further product information like product quality, attributes, target audiences, etc. \n\nHere is a review: \"This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be to big.\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: The review author likes his grill. He finds it perfect for home BBQ and to smoke vegetables but it is too big for camping trips.\nSentiment: Positive\nResult: home BBQ, smoking vegetables\nResult is ambiguous: No\n Needs human review: No\nMissing context/details: No\nConfidence: 100%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review: \"This was a perfect gift for my 10 year old daughter.\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: Because gifts are excluded as usage options in the rules there are no use cases.\nSentiment: Positive\nResult: No use cases\nResult is ambiguous: No\n Needs human review: No\nMissing context/details: No\nConfidence: 98%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review: \"In the product description they say this pan is perfect for cooking eggs. I can not say the same. This pan is not non stick!\""
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: The reviewer is not happy with his pan because it was false advertised as non stick and perfect for cooking eggs. The reviewer would not recommend this pan.\nSentiment: Negative\nResult: No use cases\nResult is ambiguous: No\n Needs human review: No\nMissing context/details: No\nConfidence: 99%"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\n{{review_body}}"
                 }
             ]
         }

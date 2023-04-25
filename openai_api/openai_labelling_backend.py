@@ -2,10 +2,19 @@ import os
 import time
 import json
 import openai
+from liquid import Template
+from openai_api.parsing import format_usage_options
+import dotenv
+
+dotenv_path = dotenv.find_dotenv()
+is_dotenv_found = dotenv.load_dotenv(dotenv_path)
+if is_dotenv_found is False:
+    print("Warning no .env file found")
+else:
+    print(f"Sucessfully loaded {dotenv_path} as dotenv file")
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
-no_usage_option_string = "No use cases"
 chat_models = ["gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314"]
 model_name_mapping = {
     "text-davinci-003": "davinci",
@@ -54,7 +63,8 @@ def get_chat_labels_from_openai(
 ):
     def helper(message, review):
         message = message.copy()
-        message["content"] = eval('f"""' + message["content"] + '"""')
+        template = Template(message["content"])
+        message["content"] = template.render(review_body=review["review_body"])
         return message
 
     messages = [helper(message, review) for message in messages]
@@ -104,15 +114,6 @@ def aggregate_logprobs(output: json):
     return logprobs
 
 
-def format_usage_options(text_completion: str):
-    labels = []
-    for label in text_completion.split(","):
-        if label.strip().startswith(no_usage_option_string):
-            break
-        labels.append(label.strip().strip("."))
-    return labels
-
-
 def generate_label(
     review: json,
     prompt: str | list,
@@ -121,21 +122,28 @@ def generate_label(
     logprobs: int = None,
     prompt_id: str = None,
 ):
-    metaData = {
-        "openai": {"model": model, "temperature": temperature, "prompt_id": prompt_id}
-    }
+    metadata = {"model": model, "temperature": temperature, "prompt_id": prompt_id}
     if model in chat_models:
-        output = get_chat_labels_from_openai(review, prompt, model, temperature)
-        usage_options = format_usage_options(output.message["content"].strip())
+        raw_output = (
+            get_chat_labels_from_openai(review, prompt, model, temperature)
+            .message["content"]
+            .strip()
+        )
+        usage_options, extracted_metadata = format_usage_options(raw_output)
+        print(extracted_metadata, usage_options)
+        metadata.update({"raw_output": raw_output} | extracted_metadata)
     else:
         output = get_labels_from_openai(review, prompt, model, temperature, logprobs)
-        usage_options = format_usage_options(output.text.strip())
+        raw_output = output.text.strip()
+        usage_options, extracted_metadata = format_usage_options(raw_output)
         usage_options_logprobs = aggregate_logprobs(output)
-        metaData["openai"].update(
+        metadata.update(
             {
                 "logprobs": output.logprobs,
                 "usageOptions_logporbs": usage_options_logprobs,
+                "raw_output": raw_output,
             }
+            | extracted_metadata
         )
 
-    return usage_options, metaData
+    return usage_options, {"openai": metadata}

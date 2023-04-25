@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import dotenv
 import argparse
 import json
 from helpers.review_set import ReviewSet
@@ -10,9 +9,6 @@ from openai_api.openai_labelling_backend import (
     model_name_mapping,
 )
 import asyncio
-
-
-dotenv.load_dotenv()
 
 
 def parse_args():
@@ -46,13 +42,13 @@ def parse_args():
         metavar="[0-100]",
     )
     arg_parser.add_argument(
-        "--model", "-m", default="text-davinci-003", help="OpenAI model to use"
+        "--model", "-m", default="gpt-3.5-turbo", help="OpenAI model to use"
     )
     arg_parser.add_argument(
         "--temperature",
         "-t",
         type=restricted_temperature,
-        default=1,
+        default=0.5,
         help="Set the temperature for the sampling",
         metavar="[0.0-2.0]",
     )
