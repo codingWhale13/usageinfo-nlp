@@ -289,13 +289,12 @@ class Review:
                 ), f"'{label_id}' in review '{other_review.review_id}' has inconsistent usage options"
 
                 # merge scores
-                for ref_id, score_set in other_label["scores"].items():
+                for ref_id, other_score_dict in other_label["scores"].items():
                     if ref_id not in own_label["scores"]:
-                        own_label["scores"][ref_id] = score_set
+                        own_label["scores"][ref_id] = other_score_dict
                     else:
                         # merge different score metrics for same reference
-                        merged_score_set = set(own_label["scores"][ref_id] + score_set)
-                        own_label["scores"][ref_id] = list(merged_score_set)
+                        own_label["scores"][ref_id].update(other_score_dict)
 
                 # merge datasets and metadata
                 own_label["datasets"] |= other_label["datasets"]

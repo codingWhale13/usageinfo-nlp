@@ -2,6 +2,9 @@ import os
 import time
 import json
 import openai
+import dotenv
+
+dotenv.load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")

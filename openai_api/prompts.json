@@ -8,7 +8,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be to big."
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
                 },
                 {
                     "role": "assistant",
@@ -25,6 +25,62 @@
                 {
                     "role": "user",
                     "content": "Here is another review:\n{review['review_body']}"
+                }
+            ]
+        },
+        "leoh_v2": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs, smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nThis was a perfect gift for my 10 year old daughter. It works great as a book holder."
+                },
+                {
+                    "role": "assistant",
+                    "content": "book holder"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\n{review['review_body']}"
+                }
+            ]
+        },
+        "avetis_chat_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review title and body. The product title can be of help to establish a context for a review. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nProduct title: Big grill for real men\nReview headline: Good grill!\nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs, smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nProduct title: Dress for weddings\nReview headline: Good value for money!\nReview body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "Dress for little girls"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nProduct title: {review['product_title']}\nReview headline: {review['review_headline']}\nReview body: {review['review_body']}"
                 }
             ]
         }

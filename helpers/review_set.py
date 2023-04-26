@@ -7,6 +7,7 @@ import json
 import random
 from evaluation.scoring import DEFAULT_METRICS
 from statistics import mean, variance, quantiles
+from numpy import mean, var
 
 from helpers.review import Review
 import helpers.label_selection as ls
@@ -75,7 +76,12 @@ class ReviewSet:
         return f"ReviewSet version {self.version}, reviews: {reviews}"
 
     def __getitem__(self, review_id: str) -> Review:
-        return self.reviews[review_id]
+        if isinstance(review_id, slice):
+            return [self.reviews[review_id] for review_id in list(self.reviews)][
+                review_id
+            ]
+        else:
+            return self.reviews[review_id]
 
     def __delitem__(self, review_id: str):
         del self.reviews[review_id]
@@ -112,10 +118,20 @@ class ReviewSet:
             with open(path) as file:
                 return cls.from_dict(json.load(file))
 
-        review_sets = (get_review_set(path) for path in source_paths)
+        review_sets = []
+
+        for path in source_paths:
+            absolute_path = Path(path).resolve()
+            if absolute_path.is_dir():
+                for file in Path(path).glob("*.json"):
+                    review_sets.append(get_review_set(file))
+            elif Path(path).is_file():
+                review_sets.append(get_review_set(path))
+
         review_set = functools.reduce(
             lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
         )
+
         review_set.save_path = source_paths[0] if len(source_paths) == 1 else save_path
 
         return review_set
@@ -152,7 +168,7 @@ class ReviewSet:
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ):
-        for review in self.reviews_with({label_id, reference_label_id}):
+        for review in self.reviews_with_labels({label_id, reference_label_id}):
             review.score(label_id, reference_label_id, metric_ids)
 
     def get_scores(
@@ -163,7 +179,7 @@ class ReviewSet:
     ) -> list[dict[str, float]]:
         result = {metric_id: [] for metric_id in metric_ids}
 
-        for review in self.reviews_with({label_id, reference_label_id}):
+        for review in self.reviews_with_labels({label_id, reference_label_id}):
             review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
             for metric_id, value in review_scores.items():
                 result[metric_id].append(value)
@@ -193,7 +209,8 @@ class ReviewSet:
 
         return agg_scores
 
-    def reviews_with(self, label_ids: set[str]) -> list[Review]:
+    def reviews_with_labels(self, label_ids: set[str]) -> list[Review]:
+        """Returns a review set containing only reviews with the given labels"""
         relevant_reviews = [
             review for review in self if label_ids <= review.get_label_ids()
         ]
@@ -442,6 +459,105 @@ class ReviewSet:
                 )
 
         return train_data, test_data
+
+    def score_labels_pairwise(
+        self, label_ids: list[str] = None, metric_ids: list[str] = DEFAULT_METRICS
+    ):
+        if label_ids is None:
+            label_ids = self.get_all_label_ids()
+
+        for label_id in label_ids:
+            for label_id2 in label_ids:
+                if label_id != label_id2:
+                    self.score(label_id, label_id2, metric_ids=metric_ids)
+
+    def compute_label_variance(
+        self,
+        label_ids_to_compare: Union[str, list[str]] = "all",
+        variance_type: str = "reviews",
+        metric_ids: list[str] = DEFAULT_METRICS,
+    ):
+        """Computes the variance of the pairwise scores of the labels in the review set."""
+        result = {metric_id: {} for metric_id in metric_ids}
+
+        if label_ids_to_compare == "all":
+            label_ids_to_compare = self.get_all_label_ids()
+        else:
+            assert set(label_ids_to_compare).issubset(set(self.get_all_label_ids()))
+
+        self.score_labels_pairwise(
+            label_ids=label_ids_to_compare, metric_ids=metric_ids
+        )
+
+        if variance_type == "reviews":
+            res = {metric_id: [] for metric_id in metric_ids}
+
+            for review in self:
+                pairwise_scores_per_review = {}
+                for label_id, label in review.get_labels().items():
+                    if label_id not in label_ids_to_compare:
+                        continue
+
+                    for ref_id, score_dict in label["scores"].items():
+                        if ref_id not in label_ids_to_compare or label_id == ref_id:
+                            continue
+
+                        key = tuple(sorted([label_id, ref_id]))
+                        if key not in pairwise_scores_per_review:
+                            pairwise_scores_per_review[key] = {
+                                metric_id: score_dict[metric_id]
+                                for metric_id in metric_ids
+                            }
+
+                for metric_id in metric_ids:
+                    if len(pairwise_scores_per_review) == 0:
+                        continue
+
+                    metric_scores = [
+                        scores[metric_id]
+                        for scores in pairwise_scores_per_review.values()
+                    ]
+                    res[metric_id].append(
+                        (review.review_id, mean(metric_scores), var(metric_scores))
+                    )
+
+            for metric_id in metric_ids:
+                result[metric_id]["expectation"] = mean([x[1] for x in res[metric_id]])
+                result[metric_id]["variance"] = mean([x[2] for x in res[metric_id]])
+
+            return result
+
+        elif variance_type == "labels":
+            pairwise_scores = {}
+            for review in self:
+                for label_id, label in review.get_labels().items():
+                    if label_id not in label_ids_to_compare:
+                        continue
+
+                    for ref_id, score_dict in label["scores"].items():
+                        if ref_id not in label_ids_to_compare:
+                            continue
+
+                        key = tuple(sorted([label_id, ref_id]))
+                        if key not in pairwise_scores:
+                            pairwise_scores[key] = {
+                                metric_id: [] for metric_id in metric_ids
+                            }
+
+                        for metric_id in metric_ids:
+                            pairwise_scores[key][metric_id].append(
+                                score_dict[metric_id]
+                            )
+
+            for metric_id in metric_ids:
+                result[metric_id]["expectation"] = mean(
+                    [mean(x[metric_id]) for x in pairwise_scores.values()]
+                )
+                result[metric_id]["variance"] = mean(
+                    [var(x[metric_id]) for x in pairwise_scores.values()]
+                )
+
+            return result
 
     def save_as(self, path: Union[str, Path]) -> None:
         self.save_path = path

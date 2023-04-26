@@ -1,11 +1,11 @@
 import json
 from typing import Optional, Union
 from pathlib import Path
+
 import pandas as pd
-import spacy
-from sentence_transformers import SentenceTransformer, util
 import evaluate
 
+from evaluation.scoring.embedding_cache import EmbeddingCache
 from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
 
 
@@ -63,17 +63,16 @@ def get_similarity(
         reference = reference.lower()
 
     if str_sim == "all-mpnet-base-v2":
-        if st_eval is None:
-            st_eval = SentenceTransformer("all-mpnet-base-v2")
-        embeddings1 = st_eval.encode(prediction, convert_to_tensor=True)
-        embeddings2 = st_eval.encode(reference, convert_to_tensor=True)
+        embeddings1 = get_embedding(prediction, str_sim)
+        embeddings2 = get_embedding(reference, str_sim)
+
+        from sentence_transformers import util
+
         return util.cos_sim(embeddings1, embeddings2)[0][0].item()
 
     elif str_sim == "spacy":
-        if spacy_eval is None:
-            spacy_eval = spacy.load("en_core_web_md")
-        prediction_tokens = spacy_eval(prediction)
-        reference_tokens = spacy_eval(reference)
+        prediction_tokens = get_embedding(prediction, str_sim)
+        reference_tokens = get_embedding(reference, str_sim)
         return prediction_tokens.similarity(reference_tokens)
 
     elif str_sim == "bleu":
@@ -97,6 +96,40 @@ def get_similarity(
         if str_sim in rogue_metrics.keys():
             return rogue_metrics[str_sim]
         raise ValueError(f"metric {str_sim} is not supported")
+
+
+def get_embedding(
+    usage_option: str,
+    str_sim: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+) -> list:
+    global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
+
+    if use_lowercase:
+        usage_option = usage_option.lower()
+
+    embedding_cache = EmbeddingCache.get()
+    if embedding_cache.exists(usage_option, str_sim):
+        return embedding_cache.load(usage_option, str_sim)
+
+    if str_sim == "all-mpnet-base-v2":
+        if st_eval is None:
+            from sentence_transformers import SentenceTransformer
+
+            st_eval = SentenceTransformer("all-mpnet-base-v2")
+        embedding = st_eval.encode(usage_option, convert_to_tensor=True)
+        embedding_cache.add(usage_option, str_sim, embedding)
+        return embedding
+    elif str_sim == "spacy":
+        import spacy
+
+        if spacy_eval is None:
+            spacy_eval = spacy.load("en_core_web_md")
+        embedding = spacy_eval(usage_option)
+        embedding_cache.add(usage_option, str_sim, embedding)
+        return embedding
+    else:
+        raise ValueError(f"embeddings for metric {str_sim} doesn't exist")
 
 
 def get_most_similar(

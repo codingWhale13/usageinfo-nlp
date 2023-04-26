@@ -202,7 +202,6 @@ if not os.path.exists(f"{CSV_DIR}/describe_verified_purchases.csv"):
 # get number of reviews from customers with more than 1000/5000 reviews
 
 if not os.path.exists(f"{CSV_DIR}/no_reviews_result.csv"):
-
     dfc = pd.read_csv(
         f"{CSV_DIR}/reviews_per_customer.csv", index_col=0, header=0
     ).reset_index()

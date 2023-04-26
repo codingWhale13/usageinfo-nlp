@@ -162,7 +162,6 @@ class SingleReviewMetrics:
         return results
 
     def custom_classification_score_with_negative_class(self):
-
         matches = {reference: [] for reference in self.references}
         non_matching_predictions = []
 
@@ -239,7 +238,6 @@ class SingleReviewMetrics:
         return best_matching_predictions, best_matching_references
 
     def custom_similarity_classification_score_with_negative_class(self):
-
         best_matching_predictions = dict.fromkeys(self.references, 0)
         best_matching_references = dict.fromkeys(self.predictions, 0)
 
