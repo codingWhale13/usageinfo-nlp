@@ -327,11 +327,9 @@ class ReviewSet:
 
         # If selection_strategy is specified the output should not be 0 which is used as the default value
         if selection_strategy:
-            tokenized_reviews = list(
-                filter(lambda x: 0 not in x.values(), tokenized_reviews)
-            )
+            tokenized_reviews = filter(lambda x: 0 not in x.values(), tokenized_reviews)
 
-        return DataLoader(tokenized_reviews, **dataloader_args)
+        return DataLoader(list(tokenized_reviews), **dataloader_args)
 
     def split(
         self, fraction: float, seed: int = None
