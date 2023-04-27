@@ -177,6 +177,7 @@ class ReviewModel(pl.LightningModule):
             shuffle=True,  # Shuffles the training data every epoch.
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
+            dataset_name=self.data["dataset_name"],
         )
 
     def val_dataloader(self):
@@ -186,6 +187,7 @@ class ReviewModel(pl.LightningModule):
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
+            dataset_name=self.data["dataset_name"],
         )
 
     def test_dataloader(self):
@@ -195,6 +197,7 @@ class ReviewModel(pl.LightningModule):
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
+            dataset_name=self.data["dataset_name"],
         )
 
     def _initialize_datasets(self):

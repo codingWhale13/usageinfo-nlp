@@ -135,57 +135,61 @@ class Review:
 
         return tokens if len(tokens["input_ids"]) <= max_length else None
 
+    def _get_output_texts_from_strategy(
+        self, usage_options: list[str], strategy: str = None
+    ) -> list[str]:
+        if not strategy or strategy == "default":
+            return [", ".join(usage_options)]
+        elif strategy == "flat":
+            return usage_options or [""]
+        elif strategy.startswith("shuffle"):
+            usage_options = copy(usage_options)
+            random.shuffle(usage_options)
+            if not strategy.startswith("shuffle-"):
+                return [", ".join(usage_options)]
+
+            permutation_limit = strategy.split("-")[1]
+            if permutation_limit == "all":
+                permutation_limit = None
+            else:
+                try:
+                    permutation_limit = int(permutation_limit)
+                    if permutation_limit < 1:
+                        raise ValueError(
+                            "Number of permutations must be greater than 0"
+                        )
+                except ValueError as e:
+                    if str(e) == "Number of permutations must be greater than 0":
+                        raise e
+                    raise ValueError(
+                        f"Could not parse number of permutations for shuffle strategy '{strategy}'",
+                        "Please use 'shuffle-<number_of_permutations>' or 'shuffle-all'",
+                    )
+
+            permutations = [
+                ", ".join(permutation)
+                for permutation in itertools.islice(
+                    itertools.permutations(usage_options), permutation_limit
+                )
+            ]
+            return permutations
+        else:
+            raise ValueError(f"strategy '{strategy}' not supported")
+
     def get_tokenized_datapoints(
         self,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
+        dataset_name: str = None,
         **tokenization_kwargs,
     ) -> Iterable[dict]:
+        def get_prompt(product_title: str, review_body: str) -> str:
+            return f"Product title: {product_title} \nReview body: {review_body}\n"
+
         def format_dict(model_input, output, review_id) -> dict:
             return {"input": model_input, "output": output, "review_id": review_id}
 
-        def get_output_texts_from_strategy(
-            usage_options: list[str], strategy: str = None
-        ) -> list[str]:
-            if not strategy or strategy == "default":
-                return [", ".join(usage_options)]
-            elif strategy == "flat":
-                return usage_options or [""]
-            elif strategy.startswith("shuffle"):
-                usage_options = copy(usage_options)
-                random.shuffle(usage_options)
-                if not strategy.startswith("shuffle-"):
-                    return [", ".join(usage_options)]
-
-                permutation_limit = strategy.split("-")[1]
-                if permutation_limit == "all":
-                    permutation_limit = None
-                else:
-                    try:
-                        permutation_limit = int(permutation_limit)
-                        if permutation_limit < 1:
-                            raise ValueError(
-                                "Number of permutations must be greater than 0"
-                            )
-                    except ValueError as e:
-                        if str(e) == "Number of permutations must be greater than 0":
-                            raise e
-                        raise ValueError(
-                            f"Could not parse number of permutations for shuffle strategy '{strategy}'",
-                            "Please use 'shuffle-<number_of_permutations>' or 'shuffle-all'",
-                        )
-
-                permutations = [
-                    ", ".join(permutation)
-                    for permutation in itertools.islice(
-                        itertools.permutations(usage_options), permutation_limit
-                    )
-                ]
-                return permutations
-            else:
-                raise ValueError(f"strategy '{strategy}' not supported")
-
-        model_input = f"Product title: {self['product_title']} \nReview body: {self['review_body']}\n"
+        model_input = get_prompt(self["product_title"], self["review_body"])
         model_input = self.tokenize(
             text=model_input, is_input=True, **tokenization_kwargs
         )
@@ -200,19 +204,37 @@ class Review:
             yield format_dict(model_input, 0, self.review_id)
             return
 
-        output_texts = get_output_texts_from_strategy(
-            label["usageOptions"], strategy=multiple_usage_options_strategy
-        )
-        for output_text in output_texts:
-            yield format_dict(
-                model_input,
-                self.tokenize(
-                    text=output_text,
-                    is_input=False,
-                    **tokenization_kwargs,
-                ),
-                self.review_id,
+        augmentations = [(model_input, label["usageOptions"])]
+        if dataset_name and dataset_name in label["datasets"]:
+            for augmentation in label.get("augmentations", {}).get(dataset_name, []):
+                model_input = get_prompt(
+                    augmentation.get("product_title") or self["product_title"],
+                    augmentation.get("review_body") or self["review_body"],
+                )
+                model_input = self.tokenize(
+                    text=model_input, is_input=True, **tokenization_kwargs
+                )
+                augmentations.append(
+                    (
+                        model_input,
+                        augmentation.get("usageOptions") or label["usageOptions"],
+                    )
+                )
+
+        for model_input, usage_options in augmentations:
+            output_texts = self._get_output_texts_from_strategy(
+                usage_options, strategy=multiple_usage_options_strategy
             )
+            for output_text in output_texts:
+                yield format_dict(
+                    model_input,
+                    self.tokenize(
+                        text=output_text,
+                        is_input=False,
+                        **tokenization_kwargs,
+                    ),
+                    self.review_id,
+                )
 
     def remove_label(self, label_id: str, inplace=True) -> Optional["Review"]:
         review_without_label = (
