@@ -17,7 +17,10 @@ class Generator:
     ) -> None:
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
         checkpoint = torch.load(
-            utils.get_model_path(self.model_artifact), map_location=torch.device("cpu")
+            utils.get_model_path(self.model_artifact),
+            map_location=torch.device(
+                "cuda" if torch.cuda.is_available() else "cpu"
+            ),  # alternatively, map_location=torch.device("cpu") for CPU
         )
         model_config = utils.get_model_config_from_checkpoint(
             checkpoint["model"], checkpoint
@@ -68,17 +71,13 @@ class Generator:
         return review_ids, model_inputs, predicted_usage_options, predictions
 
     def generate(self, batch, decoder_input_ids=None, offset=0):
-        if decoder_input_ids is not None:
-            return self.get_predictions_and_token_probs(
-                self.model.generate(
-                    **batch["input"],
-                    **self.generation_config,
-                    decoder_input_ids=decoder_input_ids,
-                ),
-                offset,
-            )
         return self.get_predictions_and_token_probs(
-            self.model.generate(**batch["input"], **self.generation_config), offset
+            self.model.generate(
+                **batch["input"],
+                **self.generation_config,
+                decoder_input_ids=decoder_input_ids,
+            ),
+            offset,
         )
 
     def get_predictions_and_token_probs(self, outputs, offset):
