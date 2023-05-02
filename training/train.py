@@ -1,18 +1,24 @@
-#!/usr/bin/env python3
+#!/bin/python3
 # %%
+import warnings
+
 import torch
-from lightning import pytorch as pl
 import wandb
 import warnings
 import sys
+from codecarbon import EmissionsTracker
+from lightning import pytorch as pl
+from sustainability_logger import SustainabilityLogger
 
 from model import ReviewModel
 import utils
 
 # %%
 wandb.login()
+
 torch.set_float32_matmul_precision("medium")
 pl.seed_everything(42)
+
 warnings.filterwarnings(
     "ignore", ".*Consider increasing the value of the `num_workers` argument*"
 )
@@ -72,6 +78,7 @@ dataset_parameters = {
 }
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
 
+
 # %% Initialization
 if not test_run:
     logger = pl.loggers.WandbLogger(
@@ -108,8 +115,12 @@ model = ReviewModel(
     lr_scheduler_type=config["lr_scheduler_type"],
 )
 
-# %% Training
-trainer.fit(model)
-
-# %% Testing
-trainer.test(model)
+# %% Training and testing
+if not test_run:
+    with SustainabilityLogger(experiment_description="training"):
+        trainer.fit(model)
+    with SustainabilityLogger(experiment_description="testing"):
+        trainer.test(model)
+else:
+    trainer.fit(model)
+    trainer.test(model)
