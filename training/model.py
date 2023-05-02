@@ -2,6 +2,7 @@ import torch
 from lightning import pytorch as pl
 from torch.utils.data import DataLoader
 from copy import copy
+from typing import Optional
 
 import utils
 from helpers.review_set import ReviewSet
@@ -21,6 +22,8 @@ class ReviewModel(pl.LightningModule):
         data: dict,
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
+        lr_scheduler_type: Optional[str],
+        optimizer_args: dict,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -33,6 +36,8 @@ class ReviewModel(pl.LightningModule):
         self.active_layers = active_layers
         self.trainer = trainer
         self.multiple_usage_options_strategy = multiple_usage_options_strategy
+        self.lr_scheduler_type = lr_scheduler_type
+        self.optimizer_args = optimizer_args
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
@@ -93,6 +98,7 @@ class ReviewModel(pl.LightningModule):
             prog_bar=True,
             logger=True,
             sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
         )
         return loss
 
@@ -106,15 +112,17 @@ class ReviewModel(pl.LightningModule):
             prog_bar=True,
             logger=True,
             sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
         )
-
-        self.log(
-            "epoch_end_lr",
-            self.lr_scheduler.get_last_lr()[0],
-            on_epoch=True,
-            logger=True,
-            sync_dist=True,
-        )
+        if self.lr_scheduler_type != None:
+            self.log(
+                "epoch_end_lr",
+                self.lr_scheduler.get_last_lr()[0],
+                on_epoch=True,
+                logger=True,
+                sync_dist=True,
+                batch_size=self.hyperparameters["batch_size"],
+            )
         torch.cuda.empty_cache()
 
     def validation_step(self, batch, __):
@@ -126,6 +134,7 @@ class ReviewModel(pl.LightningModule):
             prog_bar=True,
             logger=True,
             sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
         )
         return loss
 
@@ -139,6 +148,7 @@ class ReviewModel(pl.LightningModule):
             prog_bar=True,
             logger=True,
             sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
         )
 
     def test_step(self, batch, __):
@@ -149,18 +159,24 @@ class ReviewModel(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # Huggingface recommends this optimizer https://github.com/facebookresearch/fairseq/blob/775122950d145382146e9120308432a9faf9a9b8/fairseq/optim/adafactor.py
-        optimizer = self.optimizer(
-            self.parameters(),
-            weight_decay=self.hyperparameters["weight_decay"],
-        )
-        lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=self.hyperparameters["max_lr"],
-            total_steps=self.trainer.estimated_stepping_batches,
-        )
-        self.lr_scheduler = lr_scheduler
-        return [optimizer], [{"scheduler": lr_scheduler, "interval": "step"}]
+        optimizer = self.optimizer(self.parameters(), **self.optimizer_args)
+
+        if self.lr_scheduler_type == "OneCycleLR":
+            self.lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=self.hyperparameters["max_lr"],
+                total_steps=self.trainer.estimated_stepping_batches,
+            )
+            return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
+
+        if self.lr_scheduler_type == "AdaFactor":
+            from transformers.optimization import AdafactorSchedule
+
+            self.lr_scheduler = AdafactorSchedule(optimizer)
+            return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
+
+        # This is the right way to return an optimizer, without scheduler, in lightning (https://github.com/Lightning-AI/lightning/issues/3795)
+        return [optimizer]
 
     def train_dataloader(self):
         return self.train_reviews.get_dataloader(

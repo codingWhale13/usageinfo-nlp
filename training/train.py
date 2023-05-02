@@ -64,12 +64,13 @@ del config["cluster"], config["test_run"]
 hyperparameters = {
     "weight_decay": config["optimizer"]["weight_decay"],
     "batch_size": config["batch_size"],
-    "max_lr": config["max_lr"],
+    "max_lr": config["optimizer"]["lr"],
 }
 dataset_parameters = {
     "dataset_name": config["dataset"]["version"],
     "validation_split": config["dataset"]["validation_split"],
 }
+optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
 
 # %% Initialization
 if not test_run:
@@ -77,6 +78,9 @@ if not test_run:
         project="rlp-t2t", entity="bsc2022-usageinfo", config=config
     )
     checkpoint_callback = utils.get_checkpoint_callback(logger, config)
+
+if not torch.cuda.is_available():
+    print("WARNING: CUDA is not available, using CPU instead.")
 
 trainer = pl.Trainer(
     strategy="ddp_find_unused_parameters_false",
@@ -95,11 +99,13 @@ model = ReviewModel(
     tokenizer=model_config[1],
     max_length=model_config[2],
     active_layers=config["active_layers"],
-    optimizer=utils.get_optimizer(config["optimizer"]["name"]),
+    optimizer=optimizer,
+    optimizer_args=optimizer_args,
     hyperparameters=hyperparameters,
     data=dataset_parameters,
     trainer=trainer,
     multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
+    lr_scheduler_type=config["lr_scheduler_type"],
 )
 
 # %% Training

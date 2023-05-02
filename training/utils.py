@@ -6,6 +6,7 @@ from transformers import (
     T5ForConditionalGeneration,
     BartTokenizer,
     BartForConditionalGeneration,
+    optimization,
 )
 import torch
 import dotenv
@@ -43,7 +44,11 @@ models = {
 }
 
 optimizers = {
-    "AdamW": torch.optim.AdamW,
+    "AdamW": (torch.optim.AdamW, ["weight_decay"]),
+    "AdaFactor": (
+        optimization.Adafactor,
+        ["scale_parameter", "relative_step", "warmup_init", "lr"],
+    ),
 }
 
 
@@ -109,8 +114,12 @@ def get_model_config_from_checkpoint(model_name: str, checkpoint: dict) -> tuple
     return model_config
 
 
-def get_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
-    return optimizers[optimizer_name]
+def get_optimizer(optimizer_args: dict) -> torch.optim.Optimizer:
+    optimizer, allowed_args = optimizers[optimizer_args["name"]]
+    optimizer_args = {
+        k: v for k, v in optimizer_args.items() if k in allowed_args and v != None
+    }
+    return optimizer, optimizer_args
 
 
 def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):

@@ -6,12 +6,16 @@ active_layers:
 artifact:
   name: #"scintillating-mandu-99"
   checkpoint: #9
-epochs: 50
-batch_size: 8
-optimizer:
+epochs: 20
+batch_size: 16
+optimizer: #Set all parameters you do not want to null
   name: "AdamW"
   weight_decay: 0.01
-max_lr: 0.001
+  scale_parameter: True
+  relative_step: True
+  warmup_init: True
+  lr: 0.0001
+lr_scheduler_type: "OneCycleLR" #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 dataset:
   version: "bumsebiene-69"
   validation_split: 0.10
@@ -19,7 +23,7 @@ cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
 test_run: False
-multiple_usage_options_strategy: "default"
+multiple_usage_options_strategy: "shuffle-3"
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
