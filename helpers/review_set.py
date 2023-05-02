@@ -148,6 +148,16 @@ class ReviewSet:
     def get_review(self, review_id: str) -> Review:
         return self.reviews[review_id]
 
+    def count_common_reviews(self, other: "ReviewSet") -> int:
+        common_review_counter = 0
+        for review in other:
+            if review in self:
+                common_review_counter += 1
+        return common_review_counter
+
+    def count_new_reviews(self, other: "ReviewSet") -> int:
+        return len(other) - self.count_common_reviews(other)
+
     def get_all_label_ids(self) -> set:
         label_ids = set()
         for review in self:
