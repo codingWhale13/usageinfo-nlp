@@ -1,5 +1,8 @@
 model: "t5-small"
-active_layers: "encoder_0 decoder_0 lm_head" #Space seperated components, with number of layers backwards after _. E.g. "encoder_1 decoder_2 lm_head"
+active_layers:
+  encoder: "-5:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  decoder: ":0"
+  lm_head: True
 artifact:
   name: #"scintillating-mandu-99"
   checkpoint: #9
@@ -24,3 +27,9 @@ multiple_usage_options_strategy: "default"
 #   - "shuffle" -> wie bei "default" ein Datapoint, aber mit zufälliger Reihenfolge
 #   - "shuffle-n" -> n zufällige Datapoints mit jeweils unterschiedlichen zufälligen Permutationen
 #   - "shuffle-all" -> alle Permutationen als separate Datapoints
+
+# Further examples for 'active_layers' syntax:
+#   - ':0' -> activate none
+#   - ':' -> activate all ('0:') also works
+#   - '-5:' -> activate last five
+#   - ':3' -> activate first three

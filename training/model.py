@@ -45,27 +45,21 @@ class ReviewModel(pl.LightningModule):
         self._freeze_model()
 
     def _freeze_model(self):
-        def _unfreeze(component, layer):
-            num_layers = int(layer.split("_")[-1])
-            last_layer_index = len(component.block)
-            for i in range(last_layer_index - num_layers, last_layer_index):
-                for param in component.block[i].parameters():
+        def unfreeze(component, slice_: str):
+            transformer_blocks = eval(f"list(component.block)[{slice_}]")
+            for block in transformer_blocks:
+                for param in block.parameters():
                     param.requires_grad = True
 
         for param in self.model.parameters():
             param.requires_grad = False
 
-        layers = self.active_layers.split()
-        for layer in layers:
-            if "encoder" in layer:
-                _unfreeze(self.model.encoder, layer)
+        if self.active_layers["lm_head"]:
+            for param in self.model.lm_head.parameters():
+                param.requires_grad = True
 
-            if "decoder" in layer:
-                _unfreeze(self.model.decoder, layer)
-
-            if "lm_head" in layer:
-                for param in self.model.lm_head.parameters():
-                    param.requires_grad = True
+        unfreeze(self.model.encoder, self.active_layers["encoder"])
+        unfreeze(self.model.decoder, self.active_layers["decoder"])
 
     def forward(
         self,

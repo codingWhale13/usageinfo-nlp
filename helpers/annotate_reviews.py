@@ -15,8 +15,8 @@ def arg_parse():
         "-g",
         "--generation_config",
         type=str,
-        default="generation_config",
-        help="Generation config to use for prediction",
+        default=utils.get_config_path("generation_config"),
+        help="Path to generation config to use for prediction",
     )
     parser.add_argument(
         "-q",

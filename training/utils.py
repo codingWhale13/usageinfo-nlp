@@ -65,12 +65,13 @@ def get_model_path(model_artifact: dict) -> str:
     return os.path.join(get_model_dir(model_artifact["name"]), checkpoint_name)
 
 
-def get_config(name: str) -> dict:
-    config_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), rf"{name}.yml"
-    )
-    print(f"Loading config from {config_path}")
-    with open(config_path, "r") as file:
+def get_config_path(name: str) -> dict:
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), name + ".yml")
+
+
+def get_config(path: str) -> dict:
+    print(f"Loading config from {os.path.abspath(path)}")
+    with open(path, "r") as file:
         config = yaml.safe_load(file)
 
     return config
@@ -112,13 +113,12 @@ def get_optimizer(optimizer_name: str) -> torch.optim.Optimizer:
     return optimizers[optimizer_name]
 
 
-def get_checkpoint_callback(logger: pl.loggers.WandbLogger):
+def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
     time = datetime.datetime.now().strftime("%m_%d_%H_%M")
 
     run_name = f"{time}_{logger.experiment.name}"
     dirpath = f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/models/{run_name}"
 
-    config = get_config("training_config")
     os.mkdir(dirpath)
     with open(os.path.join(dirpath, "config.yml"), "w+") as file:
         yaml.dump(config, file)
