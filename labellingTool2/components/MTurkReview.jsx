@@ -192,7 +192,6 @@ class MTurkReview extends Component {
           }}
           saveLabel={this.saveLabel}
           navigateToNext={() => {
-            this.updateInspectionTime();
             this.setState({
               reviewIndex: this.state.reviewIndex + 1,
             });
@@ -200,7 +199,6 @@ class MTurkReview extends Component {
           isPreviousDisabled={this.state.reviewIndex === 0}
           isNextDisabled={isLastReview}
           navigateToPrevious={() => {
-            this.updateInspectionTime();
             this.setState({ reviewIndex: this.state.reviewIndex - 1 });
           }}
         />

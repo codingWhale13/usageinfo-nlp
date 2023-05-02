@@ -326,8 +326,6 @@ export class Labeller extends React.Component {
   };
 
   navigateToNext = () => {
-    this.updateInspectionTime();
-
     this.setState({
       reviewIndex: this.state.reviewIndex + 1,
       maxReviewIndex: Math.max(
@@ -339,7 +337,6 @@ export class Labeller extends React.Component {
 
   navigateToPrevious = () => {
     if (this.state.reviewIndex > 0) {
-      this.updateInspectionTime();
       this.setState({ reviewIndex: this.state.reviewIndex - 1 });
     }
   };
