@@ -23,7 +23,9 @@ class bcolors:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Easily handle reviewset json files.")
+    parser = argparse.ArgumentParser(
+        description="Easily handle reviewset json files. Call the script with only a json file path to see some stats about that reviewset."
+    )
     parser.add_argument(
         "base_file",
         type=str,

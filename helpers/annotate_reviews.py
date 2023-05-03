@@ -49,13 +49,13 @@ def arg_parse():
         "-tod",
         "--trained_on_dataset",
         action="store_true",
-        help="Choose the trained on dataset instead of giving dataset names",
+        help="Choose the test fraction of the dataset, the model was trained on instead of giving dataset names",
     )
     parser.add_argument(
         "-ftor",
         "--filter_trained_on_reviews",
         action="store_true",
-        help="Filter out reviews that were trained on",
+        help="Filter out reviews that the model was trained on",
     )
     parser.add_argument(
         "artifact_name",
