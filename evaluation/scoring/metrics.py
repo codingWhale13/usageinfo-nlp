@@ -1,19 +1,54 @@
-from evaluation.scoring.core import get_most_similar, get_similarity
-from evaluation.scoring.standard_metrics import bleu_score, sacrebleu_score, rouge_score
+import math
+from statistics import mean
+
 from evaluation.scoring import DEFAULT_METRICS
+from evaluation.scoring.core import get_most_similar, get_similarity
 from evaluation.scoring.custom_metrics import (
     custom_f1_score,
-    custom_recall,
-    custom_precision,
     custom_f1_score_ak,
+    custom_precision,
     custom_precision_ak,
+    custom_recall,
     custom_recall_ak,
 )
-from statistics import mean
-import math
+from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebleu_score
 
-DEFAULT_STRING_SIMILARITY = "all-mpnet-base-v2"
-DEFAULT_AGG = mean
+# NOTE: Do not change these values. They are directly linked with specific metric names
+# If you want to use other parameters, add new metric configurations in CUSTOM_METRIC_FUNCTIONS
+KWARGS_MPNET_V1 = {"use_lowercase": True, "comparator": "all-mpnet-base-v2"}
+KWARGS_OPENAI_V1 = {
+    "use_lowercase": True,
+    "comparator": "openai",
+    "openai_params": {
+        "model": "gpt-3.5-turbo",
+        "prompt_id": "nils_v1",
+        "temperature": 1.0,
+    },
+}
+
+# NOTE: a metric should include the word "openai" if and only if comparator="openai" is used
+# This allows for using asyncio in ReviewSet.score()
+CUSTOM_METRIC_FUNCTIONS = {
+    "custom_min_precision": (custom_precision, {"agg": min, **KWARGS_MPNET_V1}),
+    "custom_mean_precision": (custom_precision, {"agg": mean, **KWARGS_MPNET_V1}),
+    "custom_min_recall": (custom_recall, {"agg": min, **KWARGS_MPNET_V1}),
+    "custom_mean_recall": (custom_recall, {"agg": mean, **KWARGS_MPNET_V1}),
+    "custom_min_f1": (custom_f1_score, {"agg": min, **KWARGS_MPNET_V1}),
+    "custom_mean_f1": (custom_f1_score, {"agg": mean, **KWARGS_MPNET_V1}),
+    "custom_weighted_mean_precision": (custom_precision_ak, KWARGS_MPNET_V1),
+    "custom_weighted_mean_recall": (custom_recall_ak, KWARGS_MPNET_V1),
+    "custom_weighted_mean_f1": (custom_f1_score_ak, KWARGS_MPNET_V1),
+    "custom_weighted_mean_f1_openai": (custom_f1_score_ak, KWARGS_OPENAI_V1),
+}
+STANDARD_METRIC_FUNCTIONS = {
+    "bleu": (bleu_score, {}),
+    "sacrebleu": (sacrebleu_score, {}),
+    "rouge1": (rouge_score, {"score_type": "rouge1"}),
+    "rouge2": (rouge_score, {"score_type": "rouge2"}),
+    "rougeL": (rouge_score, {"score_type": "rougeL"}),
+    "rougeLsum": (rouge_score, {"score_type": "rougeLsum"}),
+    "rouge1": (rouge_score, {"score_type": "rouge1"}),
+}
 DEFAULT_NLP_THRESHOLD = 0.7
 
 
@@ -22,28 +57,17 @@ class NoUseCaseOptions:
 
 
 class SingleReviewMetrics:
-    def __init__(
-        self,
-        predictions: list,
-        references: list,
-        string_similarity=DEFAULT_STRING_SIMILARITY,
-    ) -> None:
+    def __init__(self, predictions: list, references: list) -> None:
         self.predictions = predictions
         self.references = references
-        self.string_similarity = string_similarity
 
     @classmethod
     def from_labels(
-        cls,
-        labels: dict[str, dict],
-        prediction_label_id: str,
-        reference_label_id: str,
-        string_similarity: str = DEFAULT_STRING_SIMILARITY,
+        cls, labels: dict[str, dict], prediction_label_id: str, reference_label_id: str
     ):
         return cls(
             predictions=labels[prediction_label_id]["usageOptions"],
             references=labels[reference_label_id]["usageOptions"],
-            string_similarity=string_similarity,
         )
 
     def calculate(
@@ -53,78 +77,25 @@ class SingleReviewMetrics:
         scores = {}
 
         for metric_id in metric_ids:
-            try:
-                metric_result = getattr(self, metric_id)()
-            except ZeroDivisionError:
-                metric_result = math.nan
+            if metric_id in CUSTOM_METRIC_FUNCTIONS:
+                fn, kwargs = CUSTOM_METRIC_FUNCTIONS[metric_id]
+                metric_result = fn(
+                    predictions=self.predictions, references=self.references, **kwargs
+                )
+            elif metric_id in STANDARD_METRIC_FUNCTIONS:
+                fn, kwargs = STANDARD_METRIC_FUNCTIONS[metric_id]
+                metric_result = fn(
+                    predictions=self.predictions, references=self.references, **kwargs
+                )
+            else:
+                try:
+                    metric_result = getattr(self, metric_id)()
+                except ZeroDivisionError:
+                    metric_result = math.nan
+
             scores[metric_id] = metric_result
 
         return scores
-
-    def custom_mean_recall(self):
-        return custom_recall(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=mean,
-        )
-
-    def custom_mean_precision(self):
-        return custom_precision(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=mean,
-        )
-
-    def custom_mean_f1(self):
-        return custom_f1_score(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=mean,
-        )
-
-    def custom_min_precision(self):
-        return custom_precision(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=min,
-        )
-
-    def custom_min_recall(self):
-        return custom_recall(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=min,
-        )
-
-    def custom_min_f1(self):
-        return custom_f1_score(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-            agg=min,
-        )
-
-    def custom_weighted_mean_f1(self):
-        return custom_f1_score_ak(
-            predictions=self.predictions,
-            references=self.references,
-            string_similarity=self.string_similarity,
-        )
-
-    def custom_weighted_mean_precision(self):
-        return custom_precision_ak(
-            self.predictions, self.references, self.string_similarity, mean
-        )
-
-    def custom_weighted_mean_recall(self):
-        return custom_recall_ak(
-            self.predictions, self.references, self.string_similarity, mean
-        )
 
     def custom_classification_score(self):
         matches = {reference: [] for reference in self.references}
@@ -133,9 +104,7 @@ class SingleReviewMetrics:
         for prediction in self.predictions:
             is_prediction_matched = False
             for reference in self.references:
-                similarity = get_similarity(
-                    prediction, reference, self.string_similarity
-                )
+                similarity = get_similarity(prediction, reference, **KWARGS_MPNET_V1)
                 if similarity >= DEFAULT_NLP_THRESHOLD:
                     matches[reference].append(prediction)
                     is_prediction_matched = True
@@ -168,11 +137,8 @@ class SingleReviewMetrics:
         for prediction in self.predictions:
             is_prediction_matched = False
             for reference in self.references:
-                similarity = get_similarity(
-                    prediction, reference, self.string_similarity
-                )
+                similarity = get_similarity(prediction, reference, **KWARGS_MPNET_V1)
                 if similarity >= DEFAULT_NLP_THRESHOLD:
-                    print(similarity, prediction, reference)
                     matches[reference].append(prediction)
                     is_prediction_matched = True
             if is_prediction_matched == False:
@@ -210,13 +176,13 @@ class SingleReviewMetrics:
 
         for prediction in self.predictions:
             similarity, best_matched_reference = get_most_similar(
-                prediction, self.references, self.string_similarity
+                prediction, self.references, KWARGS_MPNET_V1
             )
             best_matching_references[prediction] = (similarity, best_matched_reference)
 
         for reference in self.references:
             similarity, best_matching_prediction = get_most_similar(
-                reference, self.predictions, self.string_similarity
+                reference, self.predictions, **KWARGS_MPNET_V1
             )
             best_matching_predictions[reference] = (
                 similarity,
@@ -243,12 +209,12 @@ class SingleReviewMetrics:
 
         for prediction in self.predictions:
             similarity, best_matched_reference = get_most_similar(
-                prediction, self.references, self.string_similarity
+                prediction, self.references, **KWARGS_MPNET_V1
             )
             best_matching_references[prediction] = (similarity, best_matched_reference)
         for reference in self.references:
             similarity, best_matching_prediction = get_most_similar(
-                reference, self.predictions, self.string_similarity
+                reference, self.predictions, **KWARGS_MPNET_V1
             )
             best_matching_predictions[reference] = (
                 similarity,
@@ -284,43 +250,3 @@ class SingleReviewMetrics:
         )
 
         return results
-
-    def bleu(self):
-        return bleu_score(
-            predictions=self.predictions,
-            references=self.references,
-        )
-
-    def sacrebleu(self):
-        return sacrebleu_score(
-            predictions=self.predictions,
-            references=self.references,
-        )
-
-    def rouge1(self):
-        return rouge_score(
-            predictions=self.predictions,
-            references=self.references,
-            rouge_score="rouge1",
-        )
-
-    def rouge2(self):
-        return rouge_score(
-            predictions=self.predictions,
-            references=self.references,
-            rouge_score="rouge2",
-        )
-
-    def rougeL(self):
-        return rouge_score(
-            predictions=self.predictions,
-            references=self.references,
-            rouge_score="rougeL",
-        )
-
-    def rougeLsum(self):
-        return rouge_score(
-            predictions=self.predictions,
-            references=self.references,
-            rouge_score="rougeLsum",
-        )

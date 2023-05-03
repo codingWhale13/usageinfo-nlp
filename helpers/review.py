@@ -2,11 +2,12 @@ import itertools
 import random
 from copy import copy, deepcopy
 from datetime import datetime, timezone
-import dateutil.parser
-from typing import Union, Optional, Iterable
+from typing import Iterable, Optional, Union
 
-from evaluation.scoring import DEFAULT_METRICS
+import dateutil.parser
+
 import helpers.label_selection as ls
+from evaluation.scoring import DEFAULT_METRICS
 
 
 class Review:
@@ -100,10 +101,12 @@ class Review:
         label_id: str,
         usage_options: list[str],
         metadata: dict = {},
+        overwrite: bool = False,
     ) -> None:
-        assert (
-            label_id not in self.get_labels()
-        ), f"label '{label_id}' already exists in review '{self.review_id}'"
+        if not overwrite:
+            assert (
+                label_id not in self.get_labels()
+            ), f"label '{label_id}' already exists in review '{self.review_id}'"
 
         self.data["labels"][label_id] = {
             # using ISO 8601 with UTC timezone, https://stackoverflow.com/a/63731605
@@ -252,10 +255,7 @@ class Review:
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
-        if "scores" not in self.get_label_for_id(label_id):
-            self.get_label_for_id(label_id)["scores"] = {}  # comply with JSON v3
-
-        scores = self.get_label_for_id(label_id)["scores"]  # use reference from here
+        scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
 
         if reference_label_id not in scores:
             scores[reference_label_id] = {}
@@ -333,7 +333,7 @@ class Review:
         error_msg_prefix = f"encountered error in review '{self.review_id}':"
 
         data_keys_set = set(self.data.keys())
-        if data_keys_set != self.review_attributes:
+        if not set(self.review_attributes).issubset(set(data_keys_set)):
             raise ValueError(
                 f"{error_msg_prefix} wrong attribute names\n"
                 f"got: {data_keys_set}\nexpected: {self.review_attributes}"

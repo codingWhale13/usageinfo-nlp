@@ -1,16 +1,26 @@
-import json
-from typing import Optional, Union
 from pathlib import Path
+from typing import Optional, Union
 
-import pandas as pd
 import evaluate
+import pandas as pd
 
-from evaluation.scoring.embedding_cache import EmbeddingCache
+from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
-
+from openai_api.openai_backend import (
+    DEFAULT_OPENAI_SIM_PARAMS,
+    get_phrase_similiarity_from_openai,
+)
 
 # models for string similarity will only be loaded when needed
 spacy_eval = bleu_eval = sacrebleu_eval = rouge_eval = st_eval = None
+
+
+OPENAI_SIMILIARITY_CLASSES = {
+    "identical": 1,
+    "very similar": 0.9,
+    "somewhat similar": 0.5,
+    "dissimilar": 0,
+}
 
 
 def extract_review_with_id(df: pd.DataFrame, review_id: str) -> Optional[pd.Series]:
@@ -44,17 +54,39 @@ def human_predictions_to_labels(
     return labels
 
 
-def gpt_predictions_to_labels_from_file(path: Union[Path, str]):
-    with open(path) as json_file:
-        data = json.load(json_file)
-        return gpt_predictions_to_labels(data["reviews"])
+def get_embedding(usage_option: str, comparator: str = "all-mpnet-base-v2") -> list:
+    global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
+
+    cache = EvaluationCache.get()
+    key = (comparator, usage_option)
+    if key in cache:
+        return cache[key]
+
+    if comparator == "all-mpnet-base-v2":
+        if st_eval is None:
+            from sentence_transformers import SentenceTransformer
+
+            st_eval = SentenceTransformer("all-mpnet-base-v2")
+        embedding = st_eval.encode(usage_option, convert_to_tensor=True)
+    elif comparator == "spacy":
+        if spacy_eval is None:
+            import spacy
+
+            spacy_eval = spacy.load("en_core_web_md")
+        embedding = spacy_eval(usage_option)
+    else:
+        raise ValueError(f"embeddings for metric {comparator} doesn't exist")
+
+    cache[key] = embedding
+    return embedding
 
 
 def get_similarity(
     prediction: str,
     reference: str,
-    str_sim: str = "all-mpnet-base-v2",
+    comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
 ) -> float:
     global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
 
@@ -62,80 +94,73 @@ def get_similarity(
         prediction = prediction.lower()
         reference = reference.lower()
 
-    if str_sim == "all-mpnet-base-v2":
-        embeddings1 = get_embedding(prediction, str_sim)
-        embeddings2 = get_embedding(reference, str_sim)
+    if comparator == "openai":
+        cache = EvaluationCache.get()
+        key = tuple(
+            [comparator]
+            + list(sorted([prediction, reference]))
+            + [
+                openai_params["model"],
+                openai_params["prompt_id"],
+                openai_params["temperature"],
+            ]
+        )
 
-        from sentence_transformers import util
+        if key in cache:
+            return cache[key]
 
-        return util.cos_sim(embeddings1, embeddings2)[0][0].item()
+        similiarity_class = get_phrase_similiarity_from_openai(
+            prediction, reference, **openai_params
+        )
+        if similiarity_class in OPENAI_SIMILIARITY_CLASSES:
+            similarity = OPENAI_SIMILIARITY_CLASSES[similiarity_class]
+        else:
+            similarity = 0
+            print(
+                f"WARNING: '{similiarity_class}' is not a valid similarity class for prediction '{prediction}' and reference '{reference}'"
+            )
 
-    elif str_sim == "spacy":
-        prediction_tokens = get_embedding(prediction, str_sim)
-        reference_tokens = get_embedding(reference, str_sim)
-        return prediction_tokens.similarity(reference_tokens)
+        cache[key] = similarity
+        return similarity
+    elif comparator == "all-mpnet-base-v2" or comparator == "spacy":
+        prediction_tokens = get_embedding(prediction, comparator)
+        reference_tokens = get_embedding(reference, comparator)
+        if comparator == "all-mpnet-base-v2":
+            from sentence_transformers import util
 
-    elif str_sim == "bleu":
+            similarity = util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()
+        else:
+            similarity = prediction_tokens.similarity(reference_tokens)
+        return similarity
+    elif comparator == "bleu":
         if bleu_eval is None:
             bleu_eval = evaluate.load("bleu")
         pr, re = [prediction], [[reference]]
         return bleu_eval.compute(predictions=pr, references=re)["bleu"]
 
-    elif str_sim == "sacrebleu":
+    elif comparator == "sacrebleu":
         if sacrebleu_eval is None:
             sacrebleu_eval = evaluate.load("sacrebleu")
         res = sacrebleu_eval.compute(predictions=[prediction], references=[[reference]])
         return res["score"] * 0.01
-
     else:
         if rouge_eval is None:
             rouge_eval = evaluate.load("rouge")
         pr, re = [prediction], [[reference]]
         rogue_metrics = rouge_eval.compute(predictions=pr, references=re)
         # currently available: rouge1, rouge2, rougeL, rougeLsum
-        if str_sim in rogue_metrics.keys():
-            return rogue_metrics[str_sim]
-        raise ValueError(f"metric {str_sim} is not supported")
-
-
-def get_embedding(
-    usage_option: str,
-    str_sim: str = "all-mpnet-base-v2",
-    use_lowercase: bool = True,
-) -> list:
-    global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
-
-    if use_lowercase:
-        usage_option = usage_option.lower()
-
-    embedding_cache = EmbeddingCache.get()
-    if embedding_cache.exists(usage_option, str_sim):
-        return embedding_cache.load(usage_option, str_sim)
-
-    if str_sim == "all-mpnet-base-v2":
-        if st_eval is None:
-            from sentence_transformers import SentenceTransformer
-
-            st_eval = SentenceTransformer("all-mpnet-base-v2")
-        embedding = st_eval.encode(usage_option, convert_to_tensor=True)
-        embedding_cache.add(usage_option, str_sim, embedding)
-        return embedding
-    elif str_sim == "spacy":
-        import spacy
-
-        if spacy_eval is None:
-            spacy_eval = spacy.load("en_core_web_md")
-        embedding = spacy_eval(usage_option)
-        embedding_cache.add(usage_option, str_sim, embedding)
-        return embedding
-    else:
-        raise ValueError(f"embeddings for metric {str_sim} doesn't exist")
+        if comparator in rogue_metrics.keys():
+            return rogue_metrics[comparator]
+        else:
+            raise ValueError(f"comparator {comparator} is not supported")
 
 
 def get_most_similar(
     label: str,
     options: list[str],
-    str_sim: str = "all-mpnet-base-v2",
+    comparator: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     threshold_word_sim: float = 0,
 ) -> tuple[float, str]:
     """For a single `label`, find the most similar match from `options`.
@@ -145,7 +170,13 @@ def get_most_similar(
 
     result = (0, None)
     for option in options:
-        similarity = get_similarity(option, label, str_sim)
+        similarity = get_similarity(
+            prediction=option,
+            reference=label,
+            comparator=comparator,
+            use_lowercase=use_lowercase,
+            openai_params=openai_params,
+        )
         if similarity >= max(result[0], threshold_word_sim):
             result = (similarity, option)
 

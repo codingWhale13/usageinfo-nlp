@@ -119,5 +119,51 @@
         "with_examples_v1": {
             "prompt": "\"I will give you multiple customer review for an e-commerce product. You should answer the question \\\"What can this product be used / for\\\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \\\"No use cases\\\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\\n\\nReview: \\\"I purchased this because I'm attending school in MN and it was going to be extremely cold - and it was! It did help me cope with the subzero temperatures and I'm grateful. However, I also looked forward to using it as a battery pack and I was rather disappointed. I was never able to get it to charge my phone. All the cords were connected and it seemed fine but my phone never got charged. Not even for a second. Also, even when I think I've charged it fully, the light on my device continues to flash orange. Perhaps I got a faulty one. Still, it's useful as a hand warmer - I just wish I got to use it as a battery pack as well.\\\"\\nUse cases: hand warmer\\n\\nReview: \\\"I didn't expect this to be a high quality dart board but I did expect it to work. No matter how hard or soft you throw a dart, when it hits the board it drags down at least 3 inches. This is a horrible product and it is not usable in the least bit. Don't waste your money. Spend an extra $10 and get a real magnetic dart board if you still want a cheap one.\\\"\\nUse cases: No use cases\\n\\nReview: \\\"I ordered these for our restaurant's floor drains after dealing with repeated clogs and an expensive bill to have a plumber snake out the pipes.  The baskets catch all the bits of food coming out of the sinks, without impeding the flow of water.  It was necessary to remove the dome strainer from the drain in order for the basket to sit low enough for the metal grate to sit on top.  The basket is sturdy and came in white.  My only complaint is the price for such a simple plastic item.\\\"\\nUse cases: restaurant's floor drains, catch bits of food coming out from sink\\n\\nReview: \\\"{review['review_body']}\\\"\\nUse cases:"
         }
+    },
+    "phrase-similarity": {
+        "nils_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a semantic string similarity algorithm, determining how similar two use cases of a product are. There are four possible classes:\nidentical: two phrases are exactly the same or differ only slightly in their wording\nvery similar: the use cases are not exactly the same but closely related\nsomewhat similar: the two phrases share some common elements, but also have some differences\ndissimilar: the two phrases have little to no overlap in their wording or meaning\nDon't give an explanation, only output the similarity class."
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"yard work\" to \"working in the garden\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "identical"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"blending fruits\" to \"blending vegetables\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "very similar"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"great for funerals\" to \"good for weddings\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "somewhat similar"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"working out\" to \"taking study notes\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "dissimilar"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"####1####\" to \"####2####\"? Don't give an explanation, only output the similarity class."
+                }
+            ]
+        }
     }
 }

@@ -1,16 +1,20 @@
-from copy import copy, deepcopy
+import asyncio
 import functools
-from pathlib import Path
-from typing import Union, Optional, Iterator, Iterable, ItemsView, Callable
-import numpy as np
 import json
 import random
-from evaluation.scoring import DEFAULT_METRICS
-from statistics import mean, variance, quantiles
+from copy import copy, deepcopy
+from functools import partial
+from pathlib import Path
+from statistics import mean, quantiles, variance
+from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
+
 from numpy import mean, var
 
-from helpers.review import Review
 import helpers.label_selection as ls
+from evaluation.scoring import DEFAULT_METRICS
+from evaluation.scoring.evaluation_cache import EvaluationCache
+from helpers.review import Review
+from helpers.worker import Worker
 
 
 class ReviewSet:
@@ -172,14 +176,45 @@ class ReviewSet:
         if not inplace:
             return review_set
 
+    async def __async_score(
+        self,
+        label_id: str,
+        reference_label_id: str,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+    ):
+        scoring_queue = asyncio.Queue()
+
+        def review_score(review):
+            return review.score(label_id, reference_label_id, metric_ids)
+
+        for review in self.reviews_with_labels({label_id, reference_label_id}):
+            scoring_queue.put_nowait(partial(review_score, review))
+
+        worker = Worker(scoring_queue)
+        await worker.run()
+
     def score(
         self,
         label_id: str,
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ):
-        for review in self.reviews_with_labels({label_id, reference_label_id}):
-            review.score(label_id, reference_label_id, metric_ids)
+        metric_ids_openai = set(
+            metric_id for metric_id in metric_ids if "openai" in metric_id
+        )
+        metric_ids = set(metric_ids).difference(metric_ids_openai)
+
+        cache = EvaluationCache.get()
+
+        if len(metric_ids_openai) > 0:
+            asyncio.run(
+                self.__async_score(label_id, reference_label_id, metric_ids_openai)
+            )
+        if len(metric_ids) > 0:
+            for review in self.reviews_with_labels({label_id, reference_label_id}):
+                review.score(label_id, reference_label_id, metric_ids)
+
+        cache.save_to_disk()  # save newly calculated scores to disk
 
     def get_scores(
         self,
@@ -187,8 +222,9 @@ class ReviewSet:
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> list[dict[str, float]]:
-        result = {metric_id: [] for metric_id in metric_ids}
+        self.score(label_id, reference_label_id, metric_ids)
 
+        result = {metric_id: [] for metric_id in metric_ids}
         for review in self.reviews_with_labels({label_id, reference_label_id}):
             review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
             for metric_id, value in review_scores.items():

@@ -1,44 +1,42 @@
+import json
 import os
 import time
-import json
-import openai
+from typing import Callable
+
 import dotenv
+import openai
 
 dotenv.load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
-no_usage_option_string = "No use cases"
-chat_models = ["gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314"]
-model_name_mapping = {
+
+OPENAI_MAX_RETRIES = 10
+NO_USAGE_OPTION_STR = "No use cases"
+CHAT_MODELS = ["gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314"]
+MODEL_NAME_MAPPING = {
     "text-davinci-003": "davinci",
     "gpt-3.5-turbo": "chat_gpt",
     "gpt-3.5-turbo-0301": "chat_gpt",
     "gpt-4": "gpt_4",
     "gpt-4-0314": "gpt_4",
 }
+DEFAULT_OPENAI_SIM_PARAMS = {  # for phrase similarity
+    "model": "gpt-3.5-turbo",
+    "prompt_id": "nils_v1",
+    "temperature": 1.0,
+}
 
-OPENAI_MAX_RETRIES = 10
 
-
-def get_labels_from_openai(
-    review: json, prompt: str, model: str, temperature: float, logprobs: int
-):
-    prompt_with_review = eval('f"""' + prompt + '"""')
-
+def request_openai_api(openai_function: Callable):
     openai.organization = openai_org_id
     openai.api_key = openai_api_key
     api_failure_count = 0
 
+    print("Requesting guidance from OpenAI (💸)")
     while api_failure_count < OPENAI_MAX_RETRIES:
         try:
-            completion = openai.Completion.create(
-                model=model,
-                prompt=prompt_with_review,
-                max_tokens=500,
-                logprobs=logprobs,
-                temperature=temperature,
-            )
+            completion = openai_function()
             api_failure_count = 0
             return completion.choices[0]
         except openai.OpenAIError as openai_error:
@@ -47,8 +45,33 @@ def get_labels_from_openai(
             print("WARNING: OpenAI API error: " + str(openai_error))
             print(f"Waiting {wait_time} seconds and trying again...")
             time.sleep(wait_time)
-    raise Exception(
-        f"Max Oopenai retry counter of {OPENAI_MAX_RETRIES} exceeded with {api_failure_count} retires"
+    raise Exception(f"too many requests to OpenAI failed {api_failure_count}")
+
+
+def get_labels_from_openai(
+    review: json, prompt: str, model: str, temperature: float, logprobs: int
+):
+    """NOTE: the `review` argument actually is used here, within the evaluated prompt!"""
+    return request_openai_api(
+        lambda: openai.Completion.create(
+            model=model,
+            prompt=eval('f"""' + prompt + '"""'),
+            max_tokens=500,
+            logprobs=logprobs,
+            temperature=temperature,
+        )
+    )
+
+
+def chat_completion(model, messages, temperature):
+    return request_openai_api(
+        lambda: openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            max_tokens=1024,
+            temperature=temperature,
+            timeout=8,
+        )
     )
 
 
@@ -62,30 +85,7 @@ def get_chat_labels_from_openai(
 
     messages = [helper(message, review) for message in messages]
 
-    openai.organization = openai_org_id
-    openai.api_key = openai_api_key
-    api_failure_count = 0
-
-    while api_failure_count < OPENAI_MAX_RETRIES:
-        try:
-            completion = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                max_tokens=1024,
-                temperature=temperature,
-                timeout=8,
-            )
-            api_failure_count = 0
-            return completion.choices[0]
-        except openai.OpenAIError as openai_error:
-            api_failure_count += 1
-            wait_time = 2**api_failure_count
-            print("WARNING: OpenAI API error: " + str(openai_error))
-            print(f"Waiting {wait_time} seconds and trying again...")
-            time.sleep(wait_time)
-    raise Exception(
-        f"Max Oopenai retry counter of {OPENAI_MAX_RETRIES} exceeded with {api_failure_count} retires"
-    )
+    return chat_completion(model, messages, temperature)
 
 
 def aggregate_logprobs(output: json):
@@ -110,7 +110,7 @@ def aggregate_logprobs(output: json):
 def format_usage_options(text_completion: str):
     labels = []
     for label in text_completion.split(","):
-        if label.strip().startswith(no_usage_option_string):
+        if label.strip().startswith(NO_USAGE_OPTION_STR):
             break
         labels.append(label.strip().strip("."))
     return labels
@@ -124,21 +124,42 @@ def generate_label(
     logprobs: int = None,
     prompt_id: str = None,
 ):
-    metaData = {
+    metadata = {
         "openai": {"model": model, "temperature": temperature, "prompt_id": prompt_id}
     }
-    if model in chat_models:
+    if model in CHAT_MODELS:
         output = get_chat_labels_from_openai(review, prompt, model, temperature)
         usage_options = format_usage_options(output.message["content"].strip())
     else:
         output = get_labels_from_openai(review, prompt, model, temperature, logprobs)
         usage_options = format_usage_options(output.text.strip())
         usage_options_logprobs = aggregate_logprobs(output)
-        metaData["openai"].update(
+        metadata["openai"].update(
             {
                 "logprobs": output.logprobs,
                 "usageOptions_logporbs": usage_options_logprobs,
             }
         )
 
-    return usage_options, metaData
+    return usage_options, metadata
+
+
+def get_phrase_similiarity_from_openai(
+    phrase_1: str,
+    phrase_2: str,
+    model: str = "gpt-3.5-turbo",
+    prompt_id: str = "nils_v1",
+    temperature: float = 1.0,
+):
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(script_dir, "prompts.json")) as prompt_file:
+        messages = json.load(prompt_file)["phrase-similarity"][prompt_id]["prompt"]
+        for message in messages:
+            message["content"] = (
+                message["content"]
+                .replace("####1####", phrase_1)
+                .replace("####2####", phrase_2)
+            )
+
+    # returns "dissimilar", "somewhat similar", "very similar", or "identical"
+    return chat_completion(model, messages, temperature).message["content"].strip()

@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-import os
-import dotenv
 import argparse
-import json
-from helpers.review_set import ReviewSet
-from openai_api.openai_labelling_backend import (
-    generate_label,
-    chat_models,
-    model_name_mapping,
-)
 import asyncio
+import json
+import os
 
+import dotenv
+
+from helpers.review_set import ReviewSet
+from helpers.worker import Worker
+from openai_api.openai_backend import CHAT_MODELS, MODEL_NAME_MAPPING, generate_label
 
 dotenv.load_dotenv()
 
@@ -69,28 +67,6 @@ def parse_args():
     return arg_parser.parse_args(), arg_parser.format_help()
 
 
-class Worker:
-    def __init__(self, queue: asyncio.Queue, n=10):
-        self.n = n
-        self.queue = queue
-        self.semaphore = asyncio.Semaphore(self.n)
-
-    async def run(self):
-        tasks = []
-        while True:
-            try:
-                func = self.queue.get_nowait()
-            except asyncio.QueueEmpty:
-                break
-            tasks.append(asyncio.ensure_future(self.do_work(func)))
-        await asyncio.gather(*tasks)
-
-    async def do_work(self, func):
-        async with self.semaphore:
-            loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, func)
-
-
 async def main():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     args, help_text = parse_args()
@@ -101,7 +77,7 @@ async def main():
     prompt_id = args.prompt
     with open(prompt_file_name, "r") as prompt_file:
         prompts_json = json.load(prompt_file)
-        prompt_type = "chat" if args.model in chat_models else "text"
+        prompt_type = "chat" if args.model in CHAT_MODELS else "text"
         if prompt_id not in prompts_json[prompt_type].keys():
             exit(
                 f"Prompt {prompt_id} of type {prompt_type} not found in {prompt_file_name}."
@@ -109,7 +85,7 @@ async def main():
         prompt = prompts_json[prompt_type][prompt_id]["prompt"]
 
     label_id = "{model_name}-{prompt_id}{hyphen}{id}".format(
-        model_name=model_name_mapping[args.model],
+        model_name=MODEL_NAME_MAPPING[args.model],
         prompt_id=prompt_id,
         id=args.id,
         hyphen="-" if args.id != "" else "",
@@ -120,9 +96,11 @@ async def main():
     intermediate_save_size = max(1, int(num_reviews * (args.save / 100)))
     count = 0
 
+    overwrite_label = False
     if label_id in review_set.get_all_label_ids():
         if input(f"Label {label_id} already exists. Overwrite? (y/N): ").lower() != "y":
             exit("Aborted.")
+        overwrite_label = True
 
     def generate_label_worker_item(review_id: str, review: dict):
         def task():
@@ -135,7 +113,9 @@ async def main():
                 logprobs=args.logprobs,
                 prompt_id=prompt_id,
             )
-            review_set[review_id].add_label(label_id, usageOptions, metadata)
+            review_set[review_id].add_label(
+                label_id, usageOptions, metadata, overwrite_label
+            )
 
             if count % intermediate_save_size == 0 and count != 0:
                 review_set.save()
