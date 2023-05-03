@@ -6,7 +6,6 @@ import torch
 import wandb
 import warnings
 import sys
-from codecarbon import EmissionsTracker
 from lightning import pytorch as pl
 from sustainability_logger import SustainabilityLogger
 
@@ -98,6 +97,7 @@ trainer = pl.Trainer(
     accelerator="auto",
     callbacks=[checkpoint_callback] if not test_run else None,
     logger=logger if not test_run else None,
+    accumulate_grad_batches=config["accumulate_grad_batches"],
 )
 
 model = ReviewModel(

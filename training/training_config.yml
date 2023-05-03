@@ -1,4 +1,4 @@
-model: "t5-small"
+model: "flan-t5-base"
 active_layers:
   encoder: "-5:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
   decoder: ":0"
@@ -8,6 +8,7 @@ artifact:
   checkpoint: #9
 epochs: 20
 batch_size: 16
+accumulate_grad_batches: 4
 optimizer: #Set all parameters you do not want to null
   name: "AdamW"
   weight_decay: 0.01
