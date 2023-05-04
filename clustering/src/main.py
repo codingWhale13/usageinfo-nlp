@@ -39,7 +39,7 @@ def main():
 
     usage_options, embedded_usage_options = DataLoader(
         file_paths, label_id, clustering_config["data"]
-    )
+    ).load()
 
     if len(usage_options) < max(clustering_config["clustering"]["n_clusters"]):
         raise ValueError(

@@ -67,7 +67,7 @@ def get_embedding(usage_option: str, comparator: str = "all-mpnet-base-v2") -> l
             from sentence_transformers import SentenceTransformer
 
             st_eval = SentenceTransformer("all-mpnet-base-v2")
-        embedding = st_eval.encode(usage_option, convert_to_tensor=True)
+        embedding = st_eval.encode(usage_option)
     elif comparator == "spacy":
         if spacy_eval is None:
             import spacy
