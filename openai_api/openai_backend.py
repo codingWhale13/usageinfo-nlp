@@ -4,7 +4,6 @@ import time
 from typing import Callable
 
 import dotenv
-import openai
 
 dotenv.load_dotenv()
 
@@ -29,6 +28,8 @@ DEFAULT_OPENAI_SIM_PARAMS = {  # for phrase similarity
 
 
 def request_openai_api(openai_function: Callable):
+    import openai
+
     openai.organization = openai_org_id
     openai.api_key = openai_api_key
     api_failure_count = 0
@@ -52,6 +53,8 @@ def get_labels_from_openai(
     review: json, prompt: str, model: str, temperature: float, logprobs: int
 ):
     """NOTE: the `review` argument actually is used here, within the evaluated prompt!"""
+    import openai
+
     return request_openai_api(
         lambda: openai.Completion.create(
             model=model,
@@ -64,6 +67,8 @@ def get_labels_from_openai(
 
 
 def chat_completion(model, messages, temperature):
+    import openai
+
     return request_openai_api(
         lambda: openai.ChatCompletion.create(
             model=model,
