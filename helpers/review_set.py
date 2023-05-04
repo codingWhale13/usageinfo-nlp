@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import json
+import itertools
 import random
 from copy import copy, deepcopy
 from functools import partial
@@ -175,6 +176,14 @@ class ReviewSet:
 
         if not inplace:
             return review_set
+
+    def get_usage_options(self, label_id: str) -> list:
+        usage_options = list(
+            itertools.chain(*[review.get_usage_options(label_id) for review in self])
+        )
+        if not usage_options:
+            raise ValueError(f"Label {label_id} not found in any review")
+        return usage_options
 
     async def __async_score(
         self,

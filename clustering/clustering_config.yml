@@ -1,0 +1,15 @@
+data:
+  model_name: "all-mpnet-base-v2" #model name for the embeddings
+  #dim_reduction: "tsne" #optional if reduction of dimensionality is needed
+clustering:
+  algorithm: "kmeans" #options are: kmeans, agglomerative
+  n_clusters:
+    - 50
+    - 1000
+    - 2000
+    - 3000
+    - 4000
+    - 5000
+    - 6000
+  metric: "euclidean" #options are: euclidean, cosine
+  linkage: "ward" #only for agglom, options are: ward, complete, average, single

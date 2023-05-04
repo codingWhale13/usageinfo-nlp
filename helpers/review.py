@@ -81,6 +81,9 @@ class Review:
     def get_label_ids(self) -> set[str]:
         return set(self.get_labels().keys())
 
+    def get_usage_options(self, label_id: str) -> list[str]:
+        return self.get_label_for_id(label_id).get("usageOptions", [])
+
     def get_label_from_strategy(self, strategy) -> Optional[dict]:
         if not isinstance(strategy, ls.LabelSelectionStrategyInterface):
             raise ValueError(
