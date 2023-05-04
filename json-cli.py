@@ -96,6 +96,7 @@ def parse_args():
     sample_parser.add_argument(
         "n",
         type=int,
+        nargs="?",
         help="Number of reviews to sample from the base reviewset",
     )
     sample_parser.add_argument(
@@ -106,10 +107,16 @@ def parse_args():
         help="Filepath to save the cut reviews to",
     )
     sample_parser.add_argument(
-        "--verbose",
-        "-v",
+        "--quiet",
+        "-q",
         action="store_true",
-        help="Print the sampled reviews to stdout",
+        help="Suppress the printing of the sampled reviews",
+    )
+    sample_parser.add_argument(
+        "--all",
+        "-a",
+        action="store_true",
+        help="Sample all reviews from the base reviewset",
     )
     sample_parser.add_argument(
         "--seed", "-s", type=int, default=None, help="Seed to use for sampling"
@@ -343,19 +350,25 @@ def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
-    if not args.output and not args.verbose:
+    if not args.output and args.quiet:
         print(
-            f"\n{bcolors.RED}Error:{bcolors.ENDC} Please specify either an output filepath or use the --verbose flag"
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Please specify either an output filepath or don't use the --quiet flag"
         )
         return
 
-    if args.n > len(base_reviewset):
+    if args.n is None and not args.all:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Please specify either the number of reviews to sample or use the --all flag"
+        )
+        return
+
+    if args.n and args.n > len(base_reviewset):
         print(
             f"\n{bcolors.RED}Error:{bcolors.ENDC} Cannot sample {bcolors.RED}{args.n}{bcolors.ENDC} reviews from a reviewset with only {bcolors.BLUE}{len(base_reviewset)}{bcolors.ENDC} reviews"
         )
         return
 
-    if args.n < 1:
+    if args.n and args.n < 1:
         print(
             f"\n{bcolors.RED}Error:{bcolors.ENDC} Cannot sample {bcolors.RED}{args.n}{bcolors.ENDC} reviews, please specify a number greater than 0"
         )
@@ -364,11 +377,14 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
     if args.seed:
         print(f"\nUsing seed {bcolors.BLUE}{args.seed}{bcolors.ENDC} for sampling")
 
-    cut_reviewset, _ = base_reviewset.split(
-        (args.n / len(base_reviewset)), seed=args.seed
-    )
+    if args.all:
+        cut_reviewset = base_reviewset
+    else:
+        cut_reviewset, _ = base_reviewset.split(
+            (args.n / len(base_reviewset)), seed=args.seed
+        )
 
-    if args.verbose:
+    if not args.quiet:
         print(f"\nPrinting {bcolors.BLUE}{args.n}{bcolors.ENDC} sampled reviews:")
         for review in cut_reviewset:
             print(review)

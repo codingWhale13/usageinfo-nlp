@@ -36,7 +36,7 @@ def arg_parse():
         "-d",
         "--datasets",
         type=str,
-        help="Comma seperated list of dataset-names or dataset-train/valuation pairs to only annotate (e.g. test-01,bumsbiene:train,test-02:val). Leave this empty and set -tod to get the trained on dataset. If a reviewset file is given, the reviewset files will be filtered by the given dataset. If no reviewset file is given, the dataset file will be annotated.",
+        help="Comma seperated list of dataset-names or dataset-train/valuation pairs to only annotate (e.g. test-01,bumsbiene:train,test-02:test). Leave this empty and set -tod to get the trained on dataset. If a reviewset file is given, the reviewset files will be filtered by the given dataset. If no reviewset file is given, the dataset file will be annotated.",
     )
     parser.add_argument(
         "-c",
@@ -49,7 +49,7 @@ def arg_parse():
         "-tod",
         "--trained_on_dataset",
         action="store_true",
-        help="Choose the test fraction of the dataset, the model was trained on instead of giving dataset names",
+        help='Choose the test fraction of the dataset, the model was trained on instead of giving dataset names. It is a shortcut for appending "trained-on-dataset:test" to -d.',
     )
     parser.add_argument(
         "-ftor",
@@ -79,9 +79,6 @@ def main():
     assert (
         args.datasets or args.reviewset_files or args.trained_on_dataset
     ), "No reviewset files or datasets or trained on flag given"
-    assert not (
-        args.datasets and args.trained_on_dataset
-    ), "Cannot specify both datasets and trained on flag"
 
     generation_config = utils.get_config(args.generation_config)
     generator = Generator(args.artifact_name, args.checkpoint, generation_config)
@@ -93,7 +90,7 @@ def main():
                 dataset.split(":") if ":" in dataset else (dataset, None)
             )
             datasets.append((dataset_name, dataset_part))
-    elif args.trained_on_dataset:
+    if args.trained_on_dataset:
         dataset_name = utils.get_config_from_artifact(args.artifact_name)["dataset"][
             "version"
         ]
@@ -101,14 +98,16 @@ def main():
 
     if args.reviewset_files:
         reviewset = ReviewSet.from_files(*args.reviewset_files)
-        filtered_reviewset = reviewset
     else:
         dataset_paths = [utils.get_dataset_path(dataset[0]) for dataset in datasets]
-        print(dataset_paths)
         reviewset = ReviewSet.from_files(*dataset_paths)
+
+    if datasets:
         filtered_reviewset = reviewset.filter_with_label_strategy(
             DatasetSelectionStrategy(*datasets), inplace=False
         )
+    else:
+        filtered_reviewset = reviewset
 
     if args.filter_trained_on_reviews:
         trained_on_dataset = utils.get_config_from_artifact(args.artifact_name)[

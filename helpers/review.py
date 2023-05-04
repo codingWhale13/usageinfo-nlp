@@ -3,6 +3,7 @@ import random
 from copy import copy, deepcopy
 from datetime import datetime, timezone
 from typing import Iterable, Optional, Union
+import json
 
 import dateutil.parser
 
@@ -73,7 +74,18 @@ class Review:
         return Review(self.review_id, deepcopy(self.data, memo))
 
     def __str__(self):
-        return f"Review '{self.review_id}'\t-> Label IDs: {list(self.data['labels'].keys())}"
+        simple_data = {}
+        simple_data["product_title"] = self.data["product_title"]
+        simple_data["review_headline"] = self.data["review_headline"]
+        simple_data["review_body"] = self.data["review_body"]
+        simple_data["labels"] = self.data["labels"].copy()
+        for label_id, label in simple_data["labels"].items():
+            simple_data["labels"][label_id] = label["usageOptions"]
+
+        return f"Review {self.review_id} " + json.dumps(simple_data, indent=4)
+
+    def __repr__(self):
+        return json.dumps(self.data, indent=4)
 
     def get_labels(self) -> dict:
         return self.data.get("labels", {})
