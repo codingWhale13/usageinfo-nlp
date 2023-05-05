@@ -6,7 +6,7 @@ import pandas as pd
 
 def get_config(name: str) -> dict:
     config_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), rf"../{name}.yml"
+        os.path.dirname(os.path.realpath(__file__)), rf"{name}.yml"
     )
     print(f"Loading config from {config_path}")
     with open(config_path, "r") as file:
