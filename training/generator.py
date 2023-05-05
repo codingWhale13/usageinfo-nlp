@@ -4,6 +4,10 @@ from typing import List
 from training import utils
 from helpers.review_set import ReviewSet
 
+import torch
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class Generator:
     def __init__(
@@ -12,6 +16,7 @@ class Generator:
         checkpoint: int,
         generation_config: dict,
     ) -> None:
+        global device
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
         checkpoint = torch.load(utils.get_model_path(self.model_artifact))
         model_config = utils.get_model_config_from_checkpoint(
@@ -19,6 +24,8 @@ class Generator:
         )
 
         self.model, self.tokenizer, self.max_length = model_config
+        self.model.to(device)
+        self.model.eval()
         self.generation_config = generation_config
 
     def format_usage_options(self, text_completion: str) -> List[str]:
@@ -31,11 +38,17 @@ class Generator:
     def generate_usage_options(self, batch) -> None:
         # batch is Iterable containing [List of model inputs, List of labels, List of review_ids]
         review_ids = list(batch["review_id"])
-        model_inputs = self.tokenizer.batch_decode(
-            batch["input"]["input_ids"], skip_special_tokens=True
-        )
+        input_ids = batch["input"]["input_ids"].to(device)
+        attention_mask = batch["input"]["attention_mask"].to(device)
+        model_inputs = self.tokenizer.batch_decode(input_ids, skip_special_tokens=True)
 
-        outputs = self.model.generate(**batch["input"], **self.generation_config)
+        with torch.no_grad():
+            outputs = self.model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                **self.generation_config,
+            )
+
         predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions
@@ -52,12 +65,13 @@ class Generator:
             )
 
         dataloader = reviews.get_dataloader(
-            batch_size=8,
-            num_workers=2,
+            batch_size=32,
+            num_workers=0,
             tokenizer=self.tokenizer,
             model_max_length=self.max_length,
             for_training=False,
         )
+
         label_metadata = {
             "generator": {
                 "artifact_name": self.model_artifact["name"],

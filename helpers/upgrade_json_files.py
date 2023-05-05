@@ -118,6 +118,10 @@ def upgrade_json_version(
         data = json.load(file)
 
     if "version" not in data:
+        # make version -1 to version 0
+        if type(data) == list:
+            data = {"reviews": data}
+
         data = v0_to_v1(
             data,
             input("Enter label_id for the label of v0 json structure: "),

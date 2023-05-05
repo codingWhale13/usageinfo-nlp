@@ -22,6 +22,7 @@ class ReviewModel(pl.LightningModule):
         data: dict,
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
+        seed: int,
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
     ):
@@ -38,6 +39,7 @@ class ReviewModel(pl.LightningModule):
         self.multiple_usage_options_strategy = multiple_usage_options_strategy
         self.lr_scheduler_type = lr_scheduler_type
         self.optimizer_args = optimizer_args
+        self.seed = seed
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
@@ -188,6 +190,7 @@ class ReviewModel(pl.LightningModule):
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
             dataset_name=self.data["dataset_name"],
+            seed=self.seed,  # only relevant if shuffle=True
         )
 
     def val_dataloader(self):
@@ -224,8 +227,9 @@ class ReviewModel(pl.LightningModule):
         train_reviews = reviews.filter_with_label_strategy(
             self.train_review_strategy, inplace=False
         )
+
         self.train_reviews, self.val_reviews = train_reviews.split(
-            self.data["validation_split"]
+            self.data["validation_split"], seed=self.seed
         )
 
     def on_save_checkpoint(self, checkpoint):

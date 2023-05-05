@@ -361,9 +361,23 @@ class ReviewSet:
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
         dataset_name: str = None,
+        seed: int = None,
         **dataloader_args: dict,
     ):
         from torch.utils.data import DataLoader
+        import torch
+        import random
+        import numpy as np
+
+        def seed_worker(worker_id):
+            worker_seed = torch.initial_seed() % 2**32
+            np.random.seed(worker_seed)
+            random.seed(worker_seed)
+
+        if seed is not None:
+            g = torch.Generator()
+            dataloader_args["generator"] = g
+            dataloader_args["worker_init_fn"] = seed_worker
 
         tokenized_reviews = (
             data_point
@@ -379,14 +393,18 @@ class ReviewSet:
                 for review in self
             )
             for data_point in data_points
-            if None not in data_point.values()
+            if None
+            not in data_point.values()  # remove datapoints with None values, since there was an error with the tokenization
         )
 
         # If selection_strategy is specified the output should not be 0 which is used as the default value
         if selection_strategy:
             tokenized_reviews = filter(lambda x: 0 not in x.values(), tokenized_reviews)
 
-        return DataLoader(list(tokenized_reviews), **dataloader_args)
+        return DataLoader(
+            list(tokenized_reviews),
+            **dataloader_args,
+        )
 
     def split(
         self, fraction: float, seed: int = None

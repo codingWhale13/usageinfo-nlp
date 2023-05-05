@@ -16,8 +16,6 @@ import utils
 wandb.login()
 
 torch.set_float32_matmul_precision("medium")
-pl.seed_everything(42)
-
 warnings.filterwarnings(
     "ignore", ".*Consider increasing the value of the `num_workers` argument*"
 )
@@ -64,6 +62,7 @@ config |= args_config
 model_config = utils.get_model_config(config["model"], config["artifact"])
 cluster_config = config["cluster"]
 test_run = config["test_run"]
+seed = config["seed"] if config["seed"] else None
 del config["cluster"], config["test_run"]
 
 hyperparameters = {
@@ -76,7 +75,7 @@ dataset_parameters = {
     "validation_split": config["dataset"]["validation_split"],
 }
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
-
+pl.seed_everything(seed if seed else 42)
 
 # %% Initialization
 if not test_run:
@@ -112,6 +111,7 @@ model = ReviewModel(
     data=dataset_parameters,
     trainer=trainer,
     multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
+    seed=seed,
     lr_scheduler_type=config["lr_scheduler_type"],
 )
 

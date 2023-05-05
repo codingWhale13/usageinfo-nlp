@@ -25,6 +25,7 @@ cluster:
   num_nodes: 1 #Number of nodes
 test_run: False
 multiple_usage_options_strategy: "shuffle-3"
+seed: 42 # can be left empty
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
