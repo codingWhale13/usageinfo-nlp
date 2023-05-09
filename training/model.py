@@ -25,6 +25,7 @@ class ReviewModel(pl.LightningModule):
         seed: int,
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
+        gradual_unfreezing_mode: Optional[str],
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -40,6 +41,7 @@ class ReviewModel(pl.LightningModule):
         self.lr_scheduler_type = lr_scheduler_type
         self.optimizer_args = optimizer_args
         self.seed = seed
+        self.gradual_unfreezing_mode = gradual_unfreezing_mode
 
         self.tokenization_args = {
             "tokenizer": tokenizer,
@@ -52,11 +54,13 @@ class ReviewModel(pl.LightningModule):
         self._freeze_model()
 
     def _freeze_model(self):
-        def unfreeze(component, slice_: str):
+        def unfreeze(component, slice_: str) -> int:
             transformer_blocks = eval(f"list(component.block)[{slice_}]")
             for block in transformer_blocks:
                 for param in block.parameters():
                     param.requires_grad = True
+            # Returns the number of unfrozen transformer blocks
+            return len(transformer_blocks)
 
         for param in self.model.parameters():
             param.requires_grad = False
@@ -65,8 +69,43 @@ class ReviewModel(pl.LightningModule):
             for param in self.model.lm_head.parameters():
                 param.requires_grad = True
 
-        unfreeze(self.model.encoder, self.active_layers["encoder"])
-        unfreeze(self.model.decoder, self.active_layers["decoder"])
+        self.active_encoder_layers = unfreeze(
+            self.model.encoder, self.active_layers["encoder"]
+        )
+        self.active_decoder_layers = unfreeze(
+            self.model.decoder, self.active_layers["decoder"]
+        )
+        self.gradual_unfreeze(0)
+
+    def gradual_unfreeze(self, epoch: int):
+        def unfreeze(blocks, epoch: int):
+            for i in range(1, len(blocks) + 1):
+                if epoch >= i:
+                    for param in blocks[len(blocks) - i].parameters():
+                        param.requires_grad = True
+
+        def unfreeze_helper(active_layers, epoch, speed, module):
+            epoch = epoch // speed + active_layers
+            unfreeze(module, epoch)
+
+        if self.gradual_unfreezing_mode is not None:
+            unfreezing_modes = self.gradual_unfreezing_mode.split(", ")
+            for mode in unfreezing_modes:
+                if "encoder" in mode:
+                    unfreeze_helper(
+                        self.active_encoder_layers,
+                        epoch,
+                        int(mode.split(" ")[1]),
+                        self.model.encoder.block,
+                    )
+
+                if "decoder" in mode:
+                    unfreeze_helper(
+                        self.active_decoder_layers,
+                        epoch,
+                        int(mode.split(" ")[1]),
+                        self.model.decoder.block,
+                    )
 
     def forward(
         self,
@@ -126,6 +165,7 @@ class ReviewModel(pl.LightningModule):
                 batch_size=self.hyperparameters["batch_size"],
             )
         torch.cuda.empty_cache()
+        self.gradual_unfreeze(self.current_epoch)
 
     def validation_step(self, batch, __):
         loss = self._step(batch)

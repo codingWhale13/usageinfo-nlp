@@ -1,22 +1,23 @@
 model: "flan-t5-base"
 active_layers:
-  encoder: "-5:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
-  decoder: ":0"
+  encoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  decoder: "-3:"
   lm_head: True
+gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 artifact:
   name: #"scintillating-mandu-99"
   checkpoint: #9
 epochs: 20
-batch_size: 16
-accumulate_grad_batches: 4
+batch_size: 8
+accumulate_grad_batches: 16
 optimizer: #Set all parameters you do not want to null
   name: "AdamW"
   weight_decay: 0.01
-  scale_parameter: True
-  relative_step: True
-  warmup_init: True
+  scale_parameter: False
+  relative_step: False
+  warmup_init: null
   lr: 0.0001
-lr_scheduler_type: "OneCycleLR" #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
+lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 dataset:
   version: "bumsebiene-69"
   validation_split: 0.10

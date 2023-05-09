@@ -12,7 +12,6 @@ from sustainability_logger import SustainabilityLogger
 from model import ReviewModel
 import utils
 
-# %%
 wandb.login()
 
 torch.set_float32_matmul_precision("medium")
@@ -34,7 +33,6 @@ for arg in sys.argv[1:]:
     args_config[key] = value
 
 
-# %% Config
 config = utils.get_config(
     args_config.pop("config", None) or utils.get_config_path("training_config")
 )
@@ -77,7 +75,6 @@ dataset_parameters = {
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
 pl.seed_everything(seed if seed else 42)
 
-# %% Initialization
 if not test_run:
     logger = pl.loggers.WandbLogger(
         project="rlp-t2t", entity="bsc2022-usageinfo", config=config
@@ -113,6 +110,7 @@ model = ReviewModel(
     multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
     seed=seed,
     lr_scheduler_type=config["lr_scheduler_type"],
+    gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
 )
 
 # %% Training and testing
