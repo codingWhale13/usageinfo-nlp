@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-from helpers.review_set import ReviewSet
-from helpers.label_selection import LabelIDSelectionStrategy
-from training.generator import Generator
-from training import utils
 import os
 import copy
 import pprint
+
+from helpers.review_set import ReviewSet
 
 
 dash = "-" * 80
@@ -207,6 +205,8 @@ def print_stats(reviewset: ReviewSet, prefix: str = ""):
 
 
 def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
+    from helpers.label_selection import LabelIDSelectionStrategy
+
     print(f"\n\nMerging {len(args.merge_files)} file(s) into base file")
     for counter, reviewset_file in enumerate(args.merge_files):
         reviewset = ReviewSet.from_files(reviewset_file)
@@ -263,7 +263,7 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
 
         if input("\n\tDo you want to merge the file? [Y/n]: ").lower() == "n":
             print(f"\n\t{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
-            return
+            continue
 
         base_reviewset.merge(reviewset, allow_new_reviews=allow_new_reviews)
         base_reviewset.save()
@@ -271,6 +271,8 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
+    from helpers.label_selection import LabelIDSelectionStrategy
+
     extract_labels = copy.copy(args.labels)
     all_labels = base_reviewset.get_all_label_ids()
     for label in args.labels:
@@ -403,6 +405,9 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
+    from training.generator import Generator
+    from training import utils
+
     label_id = None
     if args.label_id is not None:
         label_id = f"model-{args.artifact_name}-{args.label_id}"
