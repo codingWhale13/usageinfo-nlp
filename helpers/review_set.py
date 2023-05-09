@@ -126,18 +126,22 @@ class ReviewSet:
         review_sets = []
 
         for path in source_paths:
-            absolute_path = Path(path).resolve()
+            absolute_path = Path(path).expanduser().resolve()
             if absolute_path.is_dir():
-                for file in Path(path).glob("*.json"):
-                    review_sets.append(get_review_set(file))
-            elif Path(path).is_file():
-                review_sets.append(get_review_set(path))
+                for file in absolute_path.glob("*.json"):
+                    review_sets.append(get_review_set(str(file)))
+            elif absolute_path.is_file():
+                review_sets.append(get_review_set(str(absolute_path)))
 
         review_set = functools.reduce(
             lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
         )
 
-        review_set.save_path = source_paths[0] if len(source_paths) == 1 else save_path
+        review_set.save_path = (
+            str(Path(source_paths[0]).expanduser().resolve())
+            if len(source_paths) == 1
+            else save_path
+        )
 
         return review_set
 
