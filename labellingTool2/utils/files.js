@@ -18,7 +18,7 @@ export function downloadBlob(blob, fileName) {
 
 export function formatJsonReviews(json) {
   let reviews = [];
-  if ("version" in json && json["version"] == 3) {
+  if ("version" in json && json["version"] === 4) {
     var reviewsDict = json["reviews"];
     for (var key in reviewsDict) {
       if (reviewsDict.hasOwnProperty(key)) {
