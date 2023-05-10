@@ -480,6 +480,9 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         pprint.pprint(score)
 
+    base_reviewset.save()
+    print(f"\n{bcolors.GREEN}Scores saved!{bcolors.ENDC}")
+
 
 def main():
     args, help_text = parse_args()
