@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 from typing import Union
 from pathlib import Path
-from review import Review
+from helpers.review import Review
 import sys, os
 
 review_fields_other_than_labels = Review.review_attributes.union(
@@ -111,6 +111,16 @@ def v2_to_v3(data_v2: dict) -> dict:
     return data_v3
 
 
+def v3_to_v4(data_v3: dict) -> dict:
+    data_v4 = {"version": 4, "reviews": data_v3["reviews"]}
+
+    for _, review in data_v3["reviews"].items():
+        for label_id in review["labels"]:
+            review["labels"][label_id]["augmentations"] = []
+
+    return data_v4
+
+
 def upgrade_json_version(
     old_json_path: Union[str, Path], new_json_path: Union[str, Path], label_id=None
 ) -> None:
@@ -133,17 +143,28 @@ def upgrade_json_version(
     if data["version"] == 2:
         data = v2_to_v3(data)
 
+    if data["version"] == 3:
+        data = v3_to_v4(data)
+
     with open(new_json_path, "w") as file:
         json.dump(data, file)
 
 
-if __name__ == "__main__":
-    assert (
-        len(sys.argv) == 3
-    ), "wrong number of arguments supplied\nusage: python upgrade_json_files.py old_json_file target_file"
-    assert os.path.exists(sys.argv[1]), f"file {sys.argv[1]} doesn't exist, aborting..."
-    assert not os.path.exists(
-        sys.argv[2]
-    ), f"file {sys.argv[2]} does already exist, aborting..."
+REVIEW_SET_UPGRADE_FUNCTIONS = {0: v0_to_v1, 1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
 
-    upgrade_json_version(old_json_path=sys.argv[1], new_json_path=sys.argv[2])
+
+if __name__ == "__main__":
+    assert len(sys.argv) in [
+        2,
+        3,
+    ], "wrong number of arguments supplied\nusage: python upgrade_json_files.py old_json_file target_file"
+    assert os.path.exists(sys.argv[1]), f"file {sys.argv[1]} doesn't exist, aborting..."
+
+    new_json_path = sys.argv[1]
+    if len(sys.argv) == 3:
+        assert not os.path.exists(
+            sys.argv[2]
+        ), f"file {sys.argv[2]} does already exist, aborting..."
+        new_json_path = sys.argv[2]
+
+    upgrade_json_version(old_json_path=sys.argv[1], new_json_path=new_json_path)

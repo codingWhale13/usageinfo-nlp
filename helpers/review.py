@@ -36,6 +36,7 @@ class Review:
         "metadata",
         "scores",
         "usageOptions",
+        "augmentations",
     }
 
     def __init__(self, review_id: str, data: dict) -> None:
@@ -200,7 +201,7 @@ class Review:
         self,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
-        dataset_name: str = None,
+        for_training: bool = False,
         **tokenization_kwargs,
     ) -> Iterable[dict]:
         def get_prompt(product_title: str, review_body: str) -> str:
@@ -211,7 +212,10 @@ class Review:
 
         model_input = get_prompt(self["product_title"], self["review_body"])
         model_input = self.tokenize(
-            text=model_input, is_input=True, **tokenization_kwargs
+            text=model_input,
+            is_input=True,
+            for_training=for_training,
+            **tokenization_kwargs,
         )
 
         # Returns 0 if when no selection strategy. We are using 0 instead of None because of the dataloader
@@ -225,14 +229,17 @@ class Review:
             return
 
         augmentations = [(model_input, label["usageOptions"])]
-        if dataset_name and dataset_name in label["datasets"]:
-            for augmentation in label.get("augmentations", {}).get(dataset_name, []):
+        if for_training:
+            for augmentation in label.get("augmentations", []):
                 model_input = get_prompt(
                     augmentation.get("product_title") or self["product_title"],
                     augmentation.get("review_body") or self["review_body"],
                 )
                 model_input = self.tokenize(
-                    text=model_input, is_input=True, **tokenization_kwargs
+                    text=model_input,
+                    is_input=True,
+                    for_training=for_training,
+                    **tokenization_kwargs,
                 )
                 augmentations.append(
                     (
@@ -240,7 +247,6 @@ class Review:
                         augmentation.get("usageOptions") or label["usageOptions"],
                     )
                 )
-
         for model_input, usage_options in augmentations:
             output_texts = self._get_output_texts_from_strategy(
                 usage_options, strategy=multiple_usage_options_strategy
@@ -251,6 +257,7 @@ class Review:
                     self.tokenize(
                         text=output_text,
                         is_input=False,
+                        for_training=for_training,
                         **tokenization_kwargs,
                     ),
                     self.review_id,

@@ -8,14 +8,15 @@ from functools import partial
 from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
+from helpers.cmd_input import get_yes_or_no_input
 
 from numpy import mean, var
-
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
+import data_augmentation.core as da_core
 
 
 class ReviewSet:
@@ -24,17 +25,16 @@ class ReviewSet:
     Data can be loaded from and saved to JSON files in the appropriate format.
     """
 
-    latest_version = 3
+    latest_version = 4
 
     def __init__(
         self, version: str, reviews: dict, save_path: Optional[str] = None
     ) -> "ReviewSet":
         """load data and make sure it is structured according to our latest JSON format"""
         self.version = version
-        self.validate_version()
-
         self.reviews = reviews
-        self.validate_reviews()
+
+        self.validate()
 
         self.save_path = save_path
 
@@ -96,10 +96,23 @@ class ReviewSet:
 
     @classmethod
     def from_dict(cls, data: dict, save_path: Optional[str] = None) -> "ReviewSet":
+        if data.get("version") < cls.latest_version:
+            user_wants_to_upgrade = get_yes_or_no_input(
+                f"Do you want to upgrade your json review set (Current version: {data.get('version')})? This will not override your file unless you save this reviewset"
+            )
+            if user_wants_to_upgrade:
+                from helpers.upgrade_json_files import REVIEW_SET_UPGRADE_FUNCTIONS
+
+                data = REVIEW_SET_UPGRADE_FUNCTIONS[data.get("version")](data)
+                new_version = data.get("version")
+                print(
+                    f"Temporarily upgraded json file to version {new_version}. Please save it manually"
+                )
         reviews = {
             review_id: Review(review_id=review_id, data=review_data)
             for review_id, review_data in data.get("reviews", {}).items()
         }
+
         return cls(data.get("version"), reviews, save_path)
 
     @classmethod
@@ -275,14 +288,13 @@ class ReviewSet:
         ]
         return self.from_reviews(*relevant_reviews)
 
-    def validate_version(self) -> None:
+    def validate(self) -> None:
         if self.version != self.latest_version:
             raise ValueError(
                 f"only the latest format (v{self.latest_version})"
                 "of our JSON format is supported"
             )
 
-    def validate_reviews(self) -> None:
         for review in self:
             review.validate()
 
@@ -364,7 +376,6 @@ class ReviewSet:
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
-        dataset_name: str = None,
         seed: int = None,
         **dataloader_args: dict,
     ):
@@ -392,7 +403,6 @@ class ReviewSet:
                     max_length=model_max_length,
                     for_training=for_training,
                     multiple_usage_options_strategy=multiple_usage_options_strategy,
-                    dataset_name=dataset_name,
                 )
                 for review in self
             )
@@ -427,11 +437,12 @@ class ReviewSet:
     def create_dataset(
         self,
         dataset_name: str,
-        label_id: str,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
         test_split: float,
         contains_usage_split: Optional[float] = None,
+        augmentation: da_core.ReviewAugmentation = None,
         seed: int = None,
-    ) -> dict:
+    ) -> tuple["ReviewSet", dict]:
         def reduce_reviews(reviews: list[Review], target_num: int):
             if len(reviews) < target_num:
                 raise ValueError(
@@ -444,27 +455,32 @@ class ReviewSet:
 
         random.seed(seed)
 
-        contains_usage = []
-        contains_no_usage = []
+        reviews = deepcopy(
+            self.filter_with_label_strategy(label_selection_strategy, inplace=False)
+        )
+        has_usage_options = lambda review: bool(
+            review.get_label_from_strategy(label_selection_strategy)["usageOptions"]
+        )
+        reviews_with_usage = list(reviews.filter(has_usage_options, inplace=False))
+        reviews_without_usage = list(
+            reviews.filter(has_usage_options, inplace=False, invert=True)
+        )
 
-        for review in self:
-            try:
-                label = review.get_label_for_id(label_id)
-                # when creating a dataset the datasets field in a review will only contain the dataset that is currently being created, same for test
-                label["datasets"] = {dataset_name: "train"}
-                if len(label["usageOptions"]) == 0:
-                    contains_no_usage.append(review)
-                else:
-                    contains_usage.append(review)
+        for review in reviews:
+            dataset_label = review.get_label_from_strategy(label_selection_strategy)
 
-                for label in review.get_label_ids():
-                    if label != label_id:
-                        del review["labels"][label]
+            for label_id, label in copy(review["labels"]).items():
+                if label is not dataset_label:
+                    del review["labels"][label_id]
 
-            except KeyError:
-                self.drop_review(review)
+            # when creating a dataset the datasets field in a review will only contain the dataset that is currently being created, same for test
+            dataset_label["datasets"] = {dataset_name: "train"}
+            dataset_label["augmentations"] = []
 
-        dataset_length = len(contains_usage) + len(contains_no_usage)
+        if augmentation is not None:
+            augmentation.augment(label_selection_strategy, *reviews)
+
+        dataset_length = len(reviews)
 
         if contains_usage_split is not None:
             target_usage_split = (
@@ -473,42 +489,45 @@ class ReviewSet:
             target_no_usage_split = 1 - target_usage_split
 
             dataset_length = min(
-                len(contains_usage) / target_usage_split,
-                len(contains_no_usage) / target_no_usage_split,
+                len(reviews_with_usage) / target_usage_split,
+                len(reviews_without_usage) / target_no_usage_split,
             )
 
-            contains_usage = reduce_reviews(
-                contains_usage, round(dataset_length * target_usage_split)
+            reviews_with_usage = reduce_reviews(
+                reviews_with_usage, round(dataset_length * target_usage_split)
             )
-            contains_no_usage = reduce_reviews(
-                contains_no_usage, round(dataset_length * target_no_usage_split)
+            reviews_without_usage = reduce_reviews(
+                reviews_without_usage, round(dataset_length * target_no_usage_split)
             )
 
         test_reviews = random.sample(
-            contains_usage,
+            reviews_with_usage,
             round(dataset_length * (test_split * 0.5)),
         ) + random.sample(
-            contains_no_usage,
+            reviews_without_usage,
             round(dataset_length * (test_split * 0.5)),
         )
 
         for review in test_reviews:
-            label = review.get_label_for_id(label_id)
+            label = review.get_label_from_strategy(label_selection_strategy)
             label["datasets"] = {dataset_name: "test"}
 
         dataset_length = len(self)
 
-        return {
+        return reviews, {
             "num_test_reviews": len(test_reviews),
             "num_train_reviews": dataset_length - len(test_reviews),
             "test_split": round(len(test_reviews) / dataset_length, 3),
             "train_usage_split": round(
-                len(set(contains_usage) - set(test_reviews))
+                len(set(reviews_with_usage) - set(test_reviews))
                 / (dataset_length - len(test_reviews)),
                 3,
             ),
             "test_usage_split": round(
-                len(set(contains_usage) & set(test_reviews)) / len(test_reviews), 3
+                len(test_reviews)
+                and len(set(reviews_with_usage) & set(test_reviews))
+                / len(test_reviews),
+                3,
             ),
         }
 
