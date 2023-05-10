@@ -140,7 +140,9 @@ class Review:
         is_input: bool,
         max_length: int = float("inf"),
     ) -> Optional[dict]:
-        tokens = tokenizer(text, return_tensors="pt", padding="max_length")
+        tokens = tokenizer(
+            text, return_tensors="pt", padding="max_length", truncation=not for_training
+        )
 
         # Remove batch dimension, since we only have one example
         tokens["input_ids"] = tokens["input_ids"][0]
