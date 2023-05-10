@@ -265,7 +265,9 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
             print(f"\n\t{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
             continue
 
-        base_reviewset.merge(reviewset, allow_new_reviews=allow_new_reviews)
+        base_reviewset.merge(
+            reviewset, allow_new_reviews=allow_new_reviews, inplace=True
+        )
         base_reviewset.save()
         print(f"\n\t{bcolors.GREEN}Merged!{bcolors.ENDC}")
 
