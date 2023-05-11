@@ -60,7 +60,6 @@ class BackTranslationTextAugmentation(TextAugmentation):
     def __translate_batch(
         self, texts: list[str], model: MarianMTModel, tokenizer, language
     ):
-        texts = [f">>{language}<< {text}" for text in texts]
         input = tokenizer(texts, return_tensors="pt", padding=True, truncation=True).to(
             self.device
         )

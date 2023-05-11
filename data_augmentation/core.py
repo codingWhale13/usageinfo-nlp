@@ -83,12 +83,12 @@ class PartialReviewAugementation(ReviewAugmentation):
         instructions, batch = encode_batch(data_to_augment)
         augmented_batch, metadata = self.text_augmentation.augment(batch)
         augmented_data = decode_batch(augmented_batch, instructions)
-        for review_text_augementations, review in zip(augmented_data, reviews):
-            if len(review_text_augementations) > 0:
+        for review_text_augmentations, review in zip(augmented_data, reviews):
+            if len(review_text_augmentations) > 0:
                 label = review.get_label_from_strategy(label_selection_strategy)
                 label["augmentations"] = label.get("augmentations", [])
                 label["augmentations"].append(
-                    review_text_augementations | {"metadata": metadata}
+                    review_text_augmentations | {"metadata": metadata}
                 )
 
 

@@ -477,10 +477,12 @@ class ReviewSet:
             dataset_label["datasets"] = {dataset_name: "train"}
             dataset_label["augmentations"] = []
 
+        dataset_length = len(reviews)
+        if dataset_length == 0:
+            raise ValueError("There is no review that has any of the specified labels.")
+
         if augmentation is not None:
             augmentation.augment(label_selection_strategy, *reviews)
-
-        dataset_length = len(reviews)
 
         if contains_usage_split is not None:
             target_usage_split = (
