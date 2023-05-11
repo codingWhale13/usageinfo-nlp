@@ -268,7 +268,7 @@ class ReviewModel(pl.LightningModule):
             self.train_review_strategy, inplace=False
         )
 
-        self.train_reviews, self.val_reviews = train_reviews.split(
+        self.val_reviews, self.train_reviews = train_reviews.split(
             self.data["validation_split"], seed=self.seed
         )
 
