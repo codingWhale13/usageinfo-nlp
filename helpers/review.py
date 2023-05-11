@@ -207,8 +207,13 @@ class Review:
         def get_prompt(product_title: str, review_body: str) -> str:
             return f"Product title: {product_title} \nReview body: {review_body}\n"
 
-        def format_dict(model_input, output, review_id) -> dict:
-            return {"input": model_input, "output": output, "review_id": review_id}
+        def format_dict(model_input, output, review_id, source_id) -> dict:
+            return {
+                "input": model_input,
+                "output": output,
+                "review_id": review_id,
+                "source_id": source_id,
+            }
 
         model_input = get_prompt(self["product_title"], self["review_body"])
         model_input = self.tokenize(
@@ -227,9 +232,9 @@ class Review:
             yield format_dict(model_input, 0, self.review_id)
             return
 
-        augmentations = [(model_input, label["usageOptions"])]
+        augmentations = [(model_input, label["usageOptions"], "original")]
         if include_augmentations:
-            for augmentation in label.get("augmentations", []):
+            for id, augmentation in enumerate(label.get("augmentations", [])):
                 model_input = get_prompt(
                     augmentation.get("product_title") or self["product_title"],
                     augmentation.get("review_body") or self["review_body"],
@@ -243,13 +248,14 @@ class Review:
                     (
                         model_input,
                         augmentation.get("usageOptions") or label["usageOptions"],
+                        f"augmentation_{id}",
                     )
                 )
-        for model_input, usage_options in augmentations:
+        for model_input, usage_options, source_id in augmentations:
             output_texts = self._get_output_texts_from_strategy(
                 usage_options, strategy=multiple_usage_options_strategy
             )
-            for output_text in output_texts:
+            for id, output_text in enumerate(output_texts):
                 yield format_dict(
                     model_input,
                     self.tokenize(
@@ -258,6 +264,7 @@ class Review:
                         **tokenization_kwargs,
                     ),
                     self.review_id,
+                    f"{source_id}/{multiple_usage_options_strategy}_{id}",
                 )
 
     def remove_label(self, label_id: str, inplace=True) -> Optional["Review"]:
