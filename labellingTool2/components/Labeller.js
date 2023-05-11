@@ -33,6 +33,7 @@ import {
   CONTAINS_MORE_USAGE_OPTIONS,
   IS_LABELLED,
 } from "../utils/labelKeys";
+import LabelIdFilter from "./LabelIdFilter";
 
 const React = require("react");
 const { JSONUpload } = require("./JSONUpload");
@@ -93,6 +94,7 @@ export class Labeller extends React.Component {
       editLabelId: null,
       isInViewMode: true,
       isSetEditLabelIdModalOpen: false,
+      selectedLabelIds: []
     };
   }
 
@@ -103,6 +105,7 @@ export class Labeller extends React.Component {
       reviews: jsonData.reviews,
       reviewIndex: 0,
       maxReviewIndex: jsonData.maxReviewIndex,
+      selectedLabelIds: this.availableLabelIds(jsonData.reviews)
     });
     timer.start();
   };
@@ -215,10 +218,10 @@ export class Labeller extends React.Component {
           JSON.stringify(data, (key, value) =>
             typeof value === "string"
               ? value.replace(
-                  /[\u007f-\uffff]/g,
-                  (c) =>
-                    "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4)
-                )
+                /[\u007f-\uffff]/g,
+                (c) =>
+                  "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4)
+              )
               : value
           ).replace(/\\\\u/g, "\\u"),
         ],
@@ -343,7 +346,7 @@ export class Labeller extends React.Component {
   render() {
     const reviewLabel =
       this.state.reviews.length &&
-      this.state.reviewIndex < this.state.reviews.length
+        this.state.reviewIndex < this.state.reviews.length
         ? this.state.reviews[this.state.reviewIndex]
         : {};
     console.log(this.state, reviewLabel);
@@ -376,6 +379,11 @@ export class Labeller extends React.Component {
                 <>
                   <Feature name="localLabelling">
                     <ButtonGroup gap="2">
+                      <LabelIdFilter
+                        allLabelIds={this.availableLabelIds()}
+                        selectedLabelIds={this.state.selectedLabelIds}
+                        setSelectedLabelIds={(newSelectedLabelIds) => this.setState({ selectedLabelIds: newSelectedLabelIds })}
+                      />
                       <SetEditLabelIdModal
                         onSave={(newValue) =>
                           this.setState({ editLabelId: newValue })
@@ -457,6 +465,7 @@ export class Labeller extends React.Component {
             {this.state.isInViewMode ? (
               <ReviewLabelsOverview
                 review={this.state.reviews[this.state.reviewIndex]}
+                selectedLabelIds={this.state.selectedLabelIds}
               />
             ) : (
               <ReviewEditor

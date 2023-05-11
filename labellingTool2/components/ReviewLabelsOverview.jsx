@@ -21,7 +21,7 @@ const { ReviewHeader } = require("./ReviewHeader");
 
 const { CustomCard } = require("./Elements");
 
-export function ReviewLabelsOverview({ review }) {
+export function ReviewLabelsOverview({ review, selectedLabelIds }) {
   return (
     <CustomCard>
       <Grid
@@ -56,41 +56,45 @@ export function ReviewLabelsOverview({ review }) {
           <VStack spacing="24px" align="left">
             {Object.entries(review.labels).map(([labelId, label]) => (
               <>
-                <HStack spacing="10px">
-                  <Heading>{labelId}</Heading>
+                {selectedLabelIds.includes(labelId) && (
+                  <>
+                    <HStack spacing="10px">
+                      <Heading>{labelId}</Heading>
 
-                  <Popover trigger="hover">
-                    <PopoverTrigger>
-                      <Button size="sm">
-                        <FaInfo />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      METADATA:
-                      <pre>{JSON.stringify(label.metadata, null, 2)}</pre>
-                      SCORES:
-                      <pre>{JSON.stringify(label.scores, null, 2)}</pre>
-                    </PopoverContent>
-                  </Popover>
-                </HStack>
+                      <Popover trigger="hover">
+                        <PopoverTrigger>
+                          <Button size="sm">
+                            <FaInfo />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          METADATA:
+                          <pre>{JSON.stringify(label.metadata, null, 2)}</pre>
+                          SCORES:
+                          <pre>{JSON.stringify(label.scores, null, 2)}</pre>
+                        </PopoverContent>
+                      </Popover>
+                    </HStack>
 
-                <Stack direction={["column", "row"]} wrap="wrap">
-                  {label.usageOptions.length === 0 ? (
-                    <StackItem margin={"0.25rem !important"}>
-                      <Tag colorScheme="red" size="lg">
-                        No usage options
-                      </Tag>
-                    </StackItem>
-                  ) : (
-                    label.usageOptions.map((usageOption) => (
-                      <StackItem margin={"0.25rem !important"}>
-                        <Tag size="lg">{usageOption}</Tag>
-                      </StackItem>
-                    ))
-                  )}
-                </Stack>
+                    <Stack direction={["column", "row"]} wrap="wrap">
+                      {label.usageOptions.length === 0 ? (
+                        <StackItem margin={"0.25rem !important"}>
+                          <Tag colorScheme="red" size="lg">
+                            No usage options
+                          </Tag>
+                        </StackItem>
+                      ) : (
+                        label.usageOptions.map((usageOption) => (
+                          <StackItem margin={"0.25rem !important"}>
+                            <Tag size="lg">{usageOption}</Tag>
+                          </StackItem>
+                        ))
+                      )}
+                    </Stack>
 
-                <Divider />
+                    <Divider />
+                  </>
+                )}
               </>
             ))}
           </VStack>

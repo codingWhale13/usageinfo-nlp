@@ -18,7 +18,7 @@ export function downloadBlob(blob, fileName) {
 
 export function formatJsonReviews(json) {
   let reviews = [];
-  if ("version" in json && json["version"] === 4) {
+  if ("version" in json && json["version"] >= 3) {
     var reviewsDict = json["reviews"];
     for (var key in reviewsDict) {
       if (reviewsDict.hasOwnProperty(key)) {
@@ -29,7 +29,7 @@ export function formatJsonReviews(json) {
     }
     json.reviews = reviews;
   } else {
-    throw new Error("expected JSON format v3");
+    throw new Error("expected JSON format newer than v3");
   }
 
   if (reviews.map((review) => "label" in review).reduce((a, b) => a && b)) {
