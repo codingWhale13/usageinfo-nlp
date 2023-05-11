@@ -201,7 +201,7 @@ class Review:
         self,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
-        for_training: bool = False,
+        include_augmentations: bool = False,
         **tokenization_kwargs,
     ) -> Iterable[dict]:
         def get_prompt(product_title: str, review_body: str) -> str:
@@ -214,7 +214,6 @@ class Review:
         model_input = self.tokenize(
             text=model_input,
             is_input=True,
-            for_training=for_training,
             **tokenization_kwargs,
         )
 
@@ -229,7 +228,7 @@ class Review:
             return
 
         augmentations = [(model_input, label["usageOptions"])]
-        if for_training:
+        if include_augmentations:
             for augmentation in label.get("augmentations", []):
                 model_input = get_prompt(
                     augmentation.get("product_title") or self["product_title"],
@@ -238,7 +237,6 @@ class Review:
                 model_input = self.tokenize(
                     text=model_input,
                     is_input=True,
-                    for_training=for_training,
                     **tokenization_kwargs,
                 )
                 augmentations.append(
@@ -257,7 +255,6 @@ class Review:
                     self.tokenize(
                         text=output_text,
                         is_input=False,
-                        for_training=for_training,
                         **tokenization_kwargs,
                     ),
                     self.review_id,

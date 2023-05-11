@@ -376,6 +376,7 @@ class ReviewSet:
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
+        include_augmentations: bool = False,
         seed: int = None,
         **dataloader_args: dict,
     ):
@@ -403,6 +404,7 @@ class ReviewSet:
                     max_length=model_max_length,
                     for_training=for_training,
                     multiple_usage_options_strategy=multiple_usage_options_strategy,
+                    include_augmentations=include_augmentations,
                 )
                 for review in self
             )

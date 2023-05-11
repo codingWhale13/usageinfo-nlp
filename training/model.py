@@ -224,6 +224,7 @@ class ReviewModel(pl.LightningModule):
         return self.train_reviews.get_dataloader(
             **self.tokenization_args,
             selection_strategy=self.train_review_strategy,
+            include_augmentations=True,
             batch_size=self.hyperparameters["batch_size"],
             drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             shuffle=True,  # Shuffles the training data every epoch.
@@ -236,6 +237,7 @@ class ReviewModel(pl.LightningModule):
         return self.val_reviews.get_dataloader(
             **self.tokenization_args,
             selection_strategy=self.train_review_strategy,
+            include_augmentations=True,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
@@ -245,6 +247,7 @@ class ReviewModel(pl.LightningModule):
         return self.test_reviews.get_dataloader(
             **self.tokenization_args,
             selection_strategy=self.test_reviews_strategy,
+            include_augmentations=False,
             batch_size=self.hyperparameters["batch_size"],
             num_workers=2,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
