@@ -8,6 +8,8 @@ from functools import partial
 from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
+from helpers.cmd_input import get_yes_or_no_input
+import glob
 
 from numpy import mean, var
 import numpy as np
@@ -137,6 +139,11 @@ class ReviewSet:
     def from_files(
         cls, *source_paths: Union[str, Path], save_path: Optional[str] = None
     ) -> "ReviewSet":
+        # enabling using the * syntax to read multiple files with same pattern
+        source_paths = list(itertools.chain(*[glob.glob(path, recursive=True) for path in source_paths]))
+        source_paths.sort()
+        
+        print(source_paths)
         if len(source_paths) == 0:
             raise ValueError("Expected at least one source path argument")
 
@@ -279,10 +286,10 @@ class ReviewSet:
 
     def get_usage_options(self, label_id: str) -> list:
         usage_options = list(
-            itertools.chain(*[review.get_usage_options(label_id) for review in self])
+            itertools.chain(*[review.get_usage_options(*label_ids) for review in self])
         )
         if not usage_options:
-            raise ValueError(f"Label {label_id} not found in any review")
+            raise ValueError(f"Labels {label_ids} not found in any review")
         return usage_options
 
     async def __async_score(

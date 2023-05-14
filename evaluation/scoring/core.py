@@ -80,6 +80,10 @@ def get_embedding(usage_option: str, comparator: str = "all-mpnet-base-v2") -> l
     cache[key] = embedding
     return embedding
 
+def get_all_similarities(predictions: str, reference: str, use_lowercase: bool=True, openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS):
+    for comparator in ["all-mpnet-base-v2", "bleu", "sacrebleu", "rouge1", "rouge2", "rougeL", "rougeLsum", "openai"]:
+        yield comparator, get_similarity(predictions, reference, comparator, use_lowercase, openai_params)
+
 
 def get_similarity(
     prediction: str,
