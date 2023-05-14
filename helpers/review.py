@@ -229,7 +229,7 @@ class Review:
             else None
         )
         if not label:
-            yield format_dict(model_input, 0, self.review_id)
+            yield format_dict(model_input, 0, self.review_id, "original/no_label")
             return
 
         augmentations = [(model_input, label["usageOptions"], "original")]
