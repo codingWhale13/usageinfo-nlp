@@ -8,7 +8,6 @@ import sys, os
 
 from helpers.review import Review
 
-AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS = {1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
 
 REVIEW_FIELDS_OTHER_THAN_LABELS = Review.review_attributes.union(
     {"review_id"}
@@ -122,6 +121,9 @@ def v3_to_v4(data_v3: dict) -> dict:
             review["labels"][label_id]["augmentations"] = []
 
     return data_v4
+
+
+AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS = {1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
 
 
 def upgrade_json_version(
