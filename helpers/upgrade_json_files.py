@@ -4,10 +4,13 @@ from datetime import datetime
 import json
 from typing import Union
 from pathlib import Path
-from helpers.review import Review
 import sys, os
 
-review_fields_other_than_labels = Review.review_attributes.union(
+from helpers.review import Review
+
+AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS = {1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
+
+REVIEW_FIELDS_OTHER_THAN_LABELS = Review.review_attributes.union(
     {"review_id"}
 ).difference({"labels"})
 
@@ -31,7 +34,7 @@ def v0_to_v1(
         review_metadata = {}
 
         for key in review_v0:
-            if key in review_fields_other_than_labels:
+            if key in REVIEW_FIELDS_OTHER_THAN_LABELS:
                 review_v1[key] = review_v0[key]
             elif key == "label":
                 if source == "labellingTool":
@@ -137,20 +140,17 @@ def upgrade_json_version(
             input("Enter label_id for the label of v0 json structure: "),
             input("Enter label source (either 'labellingTool' or 'openAI')"),
         )
-    if data["version"] == 1:
-        data = v1_to_v2(data)
-
-    if data["version"] == 2:
-        data = v2_to_v3(data)
-
-    if data["version"] == 3:
-        data = v3_to_v4(data)
+    data = upgrade_to_latest_version(data)
 
     with open(new_json_path, "w") as file:
         json.dump(data, file)
 
 
-REVIEW_SET_UPGRADE_FUNCTIONS = {0: v0_to_v1, 1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
+def upgrade_to_latest_version(data: dict) -> dict:
+    while data["version"] in AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS:
+        data = AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS[data["version"]](data)
+
+    return data
 
 
 if __name__ == "__main__":

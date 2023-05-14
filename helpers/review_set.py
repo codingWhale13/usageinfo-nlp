@@ -96,18 +96,20 @@ class ReviewSet:
 
     @classmethod
     def from_dict(cls, data: dict, save_path: Optional[str] = None) -> "ReviewSet":
-        if data.get("version") < cls.latest_version:
-            user_wants_to_upgrade = get_yes_or_no_input(
-                f"Do you want to upgrade your json review set (Current version: {data.get('version')})? This will not override your file unless you save this reviewset"
-            )
-            if user_wants_to_upgrade:
-                from helpers.upgrade_json_files import REVIEW_SET_UPGRADE_FUNCTIONS
-
-                data = REVIEW_SET_UPGRADE_FUNCTIONS[data.get("version")](data)
-                new_version = data.get("version")
-                print(
-                    f"Temporarily upgraded json file to version {new_version}. Please save it manually"
+        version = data.get("version", 0)
+        if version < cls.latest_version:
+            if version < 1:
+                exit(
+                    1,
+                    "Automatic upgrade from version 0 is not supported.\nPlease resort to the manual upgrade process.",
                 )
+            print(
+                f"Auto-upgrading your json review set to version {cls.latest_version} for usage (current version: {data.get('version')})...\nThis will not override your file unless you save this reviewset!"
+            )
+            from helpers.upgrade_json_files import upgrade_to_latest_version
+
+            data = upgrade_to_latest_version(data)
+
         reviews = {
             review_id: Review(review_id=review_id, data=review_data)
             for review_id, review_data in data.get("reviews", {}).items()
