@@ -7,6 +7,7 @@ from typing import Optional
 import utils
 from helpers.review_set import ReviewSet
 from helpers.label_selection import DatasetSelectionStrategy
+from torch.nn import CrossEntropyLoss
 
 
 class ReviewModel(pl.LightningModule):
@@ -42,13 +43,15 @@ class ReviewModel(pl.LightningModule):
         self.optimizer_args = optimizer_args
         self.seed = seed
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
-
+        self.individual_loss_function = CrossEntropyLoss(
+            ignore_index=-100, reduction="mean"
+        )
         self.tokenization_args = {
             "tokenizer": tokenizer,
             "model_max_length": max_length,
             "for_training": True,
         }
-
+        self.step = 0
         self._initialize_datasets()
 
         self._freeze_model()
@@ -76,6 +79,11 @@ class ReviewModel(pl.LightningModule):
             self.model.decoder, self.active_layers["decoder"]
         )
         self.gradual_unfreeze(0)
+
+    def run_name(self) -> str:
+        if self.trainer is not None and self.trainer.logger is not None:
+            return self.trainer.logger.experiment.name
+        return "test-run"
 
     def gradual_unfreeze(self, epoch: int):
         def unfreeze(blocks, epoch: int):
@@ -121,17 +129,50 @@ class ReviewModel(pl.LightningModule):
 
     def _step(self, batch):
         # self() calls self.forward(), but should be preferred (https://github.com/Lightning-AI/lightning/issues/1209)
+        labels = batch["output"]["input_ids"]
         outputs = self(
             input_ids=batch["input"]["input_ids"],
             attention_mask=batch["input"]["attention_mask"],
-            labels=batch["output"]["input_ids"],
+            labels=labels,
         )
+        individual_losses = {}
+        logits = outputs.logits.detach()
+        for i in range(logits.shape[0]):
+            id_ = (batch["review_id"][i], batch["source_id"][i])
+            loss = self.individual_loss_function(logits[i, :, :], labels[i, :])
+            individual_losses[id_] = loss.item()
 
         # outputs is a SequenceClassifierOutput object, which has a loss attribute at the first place (https://huggingface.co/docs/transformers/main_classes/output)
-        return outputs.loss
+        return outputs.loss, individual_losses
 
-    def training_step(self, batch, __):
-        loss = self._step(batch)
+    def __log_individual_losses(
+        self, losses: dict[tuple[str, str], float], batch_idx: int, mode="training"
+    ) -> None:
+        for (review_id, source_id), loss in losses.items():
+            label = self.reviews.get_review(review_id).get_label_from_strategy(
+                self.train_review_strategy
+            )
+
+            review_loss_data = {
+                "loss": loss,
+                "batch_idx": batch_idx,
+                "epoch": self.current_epoch,
+                "mode": mode,
+                "step": self.step,
+                "source_id": source_id,
+            }
+            if "loss" in label["metadata"]:
+                label["metadata"]["loss"].append(review_loss_data)
+            else:
+                label["metadata"]["loss"] = [review_loss_data]
+
+    def __save_individual_losses_to_disk(self):
+        self.reviews.save()
+
+    def training_step(self, batch, batch_idx):
+        loss, individual_losses = self._step(batch)
+        self.__log_individual_losses(individual_losses, batch_idx)
+        self.step += 1
         self.log(
             "train_loss",
             loss,
@@ -166,9 +207,11 @@ class ReviewModel(pl.LightningModule):
             )
         torch.cuda.empty_cache()
         self.gradual_unfreeze(self.current_epoch)
+        self.__save_individual_losses_to_disk()
 
-    def validation_step(self, batch, __):
-        loss = self._step(batch)
+    def validation_step(self, batch, batch_idx):
+        loss, individual_losses = self._step(batch)
+        self.__log_individual_losses(individual_losses, batch_idx, mode="validation")
         self.log(
             "val_loss",
             loss,
@@ -194,7 +237,7 @@ class ReviewModel(pl.LightningModule):
         )
 
     def test_step(self, batch, __):
-        loss = self._step(batch)
+        loss, _ = self._step(batch)
         self.log(
             "test_loss", loss, on_step=True, prog_bar=True, logger=True, sync_dist=True
         )
@@ -258,13 +301,13 @@ class ReviewModel(pl.LightningModule):
         self.test_reviews_strategy = DatasetSelectionStrategy((dataset_name, "test"))
         self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
 
-        reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
-
-        self.test_reviews = reviews.filter_with_label_strategy(
+        self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
+        self.reviews.save_path = utils.get_model_review_set_path(self.run_name())
+        self.test_reviews = self.reviews.filter_with_label_strategy(
             self.test_reviews_strategy, inplace=False
         )
 
-        train_reviews = reviews.filter_with_label_strategy(
+        train_reviews = self.reviews.filter_with_label_strategy(
             self.train_review_strategy, inplace=False
         )
 

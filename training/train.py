@@ -73,7 +73,7 @@ dataset_parameters = {
     "validation_split": config["dataset"]["validation_split"],
 }
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
-pl.seed_everything(seed if seed else 42)
+pl.seed_everything(seed if seed else 42, workers=True)
 
 if not test_run:
     logger = pl.loggers.WandbLogger(

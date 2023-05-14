@@ -52,13 +52,13 @@ optimizers = {
 }
 
 
-def get_dataset_path(dataset: str) -> str:
+def get_dataset_path(dataset: str, review_set_name: str = "reviews.json") -> str:
     dotenv.load_dotenv()
     dataset_dir = os.path.join(
         os.getenv("DATASETS", default=ARTIFACT_PATH + "datasets"), dataset
     )
 
-    return os.path.join(dataset_dir, "reviews.json")
+    return os.path.join(dataset_dir, review_set_name)
 
 
 def get_model_path(model_artifact: dict) -> str:
@@ -68,6 +68,10 @@ def get_model_path(model_artifact: dict) -> str:
         checkpoint_name = f"epoch={model_artifact['checkpoint']}.ckpt"
 
     return os.path.join(get_model_dir(model_artifact["name"]), checkpoint_name)
+
+
+def get_model_review_set_path(artifact_name: str):
+    return os.path.join(get_model_dir(artifact_name), "reviews.json")
 
 
 def get_config_path(name: str) -> dict:
@@ -82,7 +86,7 @@ def get_config(path: str) -> dict:
     return config
 
 
-def get_model_dir(artifact_name: dict) -> str:
+def get_model_dir(artifact_name: str) -> str:
     model_dirs = glob.glob(os.path.join(ARTIFACT_PATH, "models", f"*{artifact_name}"))
     if len(model_dirs) == 0:
         raise ValueError("No model found with the given name")
