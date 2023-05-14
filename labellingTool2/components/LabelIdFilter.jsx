@@ -17,6 +17,20 @@ export default function LabelIdFilter({
         Filter label ids
       </MenuButton>
       <MenuList>
+        <MenuItem>
+          <Switch
+            isChecked={selectedLabelIds.length === allLabelIds.length}
+            onChange={() => {
+              if (selectedLabelIds.length === allLabelIds.length) {
+                setSelectedLabelIds([]);
+              } else {
+                setSelectedLabelIds(allLabelIds);
+              }
+            }}
+          >
+            All
+          </Switch>
+        </MenuItem>
         {allLabelIds.map((labelId) => {
           const is_selected = selectedLabelIds.includes(labelId);
           return (
