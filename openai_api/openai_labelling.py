@@ -35,6 +35,9 @@ def parse_args():
         "--id", default="", help="Unique identifier for the new label"
     )
     arg_parser.add_argument(
+        "-w", "--worker", default=5, type=int, help="Number of workers to use"
+    )
+    arg_parser.add_argument(
         "--save",
         "-s",
         choices=range(1, 101),
@@ -132,7 +135,7 @@ async def main():
     for review_id, review in review_set.reviews.items():
         labelling_queue.put_nowait(generate_label_worker_item(review_id, review))
 
-    worker = Worker(labelling_queue, n=20)
+    worker = Worker(labelling_queue, n=args.worker)
     print(
         f"Setup queue with {worker.queue.qsize()} reviews. Starting {worker.n} workers in parallel 🚀"
     )

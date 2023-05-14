@@ -131,6 +131,7 @@ class Review:
             "scores": {},
             "datasets": {},
             "metadata": metadata,
+            "augmentations": [],
         }
 
     def tokenize(
