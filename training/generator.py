@@ -1,5 +1,5 @@
 import torch
-from typing import List
+from typing import List, Optional
 
 from training import utils
 from helpers.review_set import ReviewSet
@@ -13,8 +13,8 @@ class Generator:
     def __init__(
         self,
         artifact_name,
-        checkpoint: int,
         generation_config: dict,
+        checkpoint: Optional[int] = None,
     ) -> None:
         global device
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}

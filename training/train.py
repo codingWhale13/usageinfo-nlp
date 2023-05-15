@@ -11,6 +11,9 @@ from sustainability_logger import SustainabilityLogger
 
 from model import ReviewModel
 import utils
+from generator import Generator
+from helpers.review_set import ReviewSet
+from helpers.label_selection import DatasetSelectionStrategy
 
 wandb.login()
 
@@ -119,6 +122,30 @@ if not test_run:
         trainer.fit(model)
     with SustainabilityLogger(experiment_description="testing"):
         trainer.test(model)
+
+    try:
+        dataset = ReviewSet.from_files(
+            utils.get_dataset_path(config["dataset"]["version"])
+        )
+        test_dataset = dataset.filter_with_label_strategy(
+            DatasetSelectionStrategy((config["dataset"]["version"], "test")),
+            inplace=False,
+        )
+
+        label_id = f"model-{wandb.run.name}-auto"
+
+        generation_config = utils.get_config(
+            utils.get_config_path("generation_config"),
+        )
+        generator = Generator(wandb.run.name, generation_config)
+        generator.generate_label(test_dataset, label_id=label_id, verbose=True)
+
+        dataset.save()
+    except Exception as e:
+        warnings.warn(
+            "Could not generate label for golden dataset. The run has probably failed.",
+            e,
+        )
 else:
     trainer.fit(model)
     trainer.test(model)

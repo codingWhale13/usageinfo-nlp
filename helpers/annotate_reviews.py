@@ -81,7 +81,7 @@ def main():
     ), "No reviewset files or datasets or trained on flag given"
 
     generation_config = utils.get_config(args.generation_config)
-    generator = Generator(args.artifact_name, args.checkpoint, generation_config)
+    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
 
     datasets = []
     if args.datasets:
