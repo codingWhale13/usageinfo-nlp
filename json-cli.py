@@ -421,7 +421,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         return
 
     generation_config = utils.get_config(args.generation_config)
-    generator = Generator(args.artifact_name, args.checkpoint, generation_config)
+    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
 
