@@ -76,7 +76,7 @@ def arg_parse():
         type=int,
         help="Seed to use for random sampling.",
     )
-    return parser.parse_known_args()
+    return parser.parse_args()
 
 
 def main():
