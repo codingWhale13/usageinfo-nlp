@@ -10,6 +10,8 @@ from lightning import pytorch as pl
 from sustainability_logger import SustainabilityLogger
 
 from model import ReviewModel
+from active_learning.supervisor import ActiveLearningSupervisor
+
 import utils
 from generator import Generator
 from helpers.review_set import ReviewSet
