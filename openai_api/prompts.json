@@ -1,5 +1,201 @@
 {
     "chat": {
+        "explain": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with \"Explanation: [X].\nResult: [Y]\". Where X is a short explanation of the usage options and Y the list of usage options separated by a semicolon. If the review author does not mention any usage options, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "user",
+                    "content": "This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "Explanation: The review author likes his grill. He finds it perfect for home BBQ and to smoke vegetables but it is too big for camping trips.\nResults: home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "{review['review_body']}"
+                }
+            ]
+        },
+        "verb": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. Each usage options should be as short as possible and describe an action. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "user",
+                    "content": "This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "{review['review_body']}"
+                }
+            ]
+        },
+        "vanilla": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "user",
+                    "content": "This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "{review['review_body']}"
+                }
+            ]
+        },
+        "product_title": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review body. The product title and the review headline is only given for context. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "user",
+                    "content": "Product title: Samurai-Plus DZ420 Grill #1 portable outdoor BBQ\nReview headline: Ready for summer!! \nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Product title: My little Pony Diary (Original) with Glitter\nReview headline: My daughter will be sooooo happy\nReview body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "Product title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                }
+            ]
+        },
+        "old_style_product_title": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review body. The product title and the review headline is only given for context. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nProduct title: Samurai-Plus DZ420 Grill #1 portable outdoor BBQ\nReview headline: Ready for summer!! \nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Product title: My little Pony Diary (Original) with Glitter\nReview headline: My daughter will be sooooo happy\nReview body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nProduct title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                }
+            ]
+        },
+        "old_style_verb": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. Each usage options should be as short as possible and describe an action. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nThis was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\n{review['review_body']}"
+                }
+            ]
+        },
+        "old_style_pv": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage information from product reviews."
+                },
+                {
+                    "role": "user",
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review body. The product title and the review headline is only given for context. Reply only and strictly with the list of usage options separated by a semicolon. Each usage options should be as short as possible and describe an action. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nProduct title: Samurai-Plus DZ420 Grill #1 portable outdoor BBQ\nReview headline: Ready for summer!! \nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "assistant",
+                    "content": "home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "user",
+                    "content": "Product title: My little Pony Diary (Original) with Glitter\nReview headline: My daughter will be sooooo happy\nReview body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "assistant",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "user",
+                    "content": "Here is another review:\nProduct title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                }
+            ]
+        },
         "leoh_v1": {
             "prompt": [
                 {
@@ -8,11 +204,11 @@
                 },
                 {
                     "role": "user",
-                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples usage options, print them semicolon-separated. If the review author does not mention any usage options, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
                 },
                 {
                     "role": "assistant",
-                    "content": "home BBQs, smoke vegetables"
+                    "content": "home BBQs; smoke vegetables"
                 },
                 {
                     "role": "user",
@@ -20,7 +216,7 @@
                 },
                 {
                     "role": "assistant",
-                    "content": "No use cases"
+                    "content": "No usage options"
                 },
                 {
                     "role": "user",
@@ -36,11 +232,11 @@
                 },
                 {
                     "role": "user",
-                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples usage options, print them semicolon-separated. If the review author does not mention any usage options, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nThis grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
                 },
                 {
                     "role": "assistant",
-                    "content": "home BBQs, smoke vegetables"
+                    "content": "home BBQs; smoke vegetables"
                 },
                 {
                     "role": "user",
@@ -64,11 +260,11 @@
                 },
                 {
                     "role": "user",
-                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review title and body. The product title can be of help to establish a context for a review. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nProduct title: Big grill for real men\nReview headline: Good grill!\nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                    "content": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review title and body. The product title can be of help to establish a context for a review. In case the review author mentions multiples usage options, print them semicolon-separated. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\nHere is a review:\nProduct title: Big grill for real men\nReview headline: Good grill!\nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
                 },
                 {
                     "role": "assistant",
-                    "content": "home BBQs, smoke vegetables"
+                    "content": "home BBQs; smoke vegetables"
                 },
                 {
                     "role": "user",

@@ -47,7 +47,7 @@ def parse_args():
         metavar="[0-100]",
     )
     arg_parser.add_argument(
-        "--model", "-m", default="text-davinci-003", help="OpenAI model to use"
+        "--model", "-m", default="gpt-3.5-turbo", help="OpenAI model to use"
     )
     arg_parser.add_argument(
         "--temperature",

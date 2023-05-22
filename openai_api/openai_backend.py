@@ -11,7 +11,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
 
 OPENAI_MAX_RETRIES = 10
-NO_USAGE_OPTION_STR = "No use cases"
+NO_USAGE_OPTION_STR = "No usage options"
 CHAT_MODELS = ["gpt-3.5-turbo", "gpt-3.5-turbo-0301", "gpt-4", "gpt-4-0314"]
 MODEL_NAME_MAPPING = {
     "text-davinci-003": "davinci",
@@ -114,7 +114,13 @@ def aggregate_logprobs(output: json):
 
 def format_usage_options(text_completion: str):
     labels = []
-    for label in text_completion.split(","):
+
+    if "Results:" in text_completion:
+        text_completion = text_completion.split("Results:")[1]
+    if "Result:" in text_completion:
+        text_completion = text_completion.split("Result:")[1]
+
+    for label in text_completion.split(";"):
         if label.strip().startswith(NO_USAGE_OPTION_STR):
             break
         labels.append(label.strip().strip("."))
