@@ -4,13 +4,17 @@ from torch.utils.data import DataLoader
 from copy import copy
 from typing import Optional
 
-import utils
+import training.utils as utils
 from helpers.review_set import ReviewSet
 from helpers.label_selection import (
     DatasetSelectionStrategy,
     LabelSelectionStrategyInterface,
 )
+from active_learning.module import ActiveLearningModule
 from transformers.modeling_outputs import Seq2SeqLMOutput
+
+
+NUM_WORKERS = 4
 
 
 class ReviewModel(pl.LightningModule):
@@ -27,6 +31,7 @@ class ReviewModel(pl.LightningModule):
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
         seed: int,
+        active_learning_module: ActiveLearningModule,
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
         gradual_unfreezing_mode: Optional[str],
@@ -46,7 +51,7 @@ class ReviewModel(pl.LightningModule):
         self.optimizer_args = optimizer_args
         self.seed = seed
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
-
+        self.active_learning_module = active_learning_module
         self.tokenization_args = {
             "tokenizer": tokenizer,
             "model_max_length": max_length,
@@ -55,7 +60,11 @@ class ReviewModel(pl.LightningModule):
 
         self._initialize_datasets()
 
-        self._freeze_model()
+        self.active_learning_module.setup(self, self.reviews)
+
+        # Skip freezing if a fake test model is loaded
+        if self.model is not None:
+            self._freeze_model()
 
     def _freeze_model(self):
         def unfreeze(component, slice_: str) -> int:
@@ -85,12 +94,6 @@ class ReviewModel(pl.LightningModule):
         if self.trainer is not None and self.trainer.logger is not None:
             return self.trainer.logger.experiment.name
         return "test-run"
-
-    def global_step(self) -> int:
-        return self.global_step
-
-    def current_epoch(self) -> int:
-        return self.current_epoch
 
     def training_reviews(self) -> ReviewSet:
         return self.train_reviews
@@ -152,6 +155,7 @@ class ReviewModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         outputs = self._step(batch)
+        self.active_learning_module.process_step(batch_idx, batch, outputs)
         self.log(
             "train_loss",
             outputs.loss,
@@ -163,7 +167,12 @@ class ReviewModel(pl.LightningModule):
         )
         return outputs.loss
 
+    def on_train_epoch_end(self):
+        print("On train epoch end")
+        self.active_learning_module.on_train_epoch_end()
+
     def training_epoch_end(self, outputs):
+        print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
@@ -184,11 +193,13 @@ class ReviewModel(pl.LightningModule):
                 sync_dist=True,
                 batch_size=self.hyperparameters["batch_size"],
             )
-        torch.cuda.empty_cache()
         self.gradual_unfreeze(self.current_epoch)
 
     def validation_step(self, batch, batch_idx):
         outputs = self._step(batch)
+        self.active_learning_module.process_step(
+            batch_idx, batch, outputs, mode="validation"
+        )
         self.log(
             "val_loss",
             outputs.loss,
@@ -253,9 +264,10 @@ class ReviewModel(pl.LightningModule):
             "batch_size": self.hyperparameters["batch_size"],
             "drop_last": True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
             "shuffle": True,  # Shuffles the training data every epoch.
-            "num_workers": 2,
+            "num_workers": NUM_WORKERS,
             "multiple_usage_options_strategy": self.multiple_usage_options_strategy,
-            "seed": self.seed,  # only relevant if shuffle=True
+            "seed": self.seed,  # only relevant if shuffle=True,
+            "pin_memory": True,
         }
 
     def train_dataloader(self):
@@ -267,7 +279,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.train_review_strategy,
             include_augmentations=True,
             batch_size=self.hyperparameters["batch_size"],
-            num_workers=2,
+            num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
@@ -277,7 +289,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.test_reviews_strategy,
             include_augmentations=False,
             batch_size=self.hyperparameters["batch_size"],
-            num_workers=2,
+            num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 

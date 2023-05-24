@@ -10,7 +10,7 @@ from lightning import pytorch as pl
 from sustainability_logger import SustainabilityLogger
 
 from model import ReviewModel
-from active_learning.supervisor import ActiveLearningSupervisor
+from active_learning.module import ActiveLearningModule
 
 import utils
 from generator import Generator
@@ -116,7 +116,9 @@ model = ReviewModel(
     seed=seed,
     lr_scheduler_type=config["lr_scheduler_type"],
     gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
+    active_learning_module=ActiveLearningModule(),
 )
+
 
 # %% Training and testing
 if not test_run:
