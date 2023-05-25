@@ -9,6 +9,7 @@ from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
 from helpers.cmd_input import get_yes_or_no_input
+from helpers import MULTI_LABEL_IDS
 
 from numpy import mean, var
 import helpers.label_selection as ls
@@ -252,8 +253,19 @@ class ReviewSet:
     ) -> list[dict[str, float]]:
         self.score(label_id, reference_label_id, metric_ids)
 
+        if reference_label_id in MULTI_LABEL_IDS:
+            reference_sub_label_ids = [
+                ref_id
+                for ref_id in self.get_all_label_ids()
+                if ref_id.startswith(reference_label_id)
+            ]
+        else:
+            reference_sub_label_ids = [reference_label_id]
+
         result = {metric_id: [] for metric_id in metric_ids}
-        for review in self.reviews_with_labels({label_id, reference_label_id}):
+        for review in self.reviews_with_labels(
+            {label_id}.union(set(reference_sub_label_ids))
+        ):
             review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
             for metric_id, value in review_scores.items():
                 result[metric_id].append(value)

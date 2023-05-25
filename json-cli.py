@@ -5,7 +5,7 @@ import copy
 import pprint
 
 from helpers.review_set import ReviewSet
-
+from helpers.review import MULTI_LABEL_IDS
 
 dash = "-" * 80
 
@@ -450,7 +450,7 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
         reference_labels = copy.copy(args.reference_labels)
 
         for label in args.reference_labels:
-            if label not in all_labels:
+            if label not in all_labels and label not in MULTI_LABEL_IDS:
                 print(
                     f"\nLabel {bcolors.DARKYELLOW}{label}{bcolors.ENDC} does not exist, skipping..."
                 )
