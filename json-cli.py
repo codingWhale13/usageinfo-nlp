@@ -184,8 +184,22 @@ def parse_args():
         "--generation_config",
         "-g",
         type=str,
-        default=None,
-        help="Generation config to use for the annotation (default is defined in the generator)",
+        default=f"{os.path.dirname(os.path.realpath(__file__))}/training/generation_config.yml",
+        help="Generation config to use for the annotation",
+    )
+    annotate_parser.add_argument(
+        "--output-probs",
+        "-op",
+        type=str,
+        default="best",
+        help="Which type of logging to use for the probabilities of the labels. Can be 'best', 'all', or anything else, which will be equivalent to no logging (default: 'best').",
+    )
+    annotate_parser.add_argument(
+        "--output-probs",
+        "-op",
+        type=str,
+        default="best",
+        help="Which type of logging to use for the probabilities of the labels. Can be 'best', 'all', or anything else, which will be equivalent to no logging (default: 'best').",
     )
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
