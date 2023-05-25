@@ -10,6 +10,9 @@ import dateutil.parser
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 
+# sub label ids are followed with "-1", "-2", ...
+MULTI_LABEL_IDS = ["bp-golden_v4"]
+
 
 class Review:
     review_attributes = {
@@ -284,6 +287,16 @@ class Review:
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
+
+        if reference_label_id in MULTI_LABEL_IDS:
+            reference_sub_label_ids = [
+                ref_id
+                for ref_id in self.get_label_ids()
+                if ref_id.startswith(reference_label_id)
+            ]
+        else:
+            reference_sub_label_ids = [reference_label_id]
+
         scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
 
         if reference_label_id not in scores:
@@ -296,12 +309,16 @@ class Review:
             # calculate missing metrics
             from evaluation.scoring.metrics import SingleReviewMetrics
 
-            new_metrics = SingleReviewMetrics.from_labels(
-                self.get_labels(), label_id, reference_label_id
-            ).calculate(missing_metric_ids)
+            for metric_id in missing_metric_ids:
+                metric_results = []
+                for reference_sub_label_id in reference_sub_label_ids:
+                    metric_result = SingleReviewMetrics.from_labels(
+                        self.get_labels(), label_id, reference_sub_label_id
+                    ).calculate([metric_id])
+                    assert len(metric_result.values()) == 1
+                    metric_results.append(metric_result.values()[0])
 
-            for metric_id, metric_value in new_metrics.items():
-                scores[reference_label_id][metric_id] = metric_value
+                scores[reference_label_id][metric_id] = max(metric_results)
 
     def get_scores(
         self,
