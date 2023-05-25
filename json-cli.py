@@ -151,6 +151,13 @@ def parse_args():
         help="Generation config to use for the annotation",
     )
     annotate_parser.add_argument(
+        "--output-probs",
+        "-op",
+        type=str,
+        default="best",
+        help="Which type of logging to use for the probabilities of the labels. Can be 'best', 'all', or anything else, which will be equivalent to no logging (default: 'best').",
+    )
+    annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
     )
 
@@ -421,7 +428,10 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         return
 
     generation_config = utils.get_config(args.generation_config)
-    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
+    output_probabilites = args.output_probs
+    generator = Generator(
+        args.artifact_name, generation_config, args.checkpoint, output_probabilites
+    )
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
 
