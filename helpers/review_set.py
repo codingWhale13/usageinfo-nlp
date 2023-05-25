@@ -260,6 +260,26 @@ class ReviewSet:
 
         return result
 
+    def get_agg_multi_score(
+        self,
+        metric_id: str,
+        label_id: str,
+        *reference_label_ids: str,
+    ):
+        aggregations = {
+            "mean": mean,
+            "variance": variance,
+            "quantiles (n=4)": quantiles,
+        }
+        scores = [
+            review.get_multi_score(metric_id, label_id, *reference_label_ids)
+            for review in self
+        ]
+        scores = list(filter(lambda x: x is not None, scores))
+        return {
+            agg_name: agg_func(scores) for agg_name, agg_func in aggregations.items()
+        }
+
     def get_agg_scores(
         self,
         label_id: str,

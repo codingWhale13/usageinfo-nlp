@@ -316,6 +316,29 @@ class Review:
             for m_id in metric_ids
         }
 
+    def get_multi_score(
+        self,
+        metric_id: str,
+        label_id: str,
+        *reference_label_ids: str,
+    ):
+        if label_id not in self.get_label_ids():
+            return None
+
+        reference_label_ids = set(reference_label_ids).intersection(
+            self.get_label_ids()
+        )
+        for reference_label_id in reference_label_ids:
+            self.score(label_id, reference_label_id, [metric_id])
+
+        return max(
+            (
+                self.get_label_for_id(label_id)["scores"][reference_label_id][metric_id]
+                for reference_label_id in reference_label_ids
+            ),
+            default=None,
+        )
+
     def merge_labels(
         self, other_review: "Review", inplace: bool = False
     ) -> Optional["Review"]:
