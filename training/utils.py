@@ -70,6 +70,10 @@ def get_model_path(model_artifact: dict) -> str:
     return os.path.join(get_model_dir(model_artifact["name"]), checkpoint_name)
 
 
+def get_model_review_set_path(artifact_name: str):
+    return os.path.join(get_model_dir(artifact_name), "reviews.json")
+
+
 def get_config_path(name: str) -> dict:
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), name + ".yml")
 
@@ -80,10 +84,6 @@ def get_config(path: str) -> dict:
         config = yaml.safe_load(file)
 
     return config
-
-
-def get_model_dir_file_path(artifact_name: str, file_name: str):
-    return os.path.join(get_model_dir(artifact_name), file_name)
 
 
 def get_model_dir(artifact_name: str) -> str:
