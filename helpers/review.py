@@ -7,7 +7,7 @@ import json
 
 import dateutil.parser
 
-from helpers import MULTI_LABEL_IDS
+from helpers import MULTI_LABEL_IDS, get_sub_label_ids
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 
@@ -285,16 +285,7 @@ class Review:
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
-        print("SCORING")
-
-        if reference_label_id in MULTI_LABEL_IDS:
-            reference_sub_label_ids = [
-                ref_id
-                for ref_id in self.get_label_ids()
-                if ref_id.startswith(reference_label_id)
-            ]
-        else:
-            reference_sub_label_ids = [reference_label_id]
+        reference_sub_label_ids = get_sub_label_ids(reference_label_id)
 
         scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
 

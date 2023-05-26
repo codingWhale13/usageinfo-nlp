@@ -8,8 +8,7 @@ from functools import partial
 from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
-from helpers.cmd_input import get_yes_or_no_input
-from helpers import MULTI_LABEL_IDS
+from helpers import MULTI_LABEL_IDS, get_sub_label_ids
 
 from numpy import mean, var
 import helpers.label_selection as ls
@@ -253,15 +252,7 @@ class ReviewSet:
     ) -> list[dict[str, float]]:
         self.score(label_id, reference_label_id, metric_ids)
 
-        if reference_label_id in MULTI_LABEL_IDS:
-            reference_sub_label_ids = [
-                ref_id
-                for ref_id in self.get_all_label_ids()
-                if ref_id.startswith(reference_label_id)
-            ]
-        else:
-            reference_sub_label_ids = [reference_label_id]
-
+        reference_sub_label_ids = get_sub_label_ids(reference_label_id, self.get_all_label_ids())
         result = {metric_id: [] for metric_id in metric_ids}
         for review in self.reviews_with_labels(
             {label_id}.union(set(reference_sub_label_ids))
