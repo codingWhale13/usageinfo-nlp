@@ -285,7 +285,7 @@ class Review:
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> None:
         """score specified metrics if not done already"""
-        reference_sub_label_ids = get_sub_label_ids(reference_label_id)
+        ref_sub_ids = get_sub_label_ids(reference_label_id, self.get_label_ids())
 
         scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
 
@@ -301,12 +301,15 @@ class Review:
 
             for metric_id in missing_metric_ids:
                 metric_results = []
-                for reference_sub_label_id in reference_sub_label_ids:
+                for reference_sub_label_id in ref_sub_ids:
                     metric_result = SingleReviewMetrics.from_labels(
                         self.get_labels(), label_id, reference_sub_label_id
                     ).calculate([metric_id])
+
+                    # NOTE: interface for  SingleReviewMetrics could be improved to avoid the following 2 ugly lines
                     assert len(metric_result.values()) == 1
                     metric_results.append(list(metric_result.values())[0])
+
                 scores[reference_label_id][metric_id] = max(metric_results)
 
     def get_scores(

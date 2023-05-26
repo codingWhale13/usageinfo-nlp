@@ -252,11 +252,11 @@ class ReviewSet:
     ) -> list[dict[str, float]]:
         self.score(label_id, reference_label_id, metric_ids)
 
-        reference_sub_label_ids = get_sub_label_ids(reference_label_id, self.get_all_label_ids())
+        ref_sub_ids = get_sub_label_ids(reference_label_id, self.get_all_label_ids())
         result = {metric_id: [] for metric_id in metric_ids}
-        for review in self.reviews_with_labels(
-            {label_id}.union(set(reference_sub_label_ids))
-        ):
+
+        relevant_labels = {label_id}.union(set(ref_sub_ids))
+        for review in self.reviews_with_labels(relevant_labels):
             review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
             for metric_id, value in review_scores.items():
                 result[metric_id].append(value)
