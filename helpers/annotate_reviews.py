@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 
-from training.generator import Generator
+from training.generator import Generator, DEFAULT_GENERATION_CONFIG
 from training import utils
 from helpers.review_set import ReviewSet
 from helpers.label_selection import DatasetSelectionStrategy
@@ -15,8 +15,8 @@ def arg_parse():
         "-g",
         "--generation_config",
         type=str,
-        default=utils.get_config_path("generation_config"),
-        help="Path to generation config to use for prediction",
+        default=DEFAULT_GENERATION_CONFIG,
+        help="Generation config to use for prediction",
     )
     parser.add_argument(
         "-q",
@@ -80,8 +80,7 @@ def main():
         args.datasets or args.reviewset_files or args.trained_on_dataset
     ), "No reviewset files or datasets or trained on flag given"
 
-    generation_config = utils.get_config(args.generation_config)
-    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
+    generator = Generator(args.artifact_name, args.generation_config, args.checkpoint)
 
     datasets = []
     if args.datasets:

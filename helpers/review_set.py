@@ -14,9 +14,11 @@ from numpy import mean, var
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.evaluation_cache import EvaluationCache
+from evaluation.plotting.plot_metrics_report import plot_report
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
+import pandas as pd
 
 
 class ReviewSet:
@@ -260,19 +262,78 @@ class ReviewSet:
 
         return result
 
-    def get_agg_scores(
+    def get_scores_dataframe_from_strategy(
         self,
-        label_id: str,
-        reference_label_id: str,
-        metric_ids: Union[set, list] = DEFAULT_METRICS,
-    ) -> dict[dict[str, float]]:
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        reference_label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+    ) -> pd.DataFrame:
+        result = []
+        for review in self:
+            review_scores = review.get_scores_from_strategy(
+                label_selection_strategy, reference_label_selection_strategy, metric_ids
+            )
+            has_usage_options = (
+                len(
+                    review.get_label_from_strategy(reference_label_selection_strategy)[
+                        "usageOptions"
+                    ]
+                )
+                > 0
+            )
+            prediction_has_usage_options = (
+                len(
+                    review.get_label_from_strategy(label_selection_strategy)[
+                        "usageOptions"
+                    ]
+                )
+                > 0
+            )
+            result.append(
+                {
+                    "review_id": review.review_id,
+                    "star_rating": review.data["star_rating"],
+                    "has_usage_options": has_usage_options,
+                    "prediction_has_usage_options": prediction_has_usage_options,
+                }
+                | {metric_id: value for metric_id, value in review_scores.items()}
+            )
+        df = pd.DataFrame.from_records(result)
+        # Correct star rating because some are saved as int vs some as str
+        df["star_rating"] = df["star_rating"].apply(lambda x: int(x))
+        return df
+
+    def get_scores_report(
+        self,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        reference_label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+    ) -> list:
+        return plot_report(
+            self.get_scores_dataframe_from_strategy(
+                label_selection_strategy, reference_label_selection_strategy, metric_ids
+            ),
+            metric_ids,
+        )
+
+    def get_agg_scores_from_strategy(
+        self,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        reference_label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+    ) -> list[dict[str, float]]:
+        return self.__aggregate_scores(
+            self.get_scores_from_strategy(
+                label_selection_strategy, reference_label_selection_strategy, metric_ids
+            )
+        )
+
+    def __aggregate_scores(self, scores_per_review):
         aggregations = {
             "mean": mean,
             "variance": variance,
             "quantiles (n=4)": quantiles,
         }
-
-        scores_per_review = self.get_scores(label_id, reference_label_id, metric_ids)
 
         agg_scores = {}
         for metric_id, metric_results in scores_per_review.items():
@@ -282,6 +343,15 @@ class ReviewSet:
             }
 
         return agg_scores
+
+    def get_agg_scores(
+        self,
+        label_id: str,
+        reference_label_id: str,
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ) -> dict[dict[str, float]]:
+        scores_per_review = self.get_scores(label_id, reference_label_id, metric_ids)
+        return self.__aggregate_scores(scores_per_review)
 
     def reviews_with_labels(self, label_ids: set[str]) -> list[Review]:
         """Returns a review set containing only reviews with the given labels"""

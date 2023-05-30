@@ -50,6 +50,13 @@ class Review:
         raise ValueError(f"review '{self.review_id}' does not contain key '{key}'")
 
     def __eq__(self, other) -> bool:
+        print(
+            "equality check with",
+            type(other),
+            isinstance(other, Review),
+            type(other) == Review,
+            other.review_id,
+        )
         if isinstance(other, Review):
             return self.__key() == other.__key()
         else:
@@ -316,6 +323,27 @@ class Review:
             for m_id in metric_ids
         }
 
+    def get_scores_from_strategy(
+        self,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        reference_label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+    ) -> dict[str, float]:
+        label_id = label_selection_strategy.retrieve_label_id(self)
+        scores = []
+
+        reference_label_ids = reference_label_selection_strategy.retrieve_label_id(self)
+        if type(reference_label_ids) is not list:
+            reference_label_ids = [reference_label_ids]
+
+        selection_metric = list(metric_ids)[0]
+
+        for reference_label_id in reference_label_ids:
+            scores.append(self.get_scores(label_id, reference_label_id, metric_ids))
+
+        best_score = max(scores, key=lambda x: x[selection_metric])
+        return best_score
+
     def merge_labels(
         self, other_review: "Review", inplace: bool = False
     ) -> Optional["Review"]:
@@ -323,6 +351,11 @@ class Review:
 
         This method is used to merge labels of the same review into this object.
         """
+        print(
+            self.review_id,
+            other_review.review_id,
+            self.review_id == other_review.review_id,
+        )
         assert self == other_review, "cannot merge labels of different reviews"
         existing_labels = self.get_labels()
         if not inplace:

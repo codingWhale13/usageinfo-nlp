@@ -11,7 +11,7 @@ from sustainability_logger import SustainabilityLogger
 
 from model import ReviewModel
 import utils
-from generator import Generator
+from generator import Generator, DEFAULT_GENERATION_CONFIG
 from helpers.review_set import ReviewSet
 from helpers.label_selection import DatasetSelectionStrategy
 
@@ -134,10 +134,7 @@ if not test_run:
 
         label_id = f"model-{wandb.run.name}-auto"
 
-        generation_config = utils.get_config(
-            utils.get_config_path("generation_config"),
-        )
-        generator = Generator(wandb.run.name, generation_config)
+        generator = Generator(wandb.run.name, DEFAULT_GENERATION_CONFIG)
         generator.generate_label(test_dataset, label_id=label_id, verbose=True)
 
         dataset.save()
