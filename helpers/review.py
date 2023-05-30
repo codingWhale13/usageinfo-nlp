@@ -50,13 +50,6 @@ class Review:
         raise ValueError(f"review '{self.review_id}' does not contain key '{key}'")
 
     def __eq__(self, other) -> bool:
-        print(
-            "equality check with",
-            type(other),
-            isinstance(other, Review),
-            type(other) == Review,
-            other.review_id,
-        )
         if isinstance(other, Review):
             return self.__key() == other.__key()
         else:
@@ -351,11 +344,6 @@ class Review:
 
         This method is used to merge labels of the same review into this object.
         """
-        print(
-            self.review_id,
-            other_review.review_id,
-            self.review_id == other_review.review_id,
-        )
         assert self == other_review, "cannot merge labels of different reviews"
         existing_labels = self.get_labels()
         if not inplace:
