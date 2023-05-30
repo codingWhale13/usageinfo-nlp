@@ -322,12 +322,13 @@ class Review:
         reference_label_selection_strategy: ls.LabelSelectionStrategyInterface,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> dict[str, float]:
+        print("Strategy")
         label_id = label_selection_strategy.retrieve_label_id(self)
         scores = []
 
-        reference_label_ids = reference_label_selection_strategy.retrieve_label_id(self)
-        if type(reference_label_ids) is not list:
-            reference_label_ids = [reference_label_ids]
+        reference_label_ids = reference_label_selection_strategy.retrieve_label_ids(
+            self
+        )
 
         selection_metric = list(metric_ids)[0]
 
