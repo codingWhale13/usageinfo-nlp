@@ -140,7 +140,7 @@ def parse_args():
     annotate_parser.add_argument(
         "--checkpoint",
         "-c",
-        type=str,
+        type=int,
         help="Optional checkpoint of the artifact to use for annotation",
     )
     annotate_parser.add_argument(

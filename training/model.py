@@ -3,6 +3,7 @@ from lightning import pytorch as pl
 from torch.utils.data import DataLoader
 from copy import copy
 from typing import Optional
+import numpy as np
 
 import training.utils as utils
 from helpers.review_set import ReviewSet
@@ -52,6 +53,7 @@ class ReviewModel(pl.LightningModule):
         self.seed = seed
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
         self.active_data_module = active_data_module
+        self.validation_loss = []
         self.tokenization_args = {
             "tokenizer": tokenizer,
             "model_max_length": max_length,
@@ -64,31 +66,9 @@ class ReviewModel(pl.LightningModule):
 
         # Skip freezing if a fake test model is loaded
         if self.model is not None:
-            self._freeze_model()
-
-    def _freeze_model(self):
-        def unfreeze(component, slice_: str) -> int:
-            transformer_blocks = eval(f"list(component.block)[{slice_}]")
-            for block in transformer_blocks:
-                for param in block.parameters():
-                    param.requires_grad = True
-            # Returns the number of unfrozen transformer blocks
-            return len(transformer_blocks)
-
-        for param in self.model.parameters():
-            param.requires_grad = False
-
-        if self.active_layers["lm_head"]:
-            for param in self.model.lm_head.parameters():
-                param.requires_grad = True
-
-        self.active_encoder_layers = unfreeze(
-            self.model.encoder, self.active_layers["encoder"]
-        )
-        self.active_decoder_layers = unfreeze(
-            self.model.decoder, self.active_layers["decoder"]
-        )
-        self.gradual_unfreeze(0)
+            self.active_encoder_layers, self.active_decoder_layers = utils.freeze_model(
+                active_layers, model
+            )
 
     def run_name(self) -> str:
         if self.trainer is not None and self.trainer.logger is not None:
@@ -100,36 +80,6 @@ class ReviewModel(pl.LightningModule):
 
     def training_review_strategy(self) -> LabelSelectionStrategyInterface:
         return self.train_review_strategy
-
-    def gradual_unfreeze(self, epoch: int):
-        def unfreeze(blocks, epoch: int):
-            for i in range(1, len(blocks) + 1):
-                if epoch >= i:
-                    for param in blocks[len(blocks) - i].parameters():
-                        param.requires_grad = True
-
-        def unfreeze_helper(active_layers, epoch, speed, module):
-            epoch = epoch // speed + active_layers
-            unfreeze(module, epoch)
-
-        if self.gradual_unfreezing_mode is not None:
-            unfreezing_modes = self.gradual_unfreezing_mode.split(", ")
-            for mode in unfreezing_modes:
-                if "encoder" in mode:
-                    unfreeze_helper(
-                        self.active_encoder_layers,
-                        epoch,
-                        int(mode.split(" ")[1]),
-                        self.model.encoder.block,
-                    )
-
-                if "decoder" in mode:
-                    unfreeze_helper(
-                        self.active_decoder_layers,
-                        epoch,
-                        int(mode.split(" ")[1]),
-                        self.model.decoder.block,
-                    )
 
     def forward(
         self,
@@ -174,7 +124,9 @@ class ReviewModel(pl.LightningModule):
     def training_epoch_end(self, outputs):
         print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
-        avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
+        avg_loss = torch.stack(
+            [x["loss"] * self.trainer.accumulate_grad_batches for x in outputs]
+        ).mean()
         self.log(
             "epoch_train_loss",
             avg_loss,
@@ -193,7 +145,13 @@ class ReviewModel(pl.LightningModule):
                 sync_dist=True,
                 batch_size=self.hyperparameters["batch_size"],
             )
-        self.gradual_unfreeze(self.current_epoch)
+        utils.gradual_unfreeze(
+            self.model,
+            self.current_epoch,
+            self.gradual_unfreezing_mode,
+            self.active_encoder_layers,
+            self.active_decoder_layers,
+        )
 
     def validation_step(self, batch, batch_idx):
         outputs = self._step(batch)
@@ -223,6 +181,7 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
+        self.validation_loss.append(avg_loss.item())
 
     def test_step(self, batch, __):
         outputs = self._step(batch)
@@ -255,6 +214,14 @@ class ReviewModel(pl.LightningModule):
 
         # This is the right way to return an optimizer, without scheduler, in lightning (https://github.com/Lightning-AI/lightning/issues/3795)
         return [optimizer]
+
+    def get_best_epoch(self) -> Optional[int]:
+        try:
+            return int(
+                np.argmin(self.validation_loss[1:])
+            )  # The first element is the validation loss during dataloader sanity check, which is not relevant.
+        except ValueError:
+            return None
 
     def train_dataloader_args(self):
         return {
@@ -299,6 +266,9 @@ class ReviewModel(pl.LightningModule):
         self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
 
         self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
+        self.reviews.save_path = utils.get_model_review_set_path(
+            utils.get_run_name(self.trainer)
+        )
         self.test_reviews = self.reviews.filter_with_label_strategy(
             self.test_reviews_strategy, inplace=False
         )

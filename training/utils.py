@@ -12,6 +12,7 @@ import torch
 import dotenv
 import datetime
 from lightning import pytorch as pl
+from typing import Tuple
 
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 
@@ -144,3 +145,61 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
         save_top_k=2,
         monitor="epoch_val_loss",
     )
+
+
+def freeze_model(active_layers: dict, model) -> Tuple[int, int]:
+    def unfreeze(component, slice_: str) -> int:
+        transformer_blocks = eval(f"list(component.block)[{slice_}]")
+        for block in transformer_blocks:
+            for param in block.parameters():
+                param.requires_grad = True
+        # Returns the number of unfrozen transformer blocks
+        return len(transformer_blocks)
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    if active_layers["lm_head"]:
+        for param in model.lm_head.parameters():
+            param.requires_grad = True
+
+    active_encoder_layers = unfreeze(model.encoder, active_layers["encoder"])
+    active_decoder_layers = unfreeze(model.decoder, active_layers["decoder"])
+    return active_encoder_layers, active_decoder_layers
+
+
+def gradual_unfreeze(
+    model,
+    epoch: int,
+    gradual_unfreezing_mode,
+    active_encoder_layers,
+    active_decoder_layers,
+):
+    def unfreeze(blocks, epoch: int):
+        for i in range(1, len(blocks) + 1):
+            if epoch >= i:
+                for param in blocks[len(blocks) - i].parameters():
+                    param.requires_grad = True
+
+    def unfreeze_helper(active_layers, epoch, speed, module):
+        epoch = epoch // speed + active_layers
+        unfreeze(module, epoch)
+
+    if gradual_unfreezing_mode is not None:
+        unfreezing_modes = gradual_unfreezing_mode.split(", ")
+        for mode in unfreezing_modes:
+            if "encoder" in mode:
+                unfreeze_helper(
+                    active_encoder_layers,
+                    epoch,
+                    int(mode.split(" ")[1]),
+                    model.encoder.block,
+                )
+
+            if "decoder" in mode:
+                unfreeze_helper(
+                    active_decoder_layers,
+                    epoch,
+                    int(mode.split(" ")[1]),
+                    model.decoder.block,
+                )

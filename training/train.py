@@ -125,7 +125,7 @@ if not test_run:
     with SustainabilityLogger(experiment_description="training"):
         trainer.fit(model)
     with SustainabilityLogger(experiment_description="testing"):
-        trainer.test(model)
+        trainer.test()
 
     try:
         dataset = ReviewSet.from_files(
@@ -141,15 +141,19 @@ if not test_run:
         generation_config = utils.get_config(
             utils.get_config_path("generation_config"),
         )
-        generator = Generator(wandb.run.name, generation_config)
+        generator = Generator(
+            wandb.run.name,
+            generation_config,
+            checkpoint=model.get_best_epoch(),
+        )
         generator.generate_label(test_dataset, label_id=label_id, verbose=True)
 
         dataset.save()
     except Exception as e:
         warnings.warn(
-            "Could not generate label for golden dataset. The run has probably failed.",
+            "Could not generate label for the dataset. The run has probably failed.",
             e,
         )
 else:
     trainer.fit(model)
-    trainer.test(model)
+    trainer.test()
