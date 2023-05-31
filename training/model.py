@@ -4,10 +4,17 @@ from torch.utils.data import DataLoader
 from copy import copy
 from typing import Optional
 
-import utils
+import training.utils as utils
 from helpers.review_set import ReviewSet
-from helpers.label_selection import DatasetSelectionStrategy
-from torch.nn import CrossEntropyLoss
+from helpers.label_selection import (
+    DatasetSelectionStrategy,
+    LabelSelectionStrategyInterface,
+)
+from active_learning.module import ActiveDataModule
+from transformers.modeling_outputs import Seq2SeqLMOutput
+
+
+NUM_WORKERS = 4
 
 
 class ReviewModel(pl.LightningModule):
@@ -24,6 +31,7 @@ class ReviewModel(pl.LightningModule):
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
         seed: int,
+        active_data_module: ActiveDataModule,
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
         gradual_unfreezing_mode: Optional[str],
@@ -43,18 +51,20 @@ class ReviewModel(pl.LightningModule):
         self.optimizer_args = optimizer_args
         self.seed = seed
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
-        self.individual_loss_function = CrossEntropyLoss(
-            ignore_index=-100, reduction="mean"
-        )
+        self.active_data_module = active_data_module
         self.tokenization_args = {
             "tokenizer": tokenizer,
             "model_max_length": max_length,
             "for_training": True,
         }
-        self.step = 0
+
         self._initialize_datasets()
 
-        self._freeze_model()
+        self.active_data_module.setup(self, self.reviews)
+
+        # Skip freezing if a fake test model is loaded
+        if self.model is not None:
+            self._freeze_model()
 
     def _freeze_model(self):
         def unfreeze(component, slice_: str) -> int:
@@ -84,6 +94,12 @@ class ReviewModel(pl.LightningModule):
         if self.trainer is not None and self.trainer.logger is not None:
             return self.trainer.logger.experiment.name
         return "test-run"
+
+    def training_reviews(self) -> ReviewSet:
+        return self.train_reviews
+
+    def training_review_strategy(self) -> LabelSelectionStrategyInterface:
+        return self.train_review_strategy
 
     def gradual_unfreeze(self, epoch: int):
         def unfreeze(blocks, epoch: int):
@@ -127,7 +143,7 @@ class ReviewModel(pl.LightningModule):
             labels=labels,
         )
 
-    def _step(self, batch):
+    def _step(self, batch) -> Seq2SeqLMOutput:
         # self() calls self.forward(), but should be preferred (https://github.com/Lightning-AI/lightning/issues/1209)
         labels = batch["output"]["input_ids"]
         outputs = self(
@@ -135,56 +151,28 @@ class ReviewModel(pl.LightningModule):
             attention_mask=batch["input"]["attention_mask"],
             labels=labels,
         )
-        individual_losses = {}
-        logits = outputs.logits.detach()
-        for i in range(logits.shape[0]):
-            id_ = (batch["review_id"][i], batch["source_id"][i])
-            loss = self.individual_loss_function(logits[i, :, :], labels[i, :])
-            individual_losses[id_] = loss.item()
-
-        # outputs is a SequenceClassifierOutput object, which has a loss attribute at the first place (https://huggingface.co/docs/transformers/main_classes/output)
-        return outputs.loss, individual_losses
-
-    def __log_individual_losses(
-        self, losses: dict[tuple[str, str], float], batch_idx: int, mode="training"
-    ) -> None:
-        for (review_id, source_id), loss in losses.items():
-            label = self.reviews.get_review(review_id).get_label_from_strategy(
-                self.train_review_strategy
-            )
-
-            review_loss_data = {
-                "loss": loss,
-                "batch_idx": batch_idx,
-                "epoch": self.current_epoch,
-                "mode": mode,
-                "step": self.step,
-                "source_id": source_id,
-            }
-            if "loss" in label["metadata"]:
-                label["metadata"]["loss"].append(review_loss_data)
-            else:
-                label["metadata"]["loss"] = [review_loss_data]
-
-    def __save_individual_losses_to_disk(self):
-        self.reviews.save()
+        return outputs
 
     def training_step(self, batch, batch_idx):
-        loss, individual_losses = self._step(batch)
-        self.__log_individual_losses(individual_losses, batch_idx)
-        self.step += 1
+        outputs = self._step(batch)
+        self.active_data_module.process_step(batch_idx, batch, outputs)
         self.log(
             "train_loss",
-            loss,
+            outputs.loss,
             on_step=True,
             prog_bar=True,
             logger=True,
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-        return loss
+        return outputs.loss
+
+    def on_train_epoch_end(self):
+        print("On train epoch end")
+        self.active_data_module.on_train_epoch_end()
 
     def training_epoch_end(self, outputs):
+        print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
@@ -205,23 +193,23 @@ class ReviewModel(pl.LightningModule):
                 sync_dist=True,
                 batch_size=self.hyperparameters["batch_size"],
             )
-        torch.cuda.empty_cache()
         self.gradual_unfreeze(self.current_epoch)
-        self.__save_individual_losses_to_disk()
 
     def validation_step(self, batch, batch_idx):
-        loss, individual_losses = self._step(batch)
-        self.__log_individual_losses(individual_losses, batch_idx, mode="validation")
+        outputs = self._step(batch)
+        self.active_data_module.process_step(
+            batch_idx, batch, outputs, mode="validation"
+        )
         self.log(
             "val_loss",
-            loss,
+            outputs.loss,
             on_step=True,
             prog_bar=True,
             logger=True,
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-        return loss
+        return outputs.loss
 
     def validation_epoch_end(self, outputs):
         """Logs the average validation loss over the epoch"""
@@ -237,11 +225,16 @@ class ReviewModel(pl.LightningModule):
         )
 
     def test_step(self, batch, __):
-        loss, _ = self._step(batch)
+        outputs = self._step(batch)
         self.log(
-            "test_loss", loss, on_step=True, prog_bar=True, logger=True, sync_dist=True
+            "test_loss",
+            outputs.loss,
+            on_step=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
         )
-        return loss
+        return outputs.loss
 
     def configure_optimizers(self):
         optimizer = self.optimizer(self.parameters(), **self.optimizer_args)
@@ -263,18 +256,22 @@ class ReviewModel(pl.LightningModule):
         # This is the right way to return an optimizer, without scheduler, in lightning (https://github.com/Lightning-AI/lightning/issues/3795)
         return [optimizer]
 
-    def train_dataloader(self):
-        return self.train_reviews.get_dataloader(
+    def train_dataloader_args(self):
+        return {
             **self.tokenization_args,
-            selection_strategy=self.train_review_strategy,
-            include_augmentations=True,
-            batch_size=self.hyperparameters["batch_size"],
-            drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
-            shuffle=True,  # Shuffles the training data every epoch.
-            num_workers=2,
-            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
-            seed=self.seed,  # only relevant if shuffle=True
-        )
+            "selection_strategy": self.train_review_strategy,
+            "include_augmentations": True,
+            "batch_size": self.hyperparameters["batch_size"],
+            "drop_last": True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
+            "shuffle": True,  # Shuffles the training data every epoch.
+            "num_workers": NUM_WORKERS,
+            "multiple_usage_options_strategy": self.multiple_usage_options_strategy,
+            "seed": self.seed,  # only relevant if shuffle=True,
+            "pin_memory": True,
+        }
+
+    def train_dataloader(self):
+        return self.train_reviews.get_dataloader(**self.train_dataloader_args())
 
     def val_dataloader(self):
         return self.val_reviews.get_dataloader(
@@ -282,7 +279,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.train_review_strategy,
             include_augmentations=True,
             batch_size=self.hyperparameters["batch_size"],
-            num_workers=2,
+            num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
@@ -292,7 +289,7 @@ class ReviewModel(pl.LightningModule):
             selection_strategy=self.test_reviews_strategy,
             include_augmentations=False,
             batch_size=self.hyperparameters["batch_size"],
-            num_workers=2,
+            num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
         )
 
@@ -302,7 +299,6 @@ class ReviewModel(pl.LightningModule):
         self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
 
         self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
-        self.reviews.save_path = utils.get_model_review_set_path(self.run_name())
         self.test_reviews = self.reviews.filter_with_label_strategy(
             self.test_reviews_strategy, inplace=False
         )
