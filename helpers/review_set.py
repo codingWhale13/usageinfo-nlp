@@ -244,26 +244,10 @@ class ReviewSet:
 
         cache.save_to_disk()  # save newly calculated scores to disk
 
-    def get_scores(
-        self,
-        label_id: str,
-        reference_label_id: str,
-        metric_ids: Iterable[str] = DEFAULT_METRICS,
-    ) -> list[dict[str, float]]:
-        self.score(label_id, reference_label_id, metric_ids)
-
-        result = {metric_id: [] for metric_id in metric_ids}
-        for review in self.reviews_with_labels({label_id, reference_label_id}):
-            review_scores = review.get_scores(label_id, reference_label_id, metric_ids)
-            for metric_id, value in review_scores.items():
-                result[metric_id].append(value)
-
-        return result
-
     def get_agg_scores(
         self,
         label_id: str,
-        reference_label_id: str,
+        *reference_label_candidates: str,
         metric_ids: Union[set, list] = DEFAULT_METRICS,
     ) -> dict[dict[str, float]]:
         aggregations = {
@@ -271,16 +255,23 @@ class ReviewSet:
             "variance": variance,
             "quantiles (n=4)": quantiles,
         }
-
-        scores_per_review = self.get_scores(label_id, reference_label_id, metric_ids)
-
-        agg_scores = {}
-        for metric_id, metric_results in scores_per_review.items():
+        scores = [
+            review.get_scores(
+                label_id, *reference_label_candidates, metric_ids=metric_ids
+            )
+            for review in self
+        ]
+        scores = list(filter(lambda x: x is not None, scores))
+        if len(scores) < 2:
+            raise ValueError(
+                "At least two reviews are required to calculate aggregated scores"
+            )
+        agg_scores = {"num_reviews": len(scores)}
+        for metric_id in metric_ids:
             agg_scores[metric_id] = {
-                agg_name: agg_func(metric_results)
+                agg_name: agg_func([score[metric_id] for score in scores])
                 for agg_name, agg_func in aggregations.items()
             }
-
         return agg_scores
 
     def reviews_with_labels(self, label_ids: set[str]) -> list[Review]:

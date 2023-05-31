@@ -306,13 +306,30 @@ class Review:
     def get_scores(
         self,
         label_id: str,
-        reference_label_id: str,
+        *reference_label_candidates: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
-    ) -> dict[str, float]:
-        """return specified scores (and calculate them internally, if missing)"""
-        self.score(label_id, reference_label_id, metric_ids)
+    ) -> Optional[dict]:
+        """return scores for a specified reference label or the best scores if multiple reference labels are specified"""
+        reference_label_candidates = set(reference_label_candidates).intersection(
+            self.get_label_ids()
+        )
+        if label_id not in self.get_label_ids() or not reference_label_candidates:
+            return None
+
+        for reference_label_id in reference_label_candidates:
+            self.score(label_id, reference_label_id, metric_ids)
+
+        scores = self.get_label_for_id(label_id)["scores"]
+
         return {
-            m_id: self.get_label_for_id(label_id)["scores"][reference_label_id][m_id]
+            m_id: max(
+                [
+                    score[m_id]
+                    for score in [
+                        scores[ref_id] for ref_id in reference_label_candidates
+                    ]
+                ]
+            )
             for m_id in metric_ids
         }
 
