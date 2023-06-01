@@ -95,7 +95,8 @@ class Review:
         return set(self.get_labels().keys())
 
     def get_usage_options(self, label_id: str) -> list[str]:
-        return self.get_label_for_id(label_id).get("usageOptions", [])
+        labels = self.get_label_for_id(label_id)
+        return labels.get("usageOptions", []) if labels is not None else []
 
     def get_label_from_strategy(self, strategy) -> Optional[dict]:
         if not isinstance(strategy, ls.LabelSelectionStrategyInterface):

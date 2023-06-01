@@ -3,6 +3,9 @@ from clusterer import Clusterer
 from scorer import Scorer
 import argparse
 import utils
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def arg_parse():
@@ -37,27 +40,35 @@ def main():
     file_paths = args.reviewset_files
     clustering_config = utils.get_config(args.clustering_config)
 
-    usage_options, embedded_usage_options = DataLoader(
-        file_paths, label_id, clustering_config["data"]
-    ).load()
+    review_set_df = DataLoader(file_paths, label_id, clustering_config["data"]).load()
 
-    if len(usage_options) < max(clustering_config["clustering"]["n_clusters"]):
+    if len(review_set_df) < max(clustering_config["clustering"]["n_clusters"]):
         raise ValueError(
-            f"Number of usage options ({len(usage_options)}) is smaller than the maximum number of clusters ({max(clustering_config['clustering']['n_clusters'])})"
+            f"Number of usage options ({len(review_set_df)}) is smaller than the maximum number of clusters ({max(clustering_config['clustering']['n_clusters'])})"
         )
+
     scores = {}
 
     for n_clusters in clustering_config["clustering"]["n_clusters"]:
         print(f"Clustering with {n_clusters} clusters...")
-        labels, centroids = Clusterer(
-            embedded_usage_options, clustering_config["clustering"], n_clusters
+        clustered_df = Clusterer(
+            review_set_df,
+            clustering_config["clustering"],
+            n_clusters,
         ).cluster()
 
-        scores[n_clusters] = Scorer(embedded_usage_options, labels, centroids).score()
+        if clustering_config["data"]["n_components"] == 2:
+            utils.plot_clusters2d(
+                clustered_df, n_clusters, color="label", interactive=False
+            )
 
+        print(f"Scoring {n_clusters} clusters...")
+        scores[n_clusters] = Scorer(clustered_df).score()
+
+    utils.plot_clusters2d(
+        clustered_df, n_clusters, color="product_category", interactive=True
+    )
     utils.plot_scores(scores, "scores.png")
-
-    # TODO: Save scores/clusters to file or display in some way
 
 
 if __name__ == "__main__":

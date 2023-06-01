@@ -3,8 +3,11 @@ from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from evaluation.scoring.core import get_embedding
-
+import numpy as np
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from sklearn.manifold import Isomap
+import pandas as pd
 
 
 class DataLoader:
@@ -31,35 +34,53 @@ class DataLoader:
         self.dim_reduction = config.get(
             "dim_reduction", None
         )  # Optional parameter for dimensionality reduction
+        self.n_components = config.get("n_components", 2)
 
     def load(self):
         review_set = ReviewSet.from_files(*self.file_paths)
-        usage_options = review_set.get_usage_options(self.label_id)
-        unique_usage_options = list(set(map(lambda x: x.lower(), usage_options)))
 
-        print(
-            f"Loaded {len(unique_usage_options)} usage options from {len(self.file_paths)} files and now start embedding with {self.model_name}."
-        )
+        embedded_usage_options = []
+        review_set_list = []
+        for review in review_set:
+            for usage_option in review.get_usage_options(self.label_id):
+                embedded_usage_option = get_embedding(
+                    usage_option=usage_option, comparator=self.model_name
+                )
+                embedded_usage_options.append(embedded_usage_option)
+                review_set_df.append(
+                    {
+                        "review_id": review.review_id,
+                        "usage_option": usage_option,
+                        "product_category": review["product_category"],
+                        "embedding": embedded_usage_option,
+                    }
+                )
+        review_set_df = pd.DataFrame(review_set_list)
 
-        # embedd with eval cache
-        embedded_usage_options = [
-            get_embedding(usage_option=usage_option, comparator=self.model_name)
-            for usage_option in unique_usage_options
-        ]
         EvaluationCache.get().save_to_disk()
 
-        if self.dim_reduction is not None:
-            if self.dim_reduction == "tsne":
-                reducer = TSNEReducer()
-                embedded_usage_options = reducer.reduce(embedded_usage_options)
+        reduced_usage_options = None
 
-            # Add more dimensionality reduction methods here
+        if self.dim_reduction is not None:
+            reducer_map = {
+                "tsne": TSNEReducer,
+                "pca": PCAReducer,
+                "isomap": ISOMapReducer
+                # Add more dimensionality reduction methods here
+            }
+
+            if self.dim_reduction in reducer_map:
+                reducer_class = reducer_map[self.dim_reduction]
+                reducer = reducer_class(self.n_components)
+                reduced_usage_options = reducer.reduce(np.array(embedded_usage_options))
+                review_set_df["reduced_embedding"] = reduced_usage_options.tolist()
+
             else:
                 raise ValueError(
                     f"Unknown dimensionality reduction method '{self.dim_reduction}'"
                 )
 
-        return unique_usage_options, embedded_usage_options
+        return review_set_df
 
 
 class TSNEReducer:
@@ -75,9 +96,27 @@ class TSNEReducer:
     Could be made configurable in the future.
     """
 
-    def __init__(self):
-        self.tsne = TSNE(n_jobs=-1)
+    def __init__(self, n_components):
+        self.tsne = TSNE(n_jobs=-1, n_components=n_components, random_state=42)
 
     def reduce(self, data):
         print("Started reducing dimensions using t-SNE...")
         return self.tsne.fit_transform(data)
+
+
+class ISOMapReducer:
+    def __init__(self, n_components):
+        self.isomap = Isomap(n_components=n_components, n_jobs=-1, n_neighbors=50)
+
+    def reduce(self, data):
+        print("Started reducing dimensions using ISOMap...")
+        return self.isomap.fit_transform(data)
+
+
+class PCAReducer:
+    def __init__(self, n_components):
+        self.pca = PCA(n_components=n_components)
+
+    def reduce(self, data):
+        print("Started reducing dimensions using PCA...")
+        return self.pca.fit_transform(data)

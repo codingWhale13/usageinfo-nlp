@@ -2,6 +2,8 @@ import os
 import yaml
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
+import plotly.express as px
 
 
 def get_config(name: str) -> dict:
@@ -35,3 +37,19 @@ def plot_scores(scores: dict, output_path: str):
     plt.xlabel("Number of clusters")
     plt.ylabel("Score")
     plt.savefig(output_path)
+
+
+def plot_clusters2d(clustered_df, n_clusters, color="label", interactive=False):
+    df = pd.DataFrame(
+        clustered_df,
+        columns=["reduced_embedding", "label", "product_category", "usage_option"],
+    )
+    df["x"] = df["reduced_embedding"].apply(lambda x: x[0])
+    df["y"] = df["reduced_embedding"].apply(lambda x: x[1])
+    if interactive:
+        fig = px.scatter(df, x="x", y="y", color=color, hover_data=["usage_option"])
+        fig.write_html(f"plots/plot{n_clusters}-{color}.html")
+    else:
+        plt.clf()
+        sns.scatterplot(x="x", y="y", hue=color, data=df)
+        plt.savefig(f"plots/plot{n_clusters}-{color}.png")
