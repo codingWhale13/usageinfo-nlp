@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
-from helpers.cmd_input import get_yes_or_no_input
 
 from numpy import mean, var
 import helpers.label_selection as ls
@@ -232,8 +231,6 @@ class ReviewSet:
         )
         metric_ids = set(metric_ids).difference(metric_ids_openai)
 
-        cache = EvaluationCache.get()
-
         if len(metric_ids_openai) > 0:
             asyncio.run(
                 self.__async_score(label_id, reference_label_id, metric_ids_openai)
@@ -242,7 +239,7 @@ class ReviewSet:
             for review in self.reviews_with_labels({label_id, reference_label_id}):
                 review.score(label_id, reference_label_id, metric_ids)
 
-        cache.save_to_disk()  # save newly calculated scores to disk
+        EvaluationCache.get().save_to_disk()  # save newly calculated scores to disk
 
     def get_agg_scores(
         self,

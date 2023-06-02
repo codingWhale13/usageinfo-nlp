@@ -15,13 +15,19 @@ def custom_precision(
     agg: callable = mean,
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     if len(predictions) == 0:
         return int(len(references) == 0)
     else:
         similarities = [
             get_most_similar(
-                prediction, references, comparator, use_lowercase, openai_params
+                prediction,
+                references,
+                comparator,
+                use_lowercase,
+                openai_params,
+                modification,
             )[0]
             for prediction in predictions
         ]
@@ -35,6 +41,7 @@ def custom_recall(
     agg: callable = mean,
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     if len(references) == 0:
         return int(len(predictions) == 0)
@@ -45,7 +52,8 @@ def custom_recall(
                 predictions,
                 comparator,
                 use_lowercase,
-                openai_params=openai_params,
+                openai_params,
+                modification,
             )[0]
             for reference in references
         ]
@@ -58,11 +66,14 @@ def custom_f1_score(
     comparator: str = "all-mpnet-base-v2",
     agg: callable = mean,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     precision = custom_precision(
-        predictions, references, comparator, agg, openai_params
+        predictions, references, comparator, agg, openai_params, modification
     )
-    recall = custom_recall(predictions, references, comparator, agg, openai_params)
+    recall = custom_recall(
+        predictions, references, comparator, agg, openai_params, modification
+    )
 
     if precision == recall == 0:
         return 0
@@ -79,6 +90,7 @@ def custom_precision_ak(
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     if len(predictions) == 0:
         return int(len(references) == 0)
@@ -92,7 +104,8 @@ def custom_precision_ak(
                 references,
                 comparator,
                 use_lowercase,
-                openai_params=openai_params,
+                openai_params,
+                modification,
             )[0]
             for prediction in predictions
         ]
@@ -104,7 +117,11 @@ def custom_precision_ak(
             similarity_matrix = [
                 [
                     get_similarity(
-                        prediction_1, prediction_2, comparator, openai_params
+                        prediction_1,
+                        prediction_2,
+                        comparator,
+                        openai_params,
+                        modification,
                     )
                     for prediction_2 in predictions
                 ]
@@ -126,6 +143,7 @@ def custom_recall_ak(
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     if len(references) == 0:
         return int(len(predictions) == 0)
@@ -140,6 +158,7 @@ def custom_recall_ak(
                 comparator,
                 use_lowercase,
                 openai_params=openai_params,
+                modification=modification,
             )[0]
             for reference in references
         ]
@@ -150,7 +169,13 @@ def custom_recall_ak(
         else:
             similarity_matrix = [
                 [
-                    get_similarity(reference_1, reference_2, comparator, openai_params)
+                    get_similarity(
+                        reference_1,
+                        reference_2,
+                        comparator,
+                        openai_params,
+                        modification,
+                    )
                     for reference_2 in references
                 ]
                 for reference_1 in references
@@ -171,12 +196,13 @@ def custom_f1_score_ak(
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     precision = custom_precision_ak(
-        predictions, references, comparator, use_lowercase, openai_params
+        predictions, references, comparator, use_lowercase, openai_params, modification
     )
     recall = custom_recall_ak(
-        predictions, references, comparator, use_lowercase, openai_params
+        predictions, references, comparator, use_lowercase, openai_params, modification
     )
 
     if precision == recall == 0:

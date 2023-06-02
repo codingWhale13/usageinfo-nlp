@@ -87,12 +87,29 @@ def get_similarity(
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
 ) -> float:
     global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
 
     if use_lowercase:
         prediction = prediction.lower()
         reference = reference.lower()
+
+    if modification == "stem":
+        import nltk
+
+        nltk.download("punkt", quiet=True)
+        ps = nltk.stem.PorterStemmer()
+        prediction = " ".join(ps.stem(word) for word in prediction.split())
+        reference = " ".join(ps.stem(word) for word in reference.split())
+    elif modification == "lemmatize":
+        import nltk
+
+        nltk.download("wordnet", quiet=True)
+        nltk.download("omw-1.4", quiet=True)
+        wnl = nltk.stem.WordNetLemmatizer()
+        prediction = " ".join(wnl.lemmatize(word) for word in prediction.split())
+        reference = " ".join(wnl.lemmatize(word) for word in reference.split())
 
     if comparator == "openai":
         cache = EvaluationCache.get()
@@ -161,6 +178,7 @@ def get_most_similar(
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
     threshold_word_sim: float = 0,
 ) -> tuple[float, str]:
     """For a single `label`, find the most similar match from `options`.
@@ -176,6 +194,7 @@ def get_most_similar(
             comparator=comparator,
             use_lowercase=use_lowercase,
             openai_params=openai_params,
+            modification=modification,
         )
         if similarity >= max(result[0], threshold_word_sim):
             result = (similarity, option)

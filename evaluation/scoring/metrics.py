@@ -38,6 +38,14 @@ CUSTOM_METRIC_FUNCTIONS = {
     "custom_weighted_mean_precision": (custom_precision_ak, KWARGS_MPNET_V1),
     "custom_weighted_mean_recall": (custom_recall_ak, KWARGS_MPNET_V1),
     "custom_weighted_mean_f1": (custom_f1_score_ak, KWARGS_MPNET_V1),
+    "custom_weighted_mean_f1_stem": (
+        custom_f1_score_ak,
+        {"modification": "stem", **KWARGS_MPNET_V1},
+    ),
+    "custom_weighted_mean_f1_lemmatize": (
+        custom_f1_score_ak,
+        {"modification": "lemmatize", **KWARGS_MPNET_V1},
+    ),
     "custom_weighted_mean_f1_openai": (custom_f1_score_ak, KWARGS_OPENAI_V1),
 }
 STANDARD_METRIC_FUNCTIONS = {
@@ -176,7 +184,7 @@ class SingleReviewMetrics:
 
         for prediction in self.predictions:
             similarity, best_matched_reference = get_most_similar(
-                prediction, self.references, KWARGS_MPNET_V1
+                prediction, self.references, **KWARGS_MPNET_V1
             )
             best_matching_references[prediction] = (similarity, best_matched_reference)
 
