@@ -3,17 +3,27 @@ from typing import List, Optional
 
 from training import utils
 from helpers.review_set import ReviewSet
-
+from training.utils import get_config
 import torch
+import os
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
+
+GENERATION_CONFIGS = [
+    file_name.replace(".yml", "")
+    for file_name in os.listdir(
+        os.path.dirname(os.path.realpath(__file__)) + "/generation_configs/"
+    )
+]
 
 
 class Generator:
     def __init__(
         self,
         artifact_name,
-        generation_config: dict,
+        generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[int] = None,
     ) -> None:
         global device
@@ -26,7 +36,9 @@ class Generator:
         self.model, self.tokenizer, self.max_length = model_config
         self.model.to(device)
         self.model.eval()
-        self.generation_config = generation_config
+        self.generation_config = get_config(
+            f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
+        )
 
     def format_usage_options(self, text_completion: str) -> List[str]:
         return [
