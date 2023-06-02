@@ -266,9 +266,6 @@ class ReviewModel(pl.LightningModule):
         self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
 
         self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
-        self.reviews.save_path = utils.get_model_review_set_path(
-            utils.get_run_name(self.trainer)
-        )
         self.test_reviews = self.reviews.filter_with_label_strategy(
             self.test_reviews_strategy, inplace=False
         )
