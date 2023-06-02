@@ -5,8 +5,8 @@ active_layers:
   lm_head: True
 gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 artifact:
-  name: #"scintillating-mandu-99"
-  checkpoint: #9
+  name: "decent-elevator-481" #"scintillating-mandu-99"
+  checkpoint: 9
 epochs: 20
 batch_size: 8
 accumulate_grad_batches: 16
@@ -19,12 +19,12 @@ optimizer: #Set all parameters you do not want to null
   lr: 0.0001
 lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 dataset:
-  version: "bumsebiene-69"
+  version: "blinding-light-99"
   validation_split: 0.10
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
-test_run: False
+test_run: True
 multiple_usage_options_strategy: "shuffle-3"
 seed: 42 # can be left empty
 

@@ -121,6 +121,14 @@ model = ReviewModel(
 
 
 # %% Training and testing
+dataset = ReviewSet.from_files(utils.get_dataset_path(config["dataset"]["version"]))
+
+print("dataset", len(dataset))
+dataloader = model.train_dataloader()
+print(len(dataloader))
+result = trainer.predict(model, dataloader)
+print(result)
+"""
 if not test_run:
     with SustainabilityLogger(experiment_description="training"):
         trainer.fit(model)
@@ -156,4 +164,5 @@ if not test_run:
         )
 else:
     trainer.fit(model)
-    trainer.test()
+    trainer.test(model)
+"""

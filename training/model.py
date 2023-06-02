@@ -169,6 +169,13 @@ class ReviewModel(pl.LightningModule):
         )
         return outputs.loss
 
+    def predict_step(self, batch, batch_idx):
+        outputs = self._step(batch)
+        self.active_data_module.process_step(
+            batch_idx, batch, outputs, mode="prediction"
+        )
+        return outputs.loss
+
     def validation_epoch_end(self, outputs):
         """Logs the average validation loss over the epoch"""
         avg_loss = torch.stack(outputs).mean()
@@ -266,9 +273,6 @@ class ReviewModel(pl.LightningModule):
         self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
 
         self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
-        self.reviews.save_path = utils.get_model_review_set_path(
-            utils.get_run_name(self.trainer)
-        )
         self.test_reviews = self.reviews.filter_with_label_strategy(
             self.test_reviews_strategy, inplace=False
         )

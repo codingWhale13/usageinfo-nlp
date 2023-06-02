@@ -70,17 +70,49 @@ def parse_args():
     return arg_parser.parse_args(), arg_parser.format_help()
 
 
-async def main():
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    args, help_text = parse_args()
+MAXIMUM_LABELS_WITHOUT_SAVING = 500
 
-    review_file_name = os.path.abspath(args.file)
+
+def label_review_set(
+    review_set: ReviewSet,
+    prompt_id: str,
+    label_id_suffix: str,
+    model: str,
+    temperature: float,
+    log_probs: int = 5,
+    workers: int = 5,
+    save_percentage: int = 5,
+) -> None:
+    asyncio.run(
+        label_review_set_async(
+            review_set,
+            prompt_id,
+            label_id_suffix,
+            model,
+            temperature,
+            log_probs,
+            workers,
+            save_percentage,
+        )
+    )
+
+
+async def label_review_set_async(
+    review_set: ReviewSet,
+    prompt_id: str,
+    label_id_suffix: str,
+    model: str,
+    temperature: float,
+    log_probs,
+    workers,
+    save_percentage,
+) -> None:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     prompt_file_name = f"{script_dir}/prompts.json"
 
-    prompt_id = args.prompt
     with open(prompt_file_name, "r") as prompt_file:
         prompts_json = json.load(prompt_file)
-        prompt_type = "chat" if args.model in CHAT_MODELS else "text"
+        prompt_type = "chat" if model in CHAT_MODELS else "text"
         if prompt_id not in prompts_json[prompt_type].keys():
             exit(
                 f"Prompt {prompt_id} of type {prompt_type} not found in {prompt_file_name}."
@@ -88,15 +120,17 @@ async def main():
         prompt = prompts_json[prompt_type][prompt_id]["prompt"]
 
     label_id = "{model_name}-{prompt_id}{hyphen}{id}".format(
-        model_name=MODEL_NAME_MAPPING[args.model],
+        model_name=MODEL_NAME_MAPPING[model],
         prompt_id=prompt_id,
-        id=args.id,
-        hyphen="-" if args.id != "" else "",
+        id=label_id_suffix,
+        hyphen="-" if label_id_suffix != "" else "",
     )
 
-    review_set = ReviewSet.from_files(review_file_name)
     num_reviews = len(review_set)
-    intermediate_save_size = max(1, int(num_reviews * (args.save / 100)))
+    intermediate_save_size = min(
+        max(1, int(num_reviews * (save_percentage / 100))),
+        MAXIMUM_LABELS_WITHOUT_SAVING,
+    )
     count = 0
 
     overwrite_label = False
@@ -111,9 +145,9 @@ async def main():
             usageOptions, metadata = generate_label(
                 review,
                 prompt,
-                model=args.model,
-                temperature=args.temperature,
-                logprobs=args.logprobs,
+                model=model,
+                temperature=temperature,
+                logprobs=log_probs,
                 prompt_id=prompt_id,
             )
             review_set[review_id].add_label(
@@ -135,7 +169,7 @@ async def main():
     for review_id, review in review_set.reviews.items():
         labelling_queue.put_nowait(generate_label_worker_item(review_id, review))
 
-    worker = Worker(labelling_queue, n=args.worker)
+    worker = Worker(labelling_queue, n=workers)
     print(
         f"Setup queue with {worker.queue.qsize()} reviews. Starting {worker.n} workers in parallel 🚀"
     )
@@ -146,5 +180,17 @@ async def main():
     review_set.save()
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+async def main():
+    args, _ = parse_args()
+    review_set = ReviewSet.from_files(os.path.abspath(args.file))
+
+    label_review_set(
+        review_set,
+        args.prompt,
+        args.id,
+        args.model,
+        args.temperature,
+        args.logprobs,
+        args.workers,
+        args.worker,
+    )

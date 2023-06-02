@@ -17,6 +17,7 @@ from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
+import pandas as pd
 
 
 class ReviewSet:
@@ -143,11 +144,19 @@ class ReviewSet:
         for path in source_paths:
             absolute_path = Path(path).expanduser().resolve()
             if absolute_path.is_dir():
-                for file in absolute_path.glob("*.json"):
+                possible_files = absolute_path.glob("*.json")
+                if len(possible_files) == 0:
+                    raise ValueError(
+                        f"Could not find any files ending with *.json for directory: {path}"
+                    )
+                for file in possible_files:
                     review_sets.append(get_review_set(str(file)))
             elif absolute_path.is_file():
                 review_sets.append(get_review_set(str(absolute_path)))
-
+            else:
+                raise ValueError(
+                    f"Specified source path: {path} is wrong and not file or a directory"
+                )
         review_set = functools.reduce(
             lambda review_set_1, review_set_2: review_set_1 | review_set_2, review_sets
         )
@@ -171,6 +180,14 @@ class ReviewSet:
 
     def get_review(self, review_id: str) -> Review:
         return self.reviews[review_id]
+
+    def to_dataframe(self) -> pd.DataFrame:
+        return pd.DataFrame.from_records(
+            [
+                {"review_id": review_id} | review.data
+                for review_id, review in self.items()
+            ]
+        )
 
     def count_common_reviews(self, other: "ReviewSet") -> int:
         common_review_counter = 0
