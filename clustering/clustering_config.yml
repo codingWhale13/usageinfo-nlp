@@ -3,6 +3,7 @@ data:
   dim_reduction: "tsne" #optional if reduction of dimensionality is needed
   n_components: 2 #optional if reduction of dimensionality is needed
 clustering:
+  use_reduced_embeddings: True #wether to cluster on reduced or original embeddings
   algorithm: "kmeans" #options are: kmeans, agglomerative
   n_clusters:
     - 50

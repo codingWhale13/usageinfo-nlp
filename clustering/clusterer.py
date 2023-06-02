@@ -25,7 +25,10 @@ class Clusterer:
         """
         key = (
             "reduced_embedding"
-            if "reduced_embedding" in self.review_set_df.columns
+            if (
+                "reduced_embedding" in self.review_set_df.columns
+                and self.config["use_reduced_embeddings"]
+            )
             else "embedding"
         )
         cluster_data = np.stack(self.review_set_df[key].to_numpy())
