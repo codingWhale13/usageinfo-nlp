@@ -243,8 +243,8 @@ class ReviewSet:
 
     def get_agg_scores(
         self,
-        label_id: str,
-        *reference_label_candidates: str,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
         metric_ids: Union[set, list] = DEFAULT_METRICS,
     ) -> dict[dict[str, float]]:
         aggregations = {

@@ -1,14 +1,19 @@
+from __future__ import annotations
 import itertools
 import random
 from copy import copy, deepcopy
 from datetime import datetime, timezone
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Union, TYPE_CHECKING
+
 import json
 
 import dateutil.parser
 
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
+
+if TYPE_CHECKING:
+    from helpers.label_selection import LabelSelectionStrategyInterface
 
 
 class Review:
@@ -98,12 +103,35 @@ class Review:
         labels = self.get_label_for_id(label_id)
         return labels.get("usageOptions", []) if labels is not None else []
 
-    def get_label_from_strategy(self, strategy) -> Optional[dict]:
+    def _check_strategy(self, strategy: LabelSelectionStrategyInterface) -> None:
         if not isinstance(strategy, ls.LabelSelectionStrategyInterface):
             raise ValueError(
                 f"strategy '{type(strategy)}' doesn't implement LabelSelectionStrategyInterface"
             )
+
+    def get_label_from_strategy(
+        self, strategy: LabelSelectionStrategyInterface
+    ) -> Optional[dict]:
+        self._check_strategy(strategy)
         return strategy.retrieve_label(self)
+
+    def get_label_id_from_strategy(
+        self, strategy: LabelSelectionStrategyInterface
+    ) -> Optional[str]:
+        self._check_strategy(strategy)
+        return strategy.retrieve_label_id(self)
+
+    def get_labels_from_strategy(
+        self, strategy: LabelSelectionStrategyInterface
+    ) -> list[dict]:
+        self._check_strategy(strategy)
+        return strategy.retrieve_labels(self)
+
+    def get_label_ids_from_strategy(
+        self, strategy: LabelSelectionStrategyInterface
+    ) -> list[str]:
+        self._check_strategy(strategy)
+        return strategy.retrieve_label_ids(self)
 
     def get_label_for_dataset(
         self, *dataset_names: Union[str, tuple[str, str]]
@@ -306,10 +334,23 @@ class Review:
 
     def get_scores(
         self,
-        label_id: str,
-        *reference_label_candidates: str,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ) -> Optional[dict]:
+        if isinstance(label_id, ls.LabelSelectionStrategyInterface):
+            label_id = self.get_label_id_from_strategy(label_id)
+
+        for reference_label_candidate in copy(reference_label_candidates):
+            if isinstance(
+                reference_label_candidate, ls.LabelSelectionStrategyInterface
+            ):
+                strategy_candidates = self.get_label_ids_from_strategy(
+                    reference_label_candidate
+                )
+                reference_label_candidates.remove(reference_label_candidate)
+                reference_label_candidates += strategy_candidates
+
         """return scores for a specified reference label or the best scores if multiple reference labels are specified"""
         reference_label_candidates = set(reference_label_candidates).intersection(
             self.get_label_ids()
