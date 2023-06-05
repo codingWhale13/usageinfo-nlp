@@ -368,6 +368,7 @@ class ReviewSet:
         multiple_usage_options_strategy: str = None,
         include_augmentations: bool = False,
         seed: int = None,
+        prompt_id: str = "avetis_v1",
         **dataloader_args: dict,
     ):
         from torch.utils.data import DataLoader
@@ -385,6 +386,7 @@ class ReviewSet:
                     for_training=for_training,
                     multiple_usage_options_strategy=multiple_usage_options_strategy,
                     include_augmentations=include_augmentations,
+                    prompt_id=prompt_id,
                 )
                 for review in self
             )

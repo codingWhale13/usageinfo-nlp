@@ -36,6 +36,7 @@ class ReviewModel(pl.LightningModule):
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
         gradual_unfreezing_mode: Optional[str],
+        prompt_id: str,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -51,6 +52,7 @@ class ReviewModel(pl.LightningModule):
         self.lr_scheduler_type = lr_scheduler_type
         self.optimizer_args = optimizer_args
         self.seed = seed
+        self.prompt_id = prompt_id
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
         self.active_data_module = active_data_module
         self.validation_loss = []
@@ -235,6 +237,7 @@ class ReviewModel(pl.LightningModule):
             "multiple_usage_options_strategy": self.multiple_usage_options_strategy,
             "seed": self.seed,  # only relevant if shuffle=True,
             "pin_memory": True,
+            "prompt_id": self.prompt_id,
         }
 
     def train_dataloader(self):
@@ -248,6 +251,7 @@ class ReviewModel(pl.LightningModule):
             batch_size=self.hyperparameters["batch_size"],
             num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
+            prompt_id=self.prompt_id,
         )
 
     def test_dataloader(self):
@@ -258,6 +262,7 @@ class ReviewModel(pl.LightningModule):
             batch_size=self.hyperparameters["batch_size"],
             num_workers=NUM_WORKERS,
             multiple_usage_options_strategy=self.multiple_usage_options_strategy,
+            prompt_id=self.prompt_id,
         )
 
     def _initialize_datasets(self):

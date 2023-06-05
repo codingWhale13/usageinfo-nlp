@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 from typing import Iterable, Optional, Union, TYPE_CHECKING
 
 import json
+from pathlib import Path
+from langchain import PromptTemplate
+
 
 import dateutil.parser
 
@@ -232,10 +235,35 @@ class Review:
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: str = None,
         include_augmentations: bool = False,
+        prompt_id: str = "avetis_v1",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
-        def get_prompt(product_title: str, review_body: str) -> str:
-            return f"Product title: {product_title} \nReview body: {review_body}\n"
+        def get_prompt(prompt_id="avetis_v1", augmentation={}) -> str:
+            path = Path(__file__).parent.parent / "openai_api/prompts.json"
+
+            with open(path) as f:
+                prompts = json.load(f)
+
+            prompt_text = prompts["model-training"][prompt_id]["prompt"]
+            prompt_input_variables = prompts["model-training"][prompt_id][
+                "input_variables"
+            ]
+
+            prompt = PromptTemplate(
+                template=prompt_text,
+                input_variables=prompt_input_variables,
+                validate_template=False,
+            )
+
+            prompt = prompt.format(
+                **{
+                    key: augmentation.get(key, value)
+                    for key, value in self.data.items()
+                    if key in prompt_input_variables
+                }
+            )
+
+            return prompt
 
         def format_dict(model_input, output, review_id, source_id) -> dict:
             return {
@@ -245,7 +273,7 @@ class Review:
                 "source_id": source_id,
             }
 
-        model_input = get_prompt(self["product_title"], self["review_body"])
+        model_input = get_prompt(prompt_id=prompt_id)
         model_input = self.tokenize(
             text=model_input,
             is_input=True,
@@ -265,10 +293,7 @@ class Review:
         augmentations = [(model_input, label["usageOptions"], "original")]
         if include_augmentations:
             for id, augmentation in enumerate(label.get("augmentations", [])):
-                model_input = get_prompt(
-                    augmentation.get("product_title") or self["product_title"],
-                    augmentation.get("review_body") or self["review_body"],
-                )
+                model_input = get_prompt(prompt_id=prompt_id, augmentation=augmentation)
                 model_input = self.tokenize(
                     text=model_input,
                     is_input=True,
@@ -289,7 +314,7 @@ class Review:
                 yield format_dict(
                     model_input,
                     self.tokenize(
-                        text=output_text,
+                        text=output_text.lower(),  # we enforce lower case because model does not need to learn casing
                         is_input=False,
                         **tokenization_kwargs,
                     ),

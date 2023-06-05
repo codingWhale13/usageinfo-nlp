@@ -28,6 +28,9 @@ class Generator:
     ) -> None:
         global device
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
+
+        self.config = utils.get_config_from_artifact(artifact_name)
+
         checkpoint = torch.load(utils.get_model_path(self.model_artifact))
         model_config = utils.get_model_config_from_checkpoint(
             checkpoint["model"], checkpoint
@@ -82,6 +85,7 @@ class Generator:
             tokenizer=self.tokenizer,
             model_max_length=self.max_length,
             for_training=False,
+            prompt_id=self.config["prompt_id"],
         )
 
         label_metadata = {

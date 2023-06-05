@@ -19,13 +19,14 @@ optimizer: #Set all parameters you do not want to null
   lr: 0.0001
 lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 dataset:
-  version: "bumsebiene-69"
+  version: "burning-wood-31"
   validation_split: 0.10
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
 test_run: False
 multiple_usage_options_strategy: "shuffle-3"
+prompt_id: "avetis_v1"
 seed: 42 # can be left empty
 
 # Options for 'multiple_usage_options_strategy':

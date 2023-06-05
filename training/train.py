@@ -117,6 +117,7 @@ model = ReviewModel(
     lr_scheduler_type=config["lr_scheduler_type"],
     gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
     active_data_module=ActiveDataModule(),
+    prompt_id=config["prompt_id"],
 )
 
 
