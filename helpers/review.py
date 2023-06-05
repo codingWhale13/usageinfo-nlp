@@ -7,7 +7,6 @@ from typing import Iterable, Optional, Union, TYPE_CHECKING
 
 import json
 from pathlib import Path
-from langchain import PromptTemplate
 
 
 import dateutil.parser
@@ -238,6 +237,8 @@ class Review:
         prompt_id: str = "avetis_v1",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
+        from langchain import PromptTemplate
+
         def get_prompt(prompt_id="avetis_v1", augmentation={}) -> str:
             path = Path(__file__).parent.parent / "openai_api/prompts.json"
 

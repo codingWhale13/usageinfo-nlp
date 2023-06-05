@@ -5,7 +5,6 @@ import copy
 import pprint
 
 from helpers.review_set import ReviewSet
-from training.generator import DEFAULT_GENERATION_CONFIG
 
 dash = "-" * 80
 
@@ -147,7 +146,7 @@ def parse_args():
         "--generation_config",
         "-g",
         type=str,
-        default=DEFAULT_GENERATION_CONFIG,
+        default="default",
         help="Generation config to use for the annotation",
     )
     annotate_parser.add_argument(
@@ -407,8 +406,13 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from training.generator import Generator
-    from training import utils
+    from training.generator import Generator, DEFAULT_GENERATION_CONFIG
+
+    generation_config = (
+        DEFAULT_GENERATION_CONFIG
+        if args.generation_config == "default"
+        else args.generation_config
+    )
 
     label_id = None
     if args.label_id is not None:
@@ -420,7 +424,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    generator = Generator(args.artifact_name, args.generation_config, args.checkpoint)
+    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
 
