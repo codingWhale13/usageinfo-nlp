@@ -3,6 +3,7 @@ import argparse
 import os
 import copy
 import pprint
+import fnmatch
 
 from helpers.review_set import ReviewSet
 
@@ -23,23 +24,39 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Easily handle reviewset json files. Call the script with only a json file path to see some stats about that reviewset."
     )
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command", metavar="command")
+
+    stats_parser = subparsers.add_parser(
+        "stats",
+        help="Just print some stats about the reviewset",
+    )
+    stats_parser.add_argument(
         "base_file",
         type=str,
         help="Filepath of the base reviewset that you want to use",
     )
-    subparsers = parser.add_subparsers(dest="command", metavar="command")
+    stats_parser.add_argument(
+        "--save",
+        "-s",
+        action="store_true",
+        help="Save the base reviewset (only useful for auto-upgrading)",
+    )
 
     merge_parser = subparsers.add_parser(
         "merge",
         help="Merge reviews and/or labels of other files into the base reviewset",
     )
     merge_parser.add_argument(
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+    merge_parser.add_argument(
         "merge_files",
         type=str,
         nargs="+",
         metavar="merge_file",
-        help="Reviewset file to with labels to merge into the base file",
+        help="Reviewset file(s) to merge into the base file",
     )
 
     extract_parser = subparsers.add_parser(
@@ -47,19 +64,21 @@ def parse_args():
         help="Extract one or more label(s) from the base reviewset to a new file",
     )
     extract_parser.add_argument(
-        "labels",
+        "base_file",
         type=str,
-        nargs="+",
-        metavar="label",
-        help="Label(s) to extract from the base file",
+        help="Filepath of the base reviewset that you want to use",
     )
     extract_parser.add_argument(
-        "--output",
-        "-o",
+        "out_file",
         type=str,
-        required=True,
-        metavar="fileapath",
         help="Filepath to save the extracted reviews to",
+    )
+    extract_parser.add_argument(
+        "label_ids",
+        type=str,
+        nargs="+",
+        metavar="label_id",
+        help="Label(s) to extract from the base file (wildcard labels need to be in quotes)",
     )
     extract_parser.add_argument(
         "--keep",
@@ -73,11 +92,16 @@ def parse_args():
         help="Delete one or more label(s) from the base reviewset",
     )
     delete_parser.add_argument(
-        "labels",
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+    delete_parser.add_argument(
+        "label_ids",
         type=str,
         nargs="+",
-        metavar="label",
-        help="Label(s) to delete from the base file",
+        metavar="label_id",
+        help="Label(s) to delete from the base file (wildcard labels need to be in quotes)",
     )
     delete_parser.add_argument(
         "--force",
@@ -91,6 +115,11 @@ def parse_args():
         help="Sample some reviews from the base reviewset and save them to a new file or print them (or both)",
     )
     sample_parser.add_argument(
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+    sample_parser.add_argument(
         "n",
         type=int,
         nargs="?",
@@ -100,7 +129,7 @@ def parse_args():
         "--output",
         "-o",
         type=str,
-        metavar="fileapath",
+        metavar="out_file",
         help="Filepath to save the cut reviews to",
     )
     sample_parser.add_argument(
@@ -116,7 +145,11 @@ def parse_args():
         help="Sample all reviews from the base reviewset",
     )
     sample_parser.add_argument(
-        "--seed", "-s", type=int, default=None, help="Seed to use for sampling"
+        "--seed",
+        "-s",
+        type=int,
+        default=None,
+        help="Seed to use for sampling (default is None)",
     )
 
     annotate_parser = subparsers.add_parser(
@@ -124,30 +157,36 @@ def parse_args():
         help="Annotate the base reviewset with a trained model artifact",
     )
     annotate_parser.add_argument(
-        "artifact_name",
+        "base_file",
         type=str,
-        metavar="model_artifact",
-        help="Model artifact to use for annotation",
+        help="Filepath of the base reviewset that you want to use",
     )
     annotate_parser.add_argument(
-        "label_id",
+        "artifact_name",
+        type=str,
+        metavar="model_artifact_name",
+        help="Name of the model artifact to use for annotation",
+    )
+    annotate_parser.add_argument(
+        "last_part_of_label_id",
         type=str,
         nargs="?",
         default=None,
-        help="ID of the label that the annotation should be saved under",
+        metavar="last_part_of_label_id",
+        help="Last part (aka the unique identifier) of the label_id that the annotation should be (optionally) saved under",
     )
     annotate_parser.add_argument(
         "--checkpoint",
         "-c",
         type=int,
-        help="Optional checkpoint of the artifact to use for annotation",
+        help="Optional checkpoint of the artifact to use for annotation (default is the last checkpoint)",
     )
     annotate_parser.add_argument(
         "--generation_config",
         "-g",
         type=str,
-        default="default",
-        help="Generation config to use for the annotation",
+        default=None,
+        help="Generation config to use for the annotation (default is defined in the generator)",
     )
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
@@ -158,36 +197,45 @@ def parse_args():
         help="Score labels against each other",
     )
     score_parser.add_argument(
-        "label",
+        "base_file",
         type=str,
-        help="Label to score",
+        help="Filepath of the base reviewset that you want to use",
     )
     score_parser.add_argument(
-        "reference_labels",
-        nargs="*",
+        "reference_label_candidate_ids",
         type=str,
-        help="Reference labels to score against",
+        # bug in argparse lol, therefore (()) instead of ()
+        metavar="reference_label_id((s))",
+        help="Reference label(s) to score against, multiple candidates must be separated by a comma (also, wildcard labels need to be in quotes)",
+    )
+    score_parser.add_argument(
+        "label_ids",
+        type=str,
+        metavar="label_id",
+        nargs="*",
+        help="Label(s) to score (wildcard labels need to be in quotes)",
     )
     score_parser.add_argument(
         "--all",
         "-a",
         action="store_true",
-        help="Score the label against all other labels",
+        help="Score all other labels against the reference label(s)",
     )
     score_parser.add_argument(
         "--metrics",
         "-m",
         type=str,
-        help="Metrics to use for scoring",
+        help="Metrics to use for scoring (comma separated, default is defined in scoring/__init__.py)",
     )
 
     return parser.parse_args(), parser.format_help()
 
 
 def print_stats(reviewset: ReviewSet, prefix: str = ""):
-    labels = list(reviewset.get_all_label_ids())
-    labels_with_count = [
-        (label, len(reviewset.reviews_with_labels({label}))) for label in labels
+    label_ids = list(reviewset.get_all_label_ids())
+    label_ids_with_count = [
+        (label_id, len(reviewset.reviews_with_labels({label_id})))
+        for label_id in label_ids
     ]
 
     print(
@@ -196,11 +244,42 @@ def print_stats(reviewset: ReviewSet, prefix: str = ""):
         "{1:<40}{2:<40}\n{0}\t".format(prefix, "Label", "Coverage"),
         dash + f"\n{prefix}\t",
         f"\n{prefix}\t".join(
-            f"{label:<40}{str(count) + '/' + str(len(reviewset)):<40}"
-            for label, count in labels_with_count
+            f"{label_id:<40}{str(count) + '/' + str(len(reviewset)):<40}"
+            for label_id, count in label_ids_with_count
         ),
         sep="",
     )
+
+
+def filter_invalid_labels(reviewset: ReviewSet, label_ids: list) -> list:
+    all_label_ids = list(reviewset.get_all_label_ids())
+
+    result = []
+    for label_id in label_ids:
+        if "*" in label_id:
+            matches = fnmatch.filter(all_label_ids, label_id)
+            if matches:
+                for match in matches:
+                    result.append(match)
+            else:
+                print(
+                    f"\nNo matching label found for wildcard {bcolors.DARKYELLOW}{label_id}{bcolors.ENDC}, skipping..."
+                )
+        else:
+            if label_id in all_label_ids:
+                result.append(label_id)
+            else:
+                print(
+                    f"\nLabel {bcolors.DARKYELLOW}{label_id}{bcolors.ENDC} does not exist in the base reviewset, skipping..."
+                )
+
+    return result
+
+
+def stats(base_reviewset: ReviewSet, args: argparse.Namespace):
+    if args.save:
+        base_reviewset.save()
+        print(f"\n{bcolors.GREEN}Reviewset saved!{bcolors.ENDC}")
 
 
 def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
@@ -230,32 +309,35 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
             ):
                 allow_new_reviews = False
 
-        new_labels = reviewset.get_all_label_ids() - base_reviewset.get_all_label_ids()
-        new_labels_with_base_count = []
-        for label in new_labels:
+        new_label_ids = (
+            reviewset.get_all_label_ids() - base_reviewset.get_all_label_ids()
+        )
+        merge_label_ids_with_base_count = {}
+        for label_id in reviewset.get_all_label_ids():
             filtered_reviewset = reviewset.filter_with_label_strategy(
-                LabelIDSelectionStrategy(label), inplace=False
+                LabelIDSelectionStrategy(label_id), inplace=False
             )
-            new_labels_with_base_count.append(
-                (label, base_reviewset.count_common_reviews(filtered_reviewset))
-            )
+            merge_label_ids_with_base_count[
+                label_id
+            ] = base_reviewset.count_common_reviews(filtered_reviewset)
 
-        if not new_labels:
+        if not new_label_ids:
             print(f"\n\t{bcolors.DARKYELLOW}No new labels found.{bcolors.ENDC}")
             if not allow_new_reviews or new_review_count == 0:
-                print(f"\n\t{bcolors.DARKYELLOW}Skipping...{bcolors.ENDC}")
-                continue
+                print(
+                    f"\n\tIt might still make sense to merge if, for example, the new reviewset has a better coverage of some existing labels in the base reviewset."
+                )
         else:
             print(
-                f"\n\tFor the following {bcolors.BLUE}{len(new_labels)}{bcolors.ENDC} new label(s), that many reviews labelled by them could also be found in the base reviewset:\n",
+                f"\n\tFor the following {bcolors.BLUE}{len(new_label_ids)}{bcolors.ENDC} new label(s), that many reviews labelled by them could also be found in the base reviewset:\n",
                 "\t\t" + dash + "\n\t\t",
                 "{0:<40}{1:<40}\n\t\t".format(
                     "Label", "Coverage of reviews in base file"
                 ),
                 dash + f"\n\t\t",
                 f"\n\t\t".join(
-                    f"{label:<40}{str(count) + '/' + str(len(base_reviewset)):<40}"
-                    for label, count in new_labels_with_base_count
+                    f"{label_id:<40}{str(merge_label_ids_with_base_count[label_id]) + '/' + str(len(base_reviewset)):<40}"
+                    for label_id in new_label_ids
                 ),
                 sep="",
             )
@@ -274,52 +356,44 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
 def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
     from helpers.label_selection import LabelIDSelectionStrategy
 
-    extract_labels = copy.copy(args.labels)
-    all_labels = base_reviewset.get_all_label_ids()
-    for label in args.labels:
-        if label not in all_labels:
-            print(
-                f"\nLabel {bcolors.DARKYELLOW}{label}{bcolors.ENDC} does not exist, skipping..."
-            )
-            extract_labels.remove(label)
-
-    if not extract_labels:
+    extract_label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
+    if not extract_label_ids:
         print(f"\n{bcolors.DARKYELLOW}No labels to extract, aborting...{bcolors.ENDC}")
         return
 
-    remove_labels = list(all_labels - set(extract_labels))
+    remove_label_ids = list(base_reviewset.get_all_label_ids() - set(extract_label_ids))
 
     if not args.keep:
-        label_selection_strategy = LabelIDSelectionStrategy(*extract_labels)
+        label_selection_strategy = LabelIDSelectionStrategy(*extract_label_ids)
         base_reviewset.filter_with_label_strategy(
             label_selection_strategy, inplace=True
         )
 
     for review in base_reviewset:
-        for label in remove_labels:
-            review.remove_label(label)
+        for label_id in remove_label_ids:
+            review.remove_label(label_id)
 
-    if os.path.exists(args.output):
-        print(f"\nFile {bcolors.RED}{args.output}{bcolors.ENDC} already exists")
+    if os.path.exists(args.out_file):
+        print(f"\nFile {bcolors.RED}{args.out_file}{bcolors.ENDC} already exists")
         if input("Do you want to overwrite it? [Y/n]: ").lower() == "n":
             print(f"{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
             return
 
-    print(f"\nSaving extracted reviewset to {bcolors.BLUE}{args.output}{bcolors.ENDC}")
-    base_reviewset.save_as(args.output)
-    print(f"\n{bcolors.GREEN}Saved!{bcolors.ENDC}")
+    print(
+        f"\nSaving extracted reviewset to {bcolors.BLUE}{args.out_file}{bcolors.ENDC}"
+    )
+    print_stats(base_reviewset)
+
+    if input("\nDo you want to save the file? [Y/n]: ").lower() == "n":
+        print(f"{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
+        return
+    base_reviewset.save_as(args.out_file)
+    print(f"{bcolors.GREEN}Saved!{bcolors.ENDC}")
 
 
 def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
-    delete_labels = copy.copy(args.labels)
-    for label in args.labels:
-        if label not in base_reviewset.get_all_label_ids():
-            print(
-                f"\nLabel {bcolors.DARKYELLOW}{label}{bcolors.ENDC} does not exist, skipping..."
-            )
-            delete_labels.remove(label)
-
-    if not delete_labels:
+    delete_label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
+    if not delete_label_ids:
         print(f"\n{bcolors.DARKYELLOW}Found no labels to delete.{bcolors.ENDC}")
         return
 
@@ -327,9 +401,9 @@ def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
         confirm = True
     else:
         print(
-            f"\nThe following {bcolors.BLUE}{len(delete_labels)}{bcolors.ENDC} label(s) will be deleted from the base file:\n\t",
+            f"\nThe following {bcolors.BLUE}{len(delete_label_ids)}{bcolors.ENDC} label(s) will be deleted from the base file:\n\t",
             f"\n\t".join(
-                f"{bcolors.RED}{label}{bcolors.ENDC}" for label in delete_labels
+                f"{bcolors.RED}{label}{bcolors.ENDC}" for label in delete_label_ids
             ),
             sep="",
         )
@@ -341,12 +415,12 @@ def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
 
     if confirm:
-        for label in delete_labels:
+        for label_id in delete_label_ids:
             for review in base_reviewset:
-                review.remove_label(label)
+                review.remove_label(label_id)
         base_reviewset.save()
         print(
-            f"\n{bcolors.GREEN}Deleted {len(delete_labels)} label(s) from the base reviewset!{bcolors.ENDC}"
+            f"\n{bcolors.GREEN}Deleted {len(delete_label_ids)} label(s) from the base reviewset!{bcolors.ENDC}"
         )
     else:
         print(f"\n{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
@@ -408,15 +482,9 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
     from training.generator import Generator, DEFAULT_GENERATION_CONFIG
 
-    generation_config = (
-        DEFAULT_GENERATION_CONFIG
-        if args.generation_config == "default"
-        else args.generation_config
-    )
-
     label_id = None
-    if args.label_id is not None:
-        label_id = f"model-{args.artifact_name}-{args.label_id}"
+    if args.last_part_of_label_id is not None:
+        label_id = f"model-{args.artifact_name}-{args.last_part_of_label_id}"
 
     if label_id and label_id in base_reviewset.get_all_label_ids():
         print(
@@ -424,7 +492,11 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    generator = Generator(args.artifact_name, generation_config, args.checkpoint)
+    generator = Generator(
+        args.artifact_name,
+        args.generation_config or DEFAULT_GENERATION_CONFIG,
+        args.checkpoint,
+    )
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
 
@@ -433,56 +505,59 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def score(base_reviewset: ReviewSet, args: argparse.Namespace):
-    if not args.all and not args.reference_labels:
+    all_label_ids = base_reviewset.get_all_label_ids()
+
+    reference_label_ids = filter_invalid_labels(
+        base_reviewset, args.reference_label_candidate_ids.split(",")
+    )
+    if not reference_label_ids:
         print(
-            f"\n{bcolors.RED}Error:{bcolors.ENDC} Either --all or at least one reference label must be specified for scoring"
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No reference labels found in the base reviewset"
         )
         return
 
-    all_labels = list(base_reviewset.get_all_label_ids())
-
-    if args.label not in all_labels:
-        print(
-            f"\n{bcolors.RED}Error:{bcolors.ENDC} Label {bcolors.DARKYELLOW}{args.label}{bcolors.ENDC} does not exist in the base reviewset"
-        )
-        return
-
+    label_ids = []
     if args.all:
-        reference_labels = all_labels
+        label_ids = list(all_label_ids - set(reference_label_ids))
+    elif args.label_ids:
+        label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
     else:
-        reference_labels = copy.copy(args.reference_labels)
-
-        for label in args.reference_labels:
-            if label not in all_labels:
-                print(
-                    f"\nLabel {bcolors.DARKYELLOW}{label}{bcolors.ENDC} does not exist, skipping..."
-                )
-                reference_labels.remove(label)
-
-        if len(reference_labels) == 0:
-            print(
-                f"\n{bcolors.DARKYELLOW}No reference labels left, skipping scoring...{bcolors.ENDC}"
-            )
-            return
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Either --all or at least one label must be specified for scoring"
+        )
+        return
+    if not label_ids:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No labels to score found in the base reviewset"
+        )
+        return
 
     scores = {}
-    for reference_label in reference_labels:
+    for label_id in label_ids:
         if args.metrics is None:
-            scores[reference_label] = base_reviewset.get_agg_scores(
-                args.label,
-                reference_label,
+            scores[label_id] = base_reviewset.get_agg_scores(
+                label_id,
+                *reference_label_ids,
             )
         else:
-            scores[reference_label] = base_reviewset.get_agg_scores(
-                args.label, reference_label, list(args.metrics.split(","))
+            scores[label_id] = base_reviewset.get_agg_scores(
+                label_id, *reference_label_ids, list(args.metrics.split(","))
             )
 
-    for reference_label, score in scores.items():
-        print(
-            f"\nScores against the label {bcolors.BLUE}{reference_label}{bcolors.ENDC}:"
+    print(
+        f"\nScores against the reference label (candidates): ",
+        ", ".join(
+            f"{bcolors.BLUE}{ref_id}{bcolors.ENDC}" for ref_id in reference_label_ids
         )
-        pprint.pprint(score)
-
+        + "\n\t",
+        "\n\t".join(
+            [
+                f"{bcolors.BLUE}{label_id}{bcolors.ENDC}: {pprint.pformat(score)}"
+                for label_id, score in scores.items()
+            ]
+        ),
+        sep="",
+    )
     base_reviewset.save()
     print(f"\n{bcolors.GREEN}Scores saved!{bcolors.ENDC}")
 

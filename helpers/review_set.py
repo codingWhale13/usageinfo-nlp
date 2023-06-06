@@ -413,7 +413,7 @@ class ReviewSet:
 
         reviews = copy(list(self))
         random.shuffle(reviews)
-        split_index = int(len(reviews) * fraction)
+        split_index = max(1, int(len(reviews) * fraction))
 
         return (
             ReviewSet.from_reviews(*reviews[:split_index]),

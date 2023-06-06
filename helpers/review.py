@@ -329,6 +329,10 @@ class Review:
         )
         review_without_label.data["labels"].pop(label_id, None)
 
+        # remove score references to deleted labels
+        for label in review_without_label.data["labels"].values():
+            label["scores"].pop(label_id, None)
+
         if not inplace:
             return review_without_label
 
