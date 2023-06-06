@@ -34,7 +34,6 @@ def request_openai_api(openai_function: Callable):
     openai.api_key = openai_api_key
     api_failure_count = 0
 
-    print("Requesting guidance from OpenAI (💸)")
     while api_failure_count < OPENAI_MAX_RETRIES:
         try:
             completion = openai_function()

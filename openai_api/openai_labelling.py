@@ -13,6 +13,15 @@ from openai_api.openai_backend import CHAT_MODELS, MODEL_NAME_MAPPING, generate_
 dotenv.load_dotenv()
 
 
+DEFAULT_MODEL = "gpt-3.5-turbo"
+DEFAULT_TEMPERATURE = 0.5
+DEFAULT_LOG_PROBS = 5
+DEFAULT_SAVE_PERCENTAGE = 5
+DEFAULT_WORKERS = 4
+
+MAXIMUM_LABELS_WITHOUT_SAVING = 100
+
+
 def parse_args():
     def restricted_temperature(x):
         try:
@@ -29,40 +38,50 @@ def parse_args():
     )
     arg_parser.add_argument("--file", "-f", required=True, help="json file path")
     arg_parser.add_argument(
-        "--prompt", "-p", default="nils_v2", help="Prompt to use for openai labelling"
+        "--prompt-id",
+        "-p",
+        default="leoh_v1",
+        help="Prompt to use for openai labelling",
     )
     arg_parser.add_argument(
-        "--id", default="", help="Unique identifier for the new label"
+        "-i",
+        "--label_id_suffix",
+        default="",
+        help="Unique identifier for the new label",
     )
     arg_parser.add_argument(
-        "-w", "--worker", default=5, type=int, help="Number of workers to use"
+        "-w",
+        "--workers",
+        default=DEFAULT_WORKERS,
+        type=int,
+        help="Number of workers to use",
     )
     arg_parser.add_argument(
-        "--save",
+        "--save-percentage",
         "-s",
         choices=range(1, 101),
         type=int,
-        default=5,
+        default=DEFAULT_SAVE_PERCENTAGE,
         help="Make an intermediate save every n percent of processed reviews",
         metavar="[0-100]",
     )
     arg_parser.add_argument(
-        "--model", "-m", default="gpt-3.5-turbo", help="OpenAI model to use"
+        "--model", "-m", default=DEFAULT_MODEL, help="OpenAI model to use"
     )
     arg_parser.add_argument(
         "--temperature",
         "-t",
         type=restricted_temperature,
-        default=1,
+        default=DEFAULT_TEMPERATURE,
         help="Set the temperature for the sampling",
         metavar="[0.0-2.0]",
     )
     arg_parser.add_argument(
-        "--logprobs",
+        "--log-probs",
         "-l",
         choices=range(1, 6),
         type=int,
-        default=5,
+        default=DEFAULT_LOG_PROBS,
         help="Define how many logprobs you want to save",
         metavar="[1-5]",
     )
@@ -70,17 +89,55 @@ def parse_args():
     return arg_parser.parse_args(), arg_parser.format_help()
 
 
-async def main():
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    args, help_text = parse_args()
+def label_review_set(
+    review_set: ReviewSet,
+    prompt_id: str,
+    label_id_suffix: str,
+    model: str = DEFAULT_MODEL,
+    temperature: float = DEFAULT_TEMPERATURE,
+    log_probs: int = DEFAULT_LOG_PROBS,
+    workers: int = DEFAULT_WORKERS,
+    save_percentage: int = DEFAULT_SAVE_PERCENTAGE,
+) -> None:
+    print(
+        prompt_id,
+        label_id_suffix,
+        model,
+        temperature,
+        log_probs,
+        workers,
+        save_percentage,
+    )
+    asyncio.run(
+        label_review_set_async(
+            review_set,
+            prompt_id,
+            label_id_suffix,
+            model,
+            temperature,
+            log_probs,
+            workers,
+            save_percentage,
+        )
+    )
 
-    review_file_name = os.path.abspath(args.file)
+
+async def label_review_set_async(
+    review_set: ReviewSet,
+    prompt_id: str,
+    label_id_suffix: str,
+    model: str,
+    temperature: float,
+    log_probs: int,
+    workers: int,
+    save_percentage: int,
+) -> None:
+    script_dir = os.path.dirname(os.path.realpath(__file__))
     prompt_file_name = f"{script_dir}/prompts.json"
 
-    prompt_id = args.prompt
     with open(prompt_file_name, "r") as prompt_file:
         prompts_json = json.load(prompt_file)
-        prompt_type = "chat" if args.model in CHAT_MODELS else "text"
+        prompt_type = "chat" if model in CHAT_MODELS else "text"
         if prompt_id not in prompts_json[prompt_type].keys():
             exit(
                 f"Prompt {prompt_id} of type {prompt_type} not found in {prompt_file_name}."
@@ -88,15 +145,17 @@ async def main():
         prompt = prompts_json[prompt_type][prompt_id]["prompt"]
 
     label_id = "{model_name}-{prompt_id}{hyphen}{id}".format(
-        model_name=MODEL_NAME_MAPPING[args.model],
+        model_name=MODEL_NAME_MAPPING[model],
         prompt_id=prompt_id,
-        id=args.id,
-        hyphen="-" if args.id != "" else "",
+        id=label_id_suffix,
+        hyphen="-" if label_id_suffix != "" else "",
     )
 
-    review_set = ReviewSet.from_files(review_file_name)
     num_reviews = len(review_set)
-    intermediate_save_size = max(1, int(num_reviews * (args.save / 100)))
+    intermediate_save_size = min(
+        max(1, int(num_reviews * (save_percentage / 100))),
+        MAXIMUM_LABELS_WITHOUT_SAVING,
+    )
     count = 0
 
     overwrite_label = False
@@ -111,9 +170,9 @@ async def main():
             usageOptions, metadata = generate_label(
                 review,
                 prompt,
-                model=args.model,
-                temperature=args.temperature,
-                logprobs=args.logprobs,
+                model=model,
+                temperature=temperature,
+                logprobs=log_probs,
                 prompt_id=prompt_id,
             )
             review_set[review_id].add_label(
@@ -135,7 +194,7 @@ async def main():
     for review_id, review in review_set.reviews.items():
         labelling_queue.put_nowait(generate_label_worker_item(review_id, review))
 
-    worker = Worker(labelling_queue, n=args.worker)
+    worker = Worker(labelling_queue, n=workers)
     print(
         f"Setup queue with {worker.queue.qsize()} reviews. Starting {worker.n} workers in parallel 🚀"
     )
@@ -146,5 +205,14 @@ async def main():
     review_set.save()
 
 
+def main():
+    args, _ = parse_args()
+    review_set = ReviewSet.from_files(os.path.abspath(args.file))
+
+    args = vars(args)
+    del args["file"]
+    label_review_set(review_set, **args)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
