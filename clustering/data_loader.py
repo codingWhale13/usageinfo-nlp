@@ -1,13 +1,11 @@
-from helpers.review_set import ReviewSet
-from sentence_transformers import SentenceTransformer
-from typing import List, Dict
-from evaluation.scoring.evaluation_cache import EvaluationCache
-from evaluation.scoring.core import get_embedding
 import numpy as np
-from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
-from sklearn.manifold import Isomap
 import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE, Isomap
+
+from evaluation.scoring.core import get_embedding
+from evaluation.scoring.evaluation_cache import EvaluationCache
+from helpers.review_set import ReviewSet
 
 
 class DataLoader:
@@ -17,9 +15,9 @@ class DataLoader:
     reduction using various methods.
 
     Args:
-        file_paths (List[str]): A list of file paths to load data from.
+        file_paths (list[str]): A list of file paths to load data from.
         label_id (str): The label ID for the usage option data.
-        config (Dict): A dictionary containing configuration options for the
+        config (dict): A dictionary containing configuration options for the
             data loader, including the model name and the dimensionality reduction method.
 
     Returns:
@@ -27,13 +25,11 @@ class DataLoader:
             possibly reduced usage option data.
     """
 
-    def __init__(self, file_paths: List[str], label_id: str, config: Dict):
+    def __init__(self, file_paths: list[str], label_id: str, config: dict):
         self.file_paths = file_paths
         self.label_id = label_id
         self.model_name = config["model_name"]
-        self.dim_reduction = config.get(
-            "dim_reduction", None
-        )  # Optional parameter for dimensionality reduction
+        self.dim_reduction = config.get("dim_reduction", None)  # optional parameter
         self.n_components = config.get("n_components", 2)
 
     def load(self):
@@ -47,7 +43,7 @@ class DataLoader:
                     usage_option=usage_option, comparator=self.model_name
                 )
                 embedded_usage_options.append(embedded_usage_option)
-                review_set_df.append(
+                review_set_list.append(
                     {
                         "review_id": review.review_id,
                         "usage_option": usage_option,
@@ -58,8 +54,6 @@ class DataLoader:
         review_set_df = pd.DataFrame(review_set_list)
 
         EvaluationCache.get().save_to_disk()
-
-        reduced_usage_options = None
 
         if self.dim_reduction is not None:
             reducer_map = {
@@ -74,7 +68,6 @@ class DataLoader:
                 reducer = reducer_class(self.n_components)
                 reduced_usage_options = reducer.reduce(np.array(embedded_usage_options))
                 review_set_df["reduced_embedding"] = reduced_usage_options.tolist()
-
             else:
                 raise ValueError(
                     f"Unknown dimensionality reduction method '{self.dim_reduction}'"

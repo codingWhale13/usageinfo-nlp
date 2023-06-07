@@ -1,8 +1,9 @@
-from sklearn import metrics
-from sklearn.metrics.pairwise import cosine_similarity
 import itertools
+
 import numpy as np
 import pandas as pd
+from sklearn import metrics
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 class Scorer:
@@ -13,6 +14,16 @@ class Scorer:
             review_set_df["centroid"] == True
         ].index.to_numpy()
         self.cluster_distances = self.get_cluster_distances()
+
+    def get_cluster_distances(self):
+        cluster_distances = [[] for _ in range(len(self.centroids))]
+        for data_point_id, data_point in enumerate(self.data):
+            for centroid_id, centroid in enumerate(self.centroids):
+                if self.labels[data_point_id] == self.labels[centroid]:
+                    X, Y = [self.data[centroid]], [data_point]
+                    distance = cosine_similarity(X, Y)[0][0]
+                    cluster_distances[centroid_id].append(distance)
+        return cluster_distances
 
     def score(self):
         """
@@ -36,17 +47,6 @@ class Scorer:
 
     def calinski_harabasz(self):
         return metrics.calinski_harabasz_score(self.data, self.labels)
-
-    def get_cluster_distances(self):
-        cluster_distances = [[] for i in range(len(self.centroids))]
-        for j in range(len(self.data)):
-            for i, centroid in enumerate(self.centroids):
-                if self.labels[j] == self.labels[centroid]:
-                    distance = cosine_similarity([self.data[centroid]], [self.data[j]])[
-                        0
-                    ][0]
-                    cluster_distances[i].append(distance)
-        return cluster_distances
 
     def average_sim_in_cluster(self):
         return np.mean([np.mean(cluster) for cluster in self.cluster_distances])

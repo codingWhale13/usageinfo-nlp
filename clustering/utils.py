@@ -1,9 +1,10 @@
 import os
-import yaml
+
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 import plotly.express as px
+import seaborn as sns
+import yaml
 
 
 def get_config(name: str) -> dict:
@@ -46,6 +47,10 @@ def plot_clusters2d(clustered_df, n_clusters, color="label", interactive=False):
     )
     df["x"] = df["reduced_embedding"].apply(lambda x: x[0])
     df["y"] = df["reduced_embedding"].apply(lambda x: x[1])
+
+    if not os.path.exists("plots"):
+        os.mkdir("plots")
+
     if interactive:
         fig = px.scatter(df, x="x", y="y", color=color, hover_data=["usage_option"])
         fig.write_html(f"plots/plot{n_clusters}-{color}.html")
