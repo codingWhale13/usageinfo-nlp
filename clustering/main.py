@@ -38,35 +38,35 @@ def main():
     label_id = args.label_id
     file_paths = args.reviewset_files
     clustering_config = utils.get_config(args.clustering_config)
-
     review_set_df = DataLoader(file_paths, label_id, clustering_config["data"]).load()
 
-    if len(review_set_df) < max(clustering_config["clustering"]["n_clusters"]):
-        raise ValueError(
-            f"Number of usage options ({len(review_set_df)}) is smaller than the maximum "
-            f"number of clusters ({max(clustering_config['clustering']['n_clusters'])})"
-        )
-
     scores = {}
-    for n_clusters in clustering_config["clustering"]["n_clusters"]:
-        print(f"Clustering with {n_clusters} clusters...")
+    arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))
+
+    for arg_dict in arg_dicts:
+        print(f"Clustering with {arg_dict}...")
         clustered_df = Clusterer(
             review_set_df,
             clustering_config["clustering"],
-            n_clusters,
+            **arg_dict,
         ).cluster()
 
         if clustering_config["data"]["n_components"] == 2:
             utils.plot_clusters2d(
-                clustered_df, n_clusters, color="label", interactive=False
+                clustered_df, arg_dict, color="label", interactive=True
             )
 
-        print(f"Scoring {n_clusters} clusters...")
-        scores[n_clusters] = Scorer(clustered_df).score()
+        if clustering_config["clustering"]["save_to_disk"]:
+            utils.save_clustered_df(clustered_df, arg_dict)
+
+        print(f"Scoring clustering with {arg_dict}...")
+        scores[[f"{v}" for v in arg_dict.values() if v is not None][0]] = Scorer(
+            clustered_df
+        ).score()
 
     if clustering_config["data"]["n_components"] == 2:
         utils.plot_clusters2d(
-            clustered_df, n_clusters, color="product_category", interactive=True
+            clustered_df, arg_dict, color="product_category", interactive=True
         )
     utils.plot_scores(scores, "scores.png")
 

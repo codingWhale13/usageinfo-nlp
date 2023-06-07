@@ -40,7 +40,11 @@ def plot_scores(scores: dict, output_path: str):
     plt.savefig(output_path)
 
 
-def plot_clusters2d(clustered_df, n_clusters, color="label", interactive=False):
+def plot_clusters2d(clustered_df, arg_dict, color="label", interactive=False):
+    if arg_dict["n_clusters"] is not None:
+        key = "nclusters-" + str(arg_dict["n_clusters"])
+    elif arg_dict["distance_threshold"] is not None:
+        key = "distance-" + str(arg_dict["distance_threshold"])
     df = pd.DataFrame(
         clustered_df,
         columns=["reduced_embedding", "label", "product_category", "usage_option"],
@@ -53,8 +57,41 @@ def plot_clusters2d(clustered_df, n_clusters, color="label", interactive=False):
 
     if interactive:
         fig = px.scatter(df, x="x", y="y", color=color, hover_data=["usage_option"])
-        fig.write_html(f"plots/plot{n_clusters}-{color}.html")
+        fig.write_html(f"plots/plot{key}-{color}.html")
     else:
         plt.clf()
         sns.scatterplot(x="x", y="y", hue=color, data=df)
-        plt.savefig(f"plots/plot{n_clusters}-{color}.png")
+        plt.savefig(f"plots/plot{key}-{color}.png")
+
+
+def get_arg_dicts(clustering_config, reviewset_length):
+    if "n_clusters" in clustering_config["clustering"]:
+        if reviewset_length < max(clustering_config["clustering"]["n_clusters"]):
+            raise ValueError(
+                f"Reviewset length ({reviewset_length}) is smaller than the maximum number of clusters ({max(clustering_config['clustering']['n_clusters'])})."
+            )
+        return [
+            {"n_clusters": n_clusters, "distance_threshold": None}
+            for n_clusters in clustering_config["clustering"]["n_clusters"]
+        ]
+    elif "distance_thresholds" in clustering_config["clustering"]:
+        return [
+            {"distance_threshold": distance_threshold, "n_clusters": None}
+            for distance_threshold in clustering_config["clustering"][
+                "distance_thresholds"
+            ]
+        ]
+    else:
+        raise ValueError(
+            "Clustering config must contain either 'n_clusters' or 'distance_thresholds'"
+        )
+
+
+def save_clustered_df(clustered_df, arg_dict):
+    if arg_dict["n_clusters"] is not None:
+        key = "nclusters-" + str(arg_dict["n_clusters"])
+    elif arg_dict["distance_threshold"] is not None:
+        key = "distance-" + str(arg_dict["distance_threshold"])
+    clustered_df.to_csv(
+        f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/clustered_usage_options/clustered_df_{key}.csv"
+    )

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch
+from typing import Optional
 from sentence_transformers import util
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
@@ -12,11 +13,13 @@ class Clusterer:
         self,
         review_set_df: pd.DataFrame,
         config: dict,
-        n_clusters: int,
+        n_clusters: Optional[int],
+        distance_threshold: Optional[float],
     ):
         self.review_set_df = review_set_df
         self.config = config
         self.n_clusters = n_clusters
+        self.distance_threshold = distance_threshold
 
     def cluster(self):
         """
@@ -50,6 +53,8 @@ class Clusterer:
         Returns:
             review_set_df (pd.DataFrame): The review set dataframe with the cluster labels and centroids added.
         """
+        if self.n_clusters is None:
+            raise ValueError("n_clusters must be specified for k-means clustering")
         kmeans = KMeans(n_clusters=self.n_clusters, random_state=42, n_init="auto").fit(
             cluster_data
         )
@@ -73,6 +78,7 @@ class Clusterer:
             n_clusters=self.n_clusters,
             metric=self.config["metric"],
             linkage=self.config["linkage"],
+            distance_threshold=self.distance_threshold,
         ).fit(cluster_data)
 
         clf = NearestCentroid(metric=self.config["metric"])
@@ -92,7 +98,7 @@ class Clusterer:
         """
         cluster_data = torch.tensor(cluster_data)
         clusters = util.community_detection(
-            cluster_data, min_community_size=1, threshold=0.75
+            cluster_data, min_community_size=1, threshold=self.distance_threshold
         )
         # add emtpy column "label" to dataframe
         self.review_set_df["label"] = np.nan

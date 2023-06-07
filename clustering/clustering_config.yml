@@ -3,9 +3,17 @@ data:
   dim_reduction: "tsne" # optional if reduction of dimensionality is needed
   n_components: 2 # optional if reduction of dimensionality is needed
 clustering:
-  use_reduced_embeddings: True # whether to cluster on reduced or original embeddings
-  algorithm: "community_detection" # options are: kmeans, agglomerative, community_detection
+  use_reduced_embeddings: False # whether to cluster on reduced or original embeddings
+  algorithm: "agglomerative" # options are: kmeans, agglomerative, community_detection
+  metric: "cosine" # options are: euclidean, cosine
+  linkage: "average" # only for agglom, options are: ward, complete, average, single
+  save_to_disk: True # whether to save the clustering results to disk
   n_clusters:
-    - 50
-  metric: "euclidean" # options are: euclidean, cosine
-  linkage: "ward" # only for agglom, options are: ward, complete, average, single
+    - 1000
+  # distance_thresholds: # only for agglom and community detection, will be ignored if n_clusters is not None
+  #   - 0.5
+  #   - 0.6
+  #   - 0.7
+  #   - 0.8
+  #   - 0.9
+  #   - 1
