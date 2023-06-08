@@ -65,18 +65,23 @@ def plot_clusters2d(clustered_df, arg_dict, color="label", interactive=False):
 
 
 def get_arg_dicts(clustering_config, reviewset_length):
+    # remove n_clusters and distance_thresholds from clustering config
+    single_params = clustering_config["clustering"].copy()
+
     if "n_clusters" in clustering_config["clustering"]:
+        del single_params["n_clusters"]
         if reviewset_length < max(clustering_config["clustering"]["n_clusters"]):
             raise ValueError(
                 f"Reviewset length ({reviewset_length}) is smaller than the maximum number of clusters ({max(clustering_config['clustering']['n_clusters'])})."
             )
         return [
-            {"n_clusters": n_clusters, "distance_threshold": None}
+            {"n_clusters": n_clusters, "distance_threshold": None, **single_params}
             for n_clusters in clustering_config["clustering"]["n_clusters"]
         ]
     elif "distance_thresholds" in clustering_config["clustering"]:
+        del single_params["distance_thresholds"]
         return [
-            {"distance_threshold": distance_threshold, "n_clusters": None}
+            {"distance_threshold": distance_threshold, "n_clusters": None, **single_params}
             for distance_threshold in clustering_config["clustering"][
                 "distance_thresholds"
             ]

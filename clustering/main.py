@@ -45,11 +45,7 @@ def main():
 
     for arg_dict in arg_dicts:
         print(f"Clustering with {arg_dict}...")
-        clustered_df = Clusterer(
-            review_set_df,
-            clustering_config["clustering"],
-            **arg_dict,
-        ).cluster()
+        clustered_df = Clusterer(review_set_df, arg_dict).cluster()
 
         if clustering_config["data"]["n_components"] == 2:
             utils.plot_clusters2d(
@@ -64,10 +60,6 @@ def main():
             clustered_df
         ).score()
 
-    if clustering_config["data"]["n_components"] == 2:
-        utils.plot_clusters2d(
-            clustered_df, arg_dict, color="product_category", interactive=True
-        )
     utils.plot_scores(scores, "scores.png")
 
 

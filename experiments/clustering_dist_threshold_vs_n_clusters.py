@@ -3,8 +3,8 @@ from clustering.data_loader import DataLoader
 from clustering.clusterer import Clusterer
 
 # This is an experiment to check the hypothesis
-# "If we run experiment A using distance_treshold and experiment B using n_clusters and the results have the same number of clusters,
-# the clusters are exactly the same.
+# "If we run experiment A using distance_treshold and experiment B using n_clusters
+# and the results have the same number of clusters, the clusters are exactly the same.
 
 clustering_config = {
     "data": {
@@ -28,24 +28,18 @@ review_set_df = DataLoader([file_path], "Golden", clustering_config["data"]).loa
 arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))
 
 for arg_dict in arg_dicts:
-    clustered_df = Clusterer(
-        review_set_df,
-        clustering_config["clustering"],
-        **arg_dict,
-    ).cluster()
-    print(clustered_df.head())
+    clustered_df = Clusterer(review_set_df, arg_dict).cluster()
 
 # 2) find out number of clusters
 n_clusters = len(clustered_df["label"].unique())
 print("NCLUSTERS", n_clusters)
+print(clustered_df.head())
 
 # 3) cluster with n_clusters and assert equality
-clustered_df_with_n_clusters = Clusterer(
-    review_set_df,
-    clustering_config["clustering"],
-    n_clusters=n_clusters,
-    distance_threshold=None,
-).cluster()
+arg_dict["n_clusters"] = n_clusters
+arg_dict["distance_threshold"] = None
+clustered_df_with_n_clusters = Clusterer(review_set_df, arg_dict).cluster()
 
-assert clustered_df.equals(clustered_df_with_n_clusters), "WRONG"
+assert clustered_df.equals(clustered_df_with_n_clusters), "Experiment failed!"
+
 print("Experiment successful!")

@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import torch
-from typing import Optional
 from sentence_transformers import util
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
@@ -9,17 +8,10 @@ from sklearn.neighbors import NearestCentroid
 
 
 class Clusterer:
-    def __init__(
-        self,
-        review_set_df: pd.DataFrame,
-        config: dict,
-        n_clusters: Optional[int],
-        distance_threshold: Optional[float],
-    ):
-        self.review_set_df = review_set_df
+    def __init__(self, review_set_df: pd.DataFrame, config: dict):
+        """NOTE: `n_clusters`: Optional[int], `distance_threshold`: Optional[float]"""
+        self.review_set_df = review_set_df.copy()
         self.config = config
-        self.n_clusters = n_clusters
-        self.distance_threshold = distance_threshold
 
     def cluster(self):
         """
@@ -53,11 +45,11 @@ class Clusterer:
         Returns:
             review_set_df (pd.DataFrame): The review set dataframe with the cluster labels and centroids added.
         """
-        if self.n_clusters is None:
+        if self.config["n_clusters"] is None:
             raise ValueError("n_clusters must be specified for k-means clustering")
-        kmeans = KMeans(n_clusters=self.n_clusters, random_state=42, n_init="auto").fit(
-            cluster_data
-        )
+        kmeans = KMeans(
+            n_clusters=self.config["n_clusters"], random_state=42, n_init="auto"
+        ).fit(cluster_data)
 
         centroids, _ = pairwise_distances_argmin_min(
             kmeans.cluster_centers_, cluster_data
@@ -75,8 +67,8 @@ class Clusterer:
             review_set_df (pd.DataFrame): The review set dataframe with the cluster labels and centroids added.
         """
         agglomerative = AgglomerativeClustering(
-            n_clusters=self.n_clusters,
-            distance_threshold=self.distance_threshold,
+            n_clusters=self.config["n_clusters"],
+            distance_threshold=self.config["distance_threshold"],
             metric=self.config["metric"],
             linkage=self.config["linkage"],
         ).fit(cluster_data)
@@ -98,7 +90,9 @@ class Clusterer:
         """
         cluster_data = torch.tensor(cluster_data)
         clusters = util.community_detection(
-            cluster_data, min_community_size=1, threshold=self.distance_threshold
+            cluster_data,
+            min_community_size=1,
+            threshold=self.config["distance_threshold"],
         )
         # add emtpy column "label" to dataframe
         self.review_set_df["label"] = np.nan
