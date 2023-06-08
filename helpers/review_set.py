@@ -654,6 +654,14 @@ class ReviewSet:
                 )
 
             return result
+        
+    def remove_outliers(self, df, label_id) -> None:
+        """df is pd.DataFrame"""
+        import pandas as pd
+        # iterate through df
+        for index, row in df.iterrows():
+            review_id = row["review_id"]
+            self[review_id].remove_usage_option(label_id, row["usage_option"])
 
     def save_as(self, path: Union[str, Path]) -> None:
         self.save_path = path

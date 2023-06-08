@@ -70,10 +70,16 @@ def get_arg_dicts(clustering_config, reviewset_length):
 
     if "n_clusters" in clustering_config["clustering"]:
         del single_params["n_clusters"]
+
+        if "distance_thresholds" in single_params:
+            raise ValueError(
+                f"You stupid?! Don't you ever again specify both n_clusters and distance_thresholds in the clustering config!"
+            )
         if reviewset_length < max(clustering_config["clustering"]["n_clusters"]):
             raise ValueError(
                 f"Reviewset length ({reviewset_length}) is smaller than the maximum number of clusters ({max(clustering_config['clustering']['n_clusters'])})."
             )
+        
         return [
             {"n_clusters": n_clusters, "distance_threshold": None, **single_params}
             for n_clusters in clustering_config["clustering"]["n_clusters"]
