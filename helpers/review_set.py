@@ -429,15 +429,17 @@ class ReviewSet:
         augmentation: da_core.ReviewAugmentation = None,
         seed: int = None,
     ) -> tuple["ReviewSet", dict]:
-        def reduce_reviews(reviews: list[Review], target_num: int):
-            if len(reviews) < target_num:
+        def reduce_reviews(
+            filtered_reviews: list[Review], target_num: int, all_reviews: ReviewSet
+        ):
+            if len(filtered_reviews) < target_num:
                 raise ValueError(
-                    f"Can't reduce list with length {len(reviews)} to {target_num}"
+                    f"Can't reduce list with length {len(filtered_reviews)} to {target_num}"
                 )
-            random.shuffle(reviews)
-            for review in reviews[target_num:]:
-                self.drop_review(review)
-            return reviews[:target_num]
+            random.shuffle(filtered_reviews)
+            for review in copy(filtered_reviews)[target_num:]:
+                all_reviews.drop_review(review)
+            return filtered_reviews[:target_num]
 
         random.seed(seed)
 
@@ -480,27 +482,37 @@ class ReviewSet:
                 len(reviews_with_usage) / target_usage_split,
                 len(reviews_without_usage) / target_no_usage_split,
             )
-
             reviews_with_usage = reduce_reviews(
-                reviews_with_usage, round(dataset_length * target_usage_split)
+                reviews_with_usage, round(dataset_length * target_usage_split), reviews
             )
             reviews_without_usage = reduce_reviews(
-                reviews_without_usage, round(dataset_length * target_no_usage_split)
+                reviews_without_usage,
+                round(dataset_length * target_no_usage_split),
+                reviews,
             )
 
-        test_reviews = random.sample(
-            reviews_with_usage,
-            round(dataset_length * (test_split * 0.5)),
-        ) + random.sample(
-            reviews_without_usage,
-            round(dataset_length * (test_split * 0.5)),
-        )
+        if len(reviews_with_usage) > 0 and len(reviews_without_usage) > 0:
+            test_reviews = random.sample(
+                reviews_with_usage,
+                round(dataset_length * (test_split * 0.5)),
+            ) + random.sample(
+                reviews_without_usage,
+                round(dataset_length * (test_split * 0.5)),
+            )
+        else:
+            print(
+                "Not enough reviews to create custom usage split.\nProceeding with random split..."
+            )
+            test_reviews = random.sample(
+                list(reviews),
+                round(dataset_length * test_split),
+            )
 
         for review in test_reviews:
             label = review.get_label_from_strategy(label_selection_strategy)
             label["datasets"] = {dataset_name: "test"}
 
-        dataset_length = len(self)
+        dataset_length = len(reviews)
 
         return reviews, {
             "num_test_reviews": len(test_reviews),
