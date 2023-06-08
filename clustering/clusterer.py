@@ -76,9 +76,9 @@ class Clusterer:
         """
         agglomerative = AgglomerativeClustering(
             n_clusters=self.n_clusters,
+            distance_threshold=self.distance_threshold,
             metric=self.config["metric"],
             linkage=self.config["linkage"],
-            distance_threshold=self.distance_threshold,
         ).fit(cluster_data)
 
         clf = NearestCentroid(metric=self.config["metric"])
