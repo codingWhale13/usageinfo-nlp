@@ -8,8 +8,8 @@ from sklearn.neighbors import NearestCentroid
 
 
 class Clusterer:
-    def __init__(self, review_set_df: pd.DataFrame, config: dict):
-        """NOTE: `n_clusters`: Optional[int], `distance_threshold`: Optional[float]"""
+    def __init__(self, review_set_df: pd.DataFrame, config: dict) -> None:
+        """NOTE for config: `n_clusters` is Optional[int], `distance_threshold` is Optional[float]"""
         self.review_set_df = review_set_df.copy()
         self.config = config
 

@@ -2,7 +2,6 @@
 import argparse
 import os
 import yaml
-from typing import List
 import glob
 import dotenv
 
@@ -121,21 +120,24 @@ def main():
 
     dataset_dir = create_dataset_dir(dataset_name=dataset_name)
     reviews = ReviewSet.from_files(*files)
+    label_selection_strategy = ls.LabelIDSelectionStrategy(*label_ids)
+
     outlier_metadata = {}
     if args.remove_outliers:
-        reviews.remove_outliers(*args.remove_outliers, label_ids)
+        reviews.remove_outliers(*args.remove_outliers, label_selection_strategy)
         outlier_metadata = {
             "outlier_removal": {
                 "distance_threshold": args.remove_outliers[0],
                 "remove_percentage": args.remove_outliers[1],
             }
         }
+
     augmentation, augmentation_config = (
         get_augmentations() if args.augment_data else (None, None)
     )
     reviews, metadata = reviews.create_dataset(
         dataset_name=dataset_name,
-        label_selection_strategy=ls.LabelIDSelectionStrategy(*label_ids),
+        label_selection_strategy=label_selection_strategy,
         test_split=test_split,
         contains_usage_split=contains_usage_split,
         augmentation=augmentation,

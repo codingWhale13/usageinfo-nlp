@@ -1,11 +1,12 @@
 import argparse
 
-from helpers.review_set import ReviewSet
 from clusterer import Clusterer
 from data_loader import DataLoader
 from scorer import Scorer
 
+import helpers.label_selection as ls
 import utils
+from helpers.review_set import ReviewSet
 
 
 def arg_parse():
@@ -38,10 +39,13 @@ def arg_parse():
 def main():
     args, _ = arg_parse()
     label_ids = args.label_ids
+
     file_paths = args.reviewset_files
     review_set = ReviewSet.from_files(file_paths)
     clustering_config = utils.get_config(args.clustering_config)
-    review_set_df = DataLoader(review_set, label_ids, clustering_config["data"]).load()
+    review_set_df = DataLoader(
+        review_set, ls.LabelIDSelectionStrategy(*label_ids), clustering_config["data"]
+    ).load()
 
     scores = {}
     arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))
@@ -59,7 +63,7 @@ def main():
             utils.save_clustered_df(clustered_df, arg_dict)
 
         print(f"Scoring clustering with {arg_dict}...")
-        scores[[f"{v}" for v in arg_dict.values() if v is not None][0]] = Scorer(
+        scores[[v for v in arg_dict.values() if v is not None][0]] = Scorer(
             clustered_df
         ).score()
 

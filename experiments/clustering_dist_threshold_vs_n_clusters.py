@@ -1,6 +1,7 @@
 from clustering import utils
 from clustering.data_loader import DataLoader
 from clustering.clusterer import Clusterer
+from helpers.review_set import ReviewSet
 
 # This is an experiment to check the hypothesis
 # "If we run experiment A using distance_treshold and experiment B using n_clusters
@@ -24,7 +25,8 @@ clustering_config = {
 
 # 1) cluster with distance_threshold
 file_path = "/home/codingwhale/Documents/Studium/HPI/Materialien/BP/bsc2022-usageinfo/data/comparison_easy_names.json"
-review_set_df = DataLoader([file_path], "Golden", clustering_config["data"]).load()
+rs = ReviewSet.from_files(file_path)
+review_set_df = DataLoader(rs, "Golden", clustering_config["data"]).load()
 arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))
 
 for arg_dict in arg_dicts:

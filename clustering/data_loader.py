@@ -1,8 +1,11 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE, Isomap
 
+import helpers.label_selection as ls
 from evaluation.scoring.core import get_embedding
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review_set import ReviewSet
@@ -25,32 +28,41 @@ class DataLoader:
             possibly reduced usage option data.
     """
 
-    def __init__(self, review_set: ReviewSet, label_ids: list[str], config: dict):
+    def __init__(
+        self,
+        review_set: ReviewSet,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        config: dict,
+    ):
         self.review_set = review_set
-        self.label_ids = label_ids
+        self.label_id = label_id
         self.model_name = config["model_name"]
         self.dim_reduction = config.get("dim_reduction", None)  # optional parameter
         self.n_components = config.get("n_components", 2)
 
     def load(self):
-
         embedded_usage_options = []
         review_set_list = []
         for review in self.review_set:
-            for label_id in self.label_ids:
-                for usage_option in review.get_usage_options(label_id):
-                    embedded_usage_option = get_embedding(
-                        usage_option=usage_option, comparator=self.model_name
-                    )
-                    embedded_usage_options.append(embedded_usage_option)
-                    review_set_list.append(
-                        {
-                            "review_id": review.review_id,
-                            "usage_option": usage_option,
-                            "product_category": review["product_category"],
-                            "embedding": embedded_usage_option,
-                        }
-                    )
+            label_id = (
+                review.get_label_id_from_strategy(self.label_id)
+                if isinstance(self.label_id, ls.LabelSelectionStrategyInterface)
+                else self.label_id
+            )
+
+            for usage_option in review.get_usage_options(label_id):
+                embedded_usage_option = get_embedding(
+                    usage_option=usage_option, comparator=self.model_name
+                )
+                embedded_usage_options.append(embedded_usage_option)
+                review_set_list.append(
+                    {
+                        "review_id": review.review_id,
+                        "usage_option": usage_option,
+                        "product_category": review["product_category"],
+                        "embedding": embedded_usage_option,
+                    }
+                )
         review_set_df = pd.DataFrame(review_set_list)
 
         EvaluationCache.get().save_to_disk()

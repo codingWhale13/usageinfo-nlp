@@ -656,7 +656,10 @@ class ReviewSet:
             return result
 
     def remove_outliers(
-        self, distance_threshold: float, remove_percentage: float, label_ids: list[str]
+        self,
+        distance_threshold: float,
+        remove_percentage: float,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
     ):
         from clustering import utils
         from clustering.clusterer import Clusterer
@@ -678,7 +681,7 @@ class ReviewSet:
         }
 
         arg_dicts = utils.get_arg_dicts(clustering_config, len(self))
-        review_set_df = DataLoader(self, label_ids, clustering_config["data"]).load()
+        review_set_df = DataLoader(self, label_id, clustering_config["data"]).load()
 
         clustered_df = Clusterer(review_set_df, arg_dicts[0]).cluster()
         total_usage_options = len(clustered_df)
