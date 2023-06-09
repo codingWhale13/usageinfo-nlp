@@ -596,63 +596,6 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     print(f"\n{bcolors.GREEN}Scores saved!{bcolors.ENDC}")
 
 
-def remove_outliers(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from clustering import utils
-    from clustering.clusterer import Clusterer
-    from clustering.data_loader import DataLoader
-    import pandas as pd
-    from copy import deepcopy
-
-    clustering_config = {
-        "data": {
-            "model_name": "all-mpnet-base-v2",
-            "dim_reduction": "tsne",
-            "n_components": 2,
-        },
-        "clustering": {
-            "use_reduced_embeddings": False,
-            "algorithm": "agglomerative",
-            "metric": "cosine",
-            "linkage": "average",
-            "save_to_disk": False,
-            "distance_thresholds": [args.dist_threshold],
-        },
-    }
-
-    arg_dicts = utils.get_arg_dicts(clustering_config, len(base_reviewset))
-    review_set_df = DataLoader(
-        [args.base_file], args.label_id, clustering_config["data"]
-    ).load()
-    clustered_df = Clusterer(review_set_df, arg_dicts[0]).cluster()
-
-    # remove outliers
-
-    outlier_df = pd.DataFrame()
-    # add label_id to outlier_df
-    total_reviews = len(clustered_df)
-    print(f"Removing outliers from {total_reviews} reviews")
-    count_label_df = (
-        clustered_df.groupby("label")
-        .count()
-        .reset_index()
-        .sort_values(ascending=True, by="review_id")
-    )
-    for label in count_label_df["label"]:
-        print(label)
-        if outlier_df.shape[0] / total_reviews > 1 - args.keep:
-            break
-        # add all reviews of label to outlier_df
-        outlier_df = outlier_df.append(clustered_df[clustered_df["label"] == label])
-    print(f"Removing {outlier_df.shape[0]} reviews as outliers")
-
-    new_reviewset = deepcopy(base_reviewset)
-    new_reviewset.remove_outliers(
-        outlier_df[["review_id", "usage_option"]], args.label_id
-    )
-
-    new_reviewset.save_as(args.output_file)
-
-
 def main():
     args, help_text = parse_args()
 

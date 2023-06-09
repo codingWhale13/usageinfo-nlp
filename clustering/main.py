@@ -1,5 +1,6 @@
 import argparse
 
+from helpers.review_set import ReviewSet
 from clusterer import Clusterer
 from data_loader import DataLoader
 from scorer import Scorer
@@ -18,9 +19,10 @@ def arg_parse():
         help="All reviewset files to cluster usage options from",
     )
     parser.add_argument(
-        "label_id",
+        "label_ids",
         type=str,
-        help="Which label (aka which usage options) to use for clustering",
+        nargs="+",
+        help="Which label(s) (aka which usage options) to use for clustering",
     )
     parser.add_argument(
         "-c",
@@ -35,10 +37,11 @@ def arg_parse():
 
 def main():
     args, _ = arg_parse()
-    label_id = args.label_id
+    label_ids = args.label_ids
     file_paths = args.reviewset_files
+    review_set = ReviewSet.from_files(file_paths)
     clustering_config = utils.get_config(args.clustering_config)
-    review_set_df = DataLoader(file_paths, label_id, clustering_config["data"]).load()
+    review_set_df = DataLoader(review_set, label_ids, clustering_config["data"]).load()
 
     scores = {}
     arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))

@@ -25,32 +25,32 @@ class DataLoader:
             possibly reduced usage option data.
     """
 
-    def __init__(self, file_paths: list[str], label_id: str, config: dict):
-        self.file_paths = file_paths
-        self.label_id = label_id
+    def __init__(self, review_set: ReviewSet, label_ids: list[str], config: dict):
+        self.review_set = review_set
+        self.label_ids = label_ids
         self.model_name = config["model_name"]
         self.dim_reduction = config.get("dim_reduction", None)  # optional parameter
         self.n_components = config.get("n_components", 2)
 
     def load(self):
-        review_set = ReviewSet.from_files(*self.file_paths)
 
         embedded_usage_options = []
         review_set_list = []
-        for review in review_set:
-            for usage_option in review.get_usage_options(self.label_id):
-                embedded_usage_option = get_embedding(
-                    usage_option=usage_option, comparator=self.model_name
-                )
-                embedded_usage_options.append(embedded_usage_option)
-                review_set_list.append(
-                    {
-                        "review_id": review.review_id,
-                        "usage_option": usage_option,
-                        "product_category": review["product_category"],
-                        "embedding": embedded_usage_option,
-                    }
-                )
+        for review in self.review_set:
+            for label_id in self.label_ids:
+                for usage_option in review.get_usage_options(label_id):
+                    embedded_usage_option = get_embedding(
+                        usage_option=usage_option, comparator=self.model_name
+                    )
+                    embedded_usage_options.append(embedded_usage_option)
+                    review_set_list.append(
+                        {
+                            "review_id": review.review_id,
+                            "usage_option": usage_option,
+                            "product_category": review["product_category"],
+                            "embedding": embedded_usage_option,
+                        }
+                    )
         review_set_df = pd.DataFrame(review_set_list)
 
         EvaluationCache.get().save_to_disk()

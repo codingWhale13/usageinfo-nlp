@@ -41,6 +41,14 @@ def arg_parse() -> tuple[argparse.Namespace, str]:
         help="Apply data augmentation (interactive configuration)",
     )
     parser.add_argument(
+        "-r",
+        "--remove_outliers",
+        nargs=2,
+        type=float,
+        metavar=("distance_threshold", "remove_percentage"),
+        help='Option to remove "remove_percentage" outliers from the dataset after performing clustering with a distance threshold of "distance_threshold"',
+    )
+    parser.add_argument(
         "-t",
         "--test_split",
         type=float,
@@ -113,6 +121,8 @@ def main():
 
     dataset_dir = create_dataset_dir(dataset_name=dataset_name)
     reviews = ReviewSet.from_files(*files)
+    if args.remove_outliers:
+        reviews.remove_outliers(*args.remove_outliers, label_ids)
     augmentation, augmentation_config = (
         get_augmentations() if args.augment_data else (None, None)
     )

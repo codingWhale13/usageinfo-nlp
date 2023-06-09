@@ -654,14 +654,53 @@ class ReviewSet:
                 )
 
             return result
-        
-    def remove_outliers(self, df, label_id) -> None:
-        """df is pd.DataFrame"""
+
+    def remove_outliers(
+        self, distance_threshold: float, remove_percentage: float, label_ids: list[str]
+    ):
+        from clustering import utils
+        from clustering.clusterer import Clusterer
+        from clustering.data_loader import DataLoader
         import pandas as pd
-        # iterate through df
-        for index, row in df.iterrows():
-            review_id = row["review_id"]
-            self[review_id].remove_usage_option(label_id, row["usage_option"])
+
+        clustering_config = {
+            "data": {
+                "model_name": "all-mpnet-base-v2",
+            },
+            "clustering": {
+                "use_reduced_embeddings": False,
+                "algorithm": "agglomerative",
+                "metric": "cosine",
+                "linkage": "average",
+                "save_to_disk": False,
+                "distance_thresholds": [distance_threshold],
+            },
+        }
+
+        arg_dicts = utils.get_arg_dicts(clustering_config, len(self))
+        review_set_df = DataLoader(self, label_ids, clustering_config["data"]).load()
+
+        clustered_df = Clusterer(review_set_df, arg_dicts[0]).cluster()
+        total_usage_options = len(clustered_df)
+
+        count_label_df = (
+            clustered_df.groupby("label")
+            .count()
+            .reset_index()
+            .sort_values(ascending=True, by="review_id")
+        )
+        outlier_df = pd.DataFrame()
+        for label in count_label_df["label"]:
+            if outlier_df.shape[0] / total_usage_options >= remove_percentage:
+                break
+            outlier_df = outlier_df.append(clustered_df[clustered_df["label"] == label])
+        review_ids_to_drop = set(outlier_df["review_id"].tolist())
+
+        print(
+            f"{outlier_df.shape[0]}/{total_usage_options} usage options are outliers -> removing {len(review_ids_to_drop)}/{len(self)} reviews"
+        )
+        for outlier_id in review_ids_to_drop:
+            self.drop_review(outlier_id)
 
     def save_as(self, path: Union[str, Path]) -> None:
         self.save_path = path
