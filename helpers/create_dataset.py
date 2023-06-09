@@ -121,8 +121,15 @@ def main():
 
     dataset_dir = create_dataset_dir(dataset_name=dataset_name)
     reviews = ReviewSet.from_files(*files)
+    outlier_metadata = {}
     if args.remove_outliers:
         reviews.remove_outliers(*args.remove_outliers, label_ids)
+        outlier_metadata = {
+            "outlier_removal": {
+                "distance_threshold": args.remove_outliers[0],
+                "remove_percentage": args.remove_outliers[1],
+            }
+        }
     augmentation, augmentation_config = (
         get_augmentations() if args.augment_data else (None, None)
     )
@@ -144,6 +151,7 @@ def main():
         dataset_dir=dataset_dir,
         augmentations=augmentation_config,
         **metadata,
+        **outlier_metadata,
     )
 
 
