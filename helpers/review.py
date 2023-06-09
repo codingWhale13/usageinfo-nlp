@@ -336,13 +336,6 @@ class Review:
         if not inplace:
             return review_without_label
 
-    def remove_usage_option(self, label_id: str, usage_option: str) -> None:
-        label = self.get_label_for_id(label_id)
-        if label is None:
-            return
-
-        label["usageOptions"].remove(usage_option)
-
     def score(
         self,
         label_id: str,

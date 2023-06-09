@@ -12,8 +12,3 @@ clustering:
     - 1000
   # distance_thresholds: # only for agglom and community detection, will be ignored if n_clusters is not None
   #   - 0.5
-  #   - 0.6
-  #   - 0.7
-  #   - 0.8
-  #   - 0.9
-  #   - 1

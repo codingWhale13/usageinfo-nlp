@@ -228,40 +228,6 @@ def parse_args():
         help="Metrics to use for scoring (comma separated, default is defined in scoring/__init__.py)",
     )
 
-    remove_outliers_parser = subparsers.add_parser(
-        "remove_outliers",
-        help="Use clustering to remove outlier usage options from a label",
-    )
-    remove_outliers_parser.add_argument(
-        "base_file",
-        type=str,
-        help="Filepath of the base reviewset that you want to use",
-    )
-    remove_outliers_parser.add_argument(
-        "label_id",
-        type=str,
-        metavar="label_id",
-        help="Label to remove outliers from",
-    )
-    remove_outliers_parser.add_argument(
-        "output_file",
-        type=str,
-        help="Filepath to save the reviewset with removed outliers to",
-    )
-    remove_outliers_parser.add_argument(
-        "--dist_threshold",
-        "-d",
-        type=float,
-        default=0.2,
-        help="Distance threshold for clustering (default: 0.2)",
-    )
-    remove_outliers_parser.add_argument(
-        "--keep",
-        "-k",
-        type=float,
-        default=0.8,
-        help="Percentage (float between 0 and 1) of usage options to keep (rest will be removed) [default: 0.8]",
-    )
     return parser.parse_args(), parser.format_help()
 
 
