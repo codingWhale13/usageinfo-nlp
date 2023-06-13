@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
-import os
-import copy
+import os, sys
+import time
 import pprint
 import fnmatch
 
@@ -228,7 +228,47 @@ def parse_args():
         help="Metrics to use for scoring (comma separated, default is defined in scoring/__init__.py)",
     )
 
+    report_parser = subparsers.add_parser(
+        "report",
+        help="Generate score report",
+    )
+    report_parser.add_argument(
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+    report_parser.add_argument(
+        "reference_label_candidate_ids",
+        type=str,
+        # bug in argparse lol, therefore (()) instead of ()
+        metavar="reference_label_id((s))",
+        help="Reference label(s) to report against, multiple candidates must be separated by a comma (also, wildcard labels need to be in quotes)",
+    )
+    report_parser.add_argument(
+        "label_id",
+        type=str,
+        metavar="label_id",
+        help="Label to report on (wildcard label needs to be in quotes)",
+    )
+    report_parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default=f"{os.path.dirname(os.path.realpath(__file__))}/score_reports",
+        metavar="filepath",
+        help="Location where the report will create a new folder named with the label_id and the current unix timestamp (default is [repo]/score_reports/). In the timestamp folder, all report files will be saved.",
+    )
+
     return parser.parse_args(), parser.format_help()
+
+
+def file_path_okay(file_path: str):
+    if os.path.exists(file_path):
+        print(f"\nFile {bcolors.RED}{file_path}{bcolors.ENDC} already exists")
+        if input("Do you want to overwrite it? [y/N]: ").lower() != "y":
+            print(f"{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
+            return False
+    return True
 
 
 def print_stats(reviewset: ReviewSet, prefix: str = ""):
@@ -251,7 +291,7 @@ def print_stats(reviewset: ReviewSet, prefix: str = ""):
     )
 
 
-def filter_invalid_labels(reviewset: ReviewSet, label_ids: list) -> list:
+def filter_invalid_label_ids(reviewset: ReviewSet, label_ids: list) -> list:
     all_label_ids = list(reviewset.get_all_label_ids())
 
     result = []
@@ -272,6 +312,9 @@ def filter_invalid_labels(reviewset: ReviewSet, label_ids: list) -> list:
                 print(
                     f"\nLabel {bcolors.DARKYELLOW}{label_id}{bcolors.ENDC} does not exist in the base reviewset, skipping..."
                 )
+
+    if not result:
+        raise ValueError("No valid label ids remaining")
 
     return result
 
@@ -356,10 +399,14 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
 def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
     from helpers.label_selection import LabelIDSelectionStrategy
 
-    extract_label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
-    if not extract_label_ids:
+    try:
+        extract_label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            args.label_ids,
+        )
+    except ValueError:
         print(f"\n{bcolors.DARKYELLOW}No labels to extract, aborting...{bcolors.ENDC}")
-        return
+        sys.exit(1)
 
     remove_label_ids = list(base_reviewset.get_all_label_ids() - set(extract_label_ids))
 
@@ -392,10 +439,14 @@ def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
-    delete_label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
-    if not delete_label_ids:
+    try:
+        delete_label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            args.label_ids,
+        )
+    except:
         print(f"\n{bcolors.DARKYELLOW}Found no labels to delete.{bcolors.ENDC}")
-        return
+        sys.exit(1)
 
     if args.force:
         confirm = True
@@ -407,11 +458,11 @@ def delete(base_reviewset: ReviewSet, args: argparse.Namespace):
             ),
             sep="",
         )
-        confirm = not (
+        confirm = (
             input(
-                f"\nDo you really want to delete these label(s) from the base file? [Y/n]: "
+                "\nDo you really want to delete these label(s) from the base file? [Y/n]: "
             ).lower()
-            == "n"
+            != "n"
         )
 
     if confirm:
@@ -467,11 +518,8 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
             print(review)
 
     if args.output:
-        if os.path.exists(args.output):
-            print(f"\nFile {bcolors.RED}{args.output}{bcolors.ENDC} already exists")
-            if input("Do you want to overwrite it? [Y/n]: ").lower() == "n":
-                print(f"\n{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
-                return
+        if not file_path_okay(args.output):
+            return
 
         cut_reviewset.save_as(args.output)
         print(
@@ -507,28 +555,34 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
 def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     all_label_ids = base_reviewset.get_all_label_ids()
 
-    reference_label_ids = filter_invalid_labels(
-        base_reviewset, args.reference_label_candidate_ids.split(",")
-    )
-    if not reference_label_ids:
-        print(
-            f"\n{bcolors.RED}Error:{bcolors.ENDC} No reference labels found in the base reviewset"
+    try:
+        reference_label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            args.reference_label_candidate_ids.split(","),
         )
-        return
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No valid reference labels found in the base reviewset"
+        )
+        sys.exit(1)
 
     label_ids = []
     if args.all:
         label_ids = list(all_label_ids - set(reference_label_ids))
     elif args.label_ids:
-        label_ids = filter_invalid_labels(base_reviewset, args.label_ids)
+        try:
+            label_ids = filter_invalid_label_ids(
+                base_reviewset,
+                args.label_ids,
+            )
+        except ValueError:
+            print(
+                f"\n{bcolors.RED}Error:{bcolors.ENDC} No labels to score found in the base reviewset"
+            )
+            sys.exit(1)
     else:
         print(
             f"\n{bcolors.RED}Error:{bcolors.ENDC} Either --all or at least one label must be specified for scoring"
-        )
-        return
-    if not label_ids:
-        print(
-            f"\n{bcolors.RED}Error:{bcolors.ENDC} No labels to score found in the base reviewset"
         )
         return
 
@@ -560,6 +614,45 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     )
     base_reviewset.save()
     print(f"\n{bcolors.GREEN}Scores saved!{bcolors.ENDC}")
+
+
+def report(base_reviewset: ReviewSet, args: argparse.Namespace):
+    try:
+        label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            [args.label_id],
+        )
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No label to report found in the base reviewset"
+        )
+        sys.exit(1)
+
+    if len(label_ids) > 1:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Multiple matches found for wildcard label {bcolors.DARKYELLOW}{args.label_id}{bcolors.ENDC}. Please be more precise."
+        )
+        return
+    else:
+        label_id = label_ids[0]
+
+    try:
+        reference_label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            args.reference_label_candidate_ids.split(","),
+        )
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No reference labels found in the base reviewset"
+        )
+        sys.exit(1)
+
+    report_folder = f"{args.output}/{label_id}-{int(time.time())}/"
+    if not file_path_okay(report_folder):
+        return
+
+    base_reviewset.generate_score_report(report_folder, label_id, *reference_label_ids)
+    base_reviewset.save()
 
 
 def main():

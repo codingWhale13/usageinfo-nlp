@@ -271,6 +271,17 @@ class ReviewSet:
             }
         return agg_scores
 
+    def generate_score_report(
+        self,
+        folder: str,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_ids: Union[str, ls.LabelSelectionStrategyInterface],
+    ):
+        from evaluation.plotting.score_report import get_score_report
+        from evaluation.plotting.save_report import save_report
+
+        save_report(*get_score_report(self, folder, label_id, *reference_label_ids))
+
     def reviews_with_labels(self, label_ids: set[str]) -> list[Review]:
         """Returns a review set containing only reviews with the given labels"""
         relevant_reviews = [

@@ -146,3 +146,7 @@ build_rate
 openai_samples
 
 ec2_ssh_key_pair*
+
+# reports
+
+score_reports/
