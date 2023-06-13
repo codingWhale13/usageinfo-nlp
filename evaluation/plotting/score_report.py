@@ -28,7 +28,7 @@ HARD_REVIEWS = [
 ]
 ORDERS = {
     "star_rating": [1, 2, 3, 4, 5],
-    "review_length": WORD_COUNT_CATEGORIES.keys(),
+    "review_length": list(WORD_COUNT_CATEGORIES.keys()),
 }
 
 
