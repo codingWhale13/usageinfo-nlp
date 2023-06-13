@@ -31,7 +31,9 @@ class Generator:
 
         self.config = utils.get_config_from_artifact(artifact_name)
 
-        checkpoint = torch.load(utils.get_model_path(self.model_artifact))
+        checkpoint = torch.load(
+            utils.get_model_path(self.model_artifact), map_location=device
+        )
         model_config = utils.get_model_config_from_checkpoint(
             checkpoint["model"], checkpoint
         )
