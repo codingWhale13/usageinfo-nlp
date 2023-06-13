@@ -378,5 +378,147 @@
                 }
             ]
         }
+    },
+    "data-generation": {
+        "mf_did_not_test_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a customer of an online shop and ordered a product for a specific use case. You are writing a review for the product, but could not test the product before writing. Specify the product title, the review headline and review text, seperated by semicolon. Make sure to name the use case directly."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which you could not test yet. The product should belong to the category: Sports"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Hogue Handall Hybrid Ruger LCP Grip Sleeve; Decent fit, doesn't make the grip too big; Shipping took a bit longer than expected - other items ordered at same time arrived in 3 days, and this took 9 days. Grip install required minor disassembly of two pieces on the gun, unlike other \\\\\"slip on\\\\\" grips. The fit is good and doesn't appear to impede magazine insertion or removal in any way. I haven't yet shot the gun with the grip, so I can't comment yet on the shock absorption. Without the grip, the gun is a bit \\\\\"snappy\\\\\", so I'm hoping this will make range practice more pleasant."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which you could not test yet. The product should belong to the category: Office Products"
+                },
+                {
+                    "role": "assistant",
+                    "content": "RFID Blocking Sleeves; Inexpensive insurance.; Bought for travel to Germany. Can't know if they work. But nice to think so."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which you could not test yet. The product should belong to the category: "
+                }
+            ]
+        },
+        "mf_stopped_working_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a customer of an online shop and ordered a product for a specific use case. You are writing a review for the product, but after working for a short time, the product stopped working. Specify the product title, the review headline and review text, seperated by semicolon. Make sure to name the use case directly."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which stopped working, but would have worked great for your use case. The product should belong to the category: Baby"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Twooth Timer Twooth Timer; Stalls; Got this for my daughter who like most was not brushing long enough. This has worked great out of the box, however lately it has started to stop/stall. Not sure why but it has."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which stopped working, but would have worked great for your use case. The product should belong to the category: Home Improvement"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Cutter Holster for S4 and S5 Cutters; Better than putting it in your pocket; The tape cutter on the S4 box cutter tool will wear out your pockets after not too very long. If you carry around a box cutter at work, or would find it convenient to do so, this is an economical way to carry one - especially when you factor in the cost of repairing your pockets or buying new pants every few weeks. January 20, 2012 After two months of pretty hard wear (by hard wear, I mean I take my cutter in and out of the holster some 30 times a day, on average, five days a week), the friction method of holding the box cutter in place has worn out. Now, if the holster is tilted or I sit down, the box cutter falls out of the holster. Pretty disappointing that it lasted only two months. I may buy another one, or several to save on shipping, but I'm going to look around some before buying again. It's still better than cutting your pocket all up, but I expect more out of products than two months of usefulness."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered, which stopped working, but would have worked great for your use case. The product should belong to the category: "
+                }
+            ]
+        },
+        "mf_sarcastic_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a customer of an online shop and ordered a product for a specific use case. You are writing a review for the product, but the product works so badly, that you write the review in a sarcastic manner. Specify the product title, the review headline and review text, seperated by semicolon. Make sure to name the use case directly."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a sarcastic review for the product that you ordered. The product should belong to the category: Beauty"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Batiste Dry Shampoo, 6.73 Ounce; Gray Gray come and stay; If you need your hair to look gray then you should buy this product :)"
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a sarcastic review for the product that you ordered. The product should belong to the category: Home Improvement"
+                },
+                {
+                    "role": "assistant",
+                    "content": "S5 Otterbox Cutter; Pants come and pants go; Bought the tape cutter for work and use it for pretty hard wear (by hard wear, I mean I take my cutter in and out of the holster some 30 times a day, on average, five days a week). The tape cutter will luckily wear out your pockets, so if you carry around the box cutter at work this is the economical way to carry one - especially when you factor in the cost of repairing your pockets or buying new pants every few weeks. Never had so big fun with a tape cutter. Going to the store every other week to buy new pants is AMAZING, no more left over money lying around or spare time."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a sarcastic review for the product that you ordered. The product should belong to the category: "
+                }
+            ]
+        },
+        "mf_did_not_work_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a customer of an online shop and ordered a product for a specific use case. You are writing a review for the product, but the product does not work for the use case. Specify the product title, the review headline and review text, seperated by semicolon. Make sure to name the use case directly."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case. The product should belong to the category: Home Improvement"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Upgradelights Slip Uno Adapter and Harp for Lamp Using Uno Euro Fitter with 1-9/16 I.d.; I couldn't find the product any where else; I couldn't find the product any where else, I went ahead and purchased it. It comes without a lampshade nut, so that has to be purchased separately. Also, it comes with only one size frame so it is proportioned for mid sized lamp shades and bulbs no larger than 150 watt.."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case. The product should belong to the category: Home"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Pro-Mart DAZZ 42-Pocket Over-the-Door Organizer; Great idea but item lacks quality; We bought this to hold the children's cloth puppets. The first item we received was missing the over the door hangers. A replacement was received, but the first puppet we put in, the fabric ripped like it was rotted. We're talking about soft hand puppets, like sock puppets, with no sharp edges. It seems like the fabric is old and frail. Poor quality is the reason this gets 2 stars."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case. The product should belong to the category: "
+                }
+            ]
+        },
+        "mf_missing_parts_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a customer of an online shop and ordered a product for a specific use case. You are writing a review for the product, which shows potential to fulfill the use case, but parts where missing, so you could not use it. Specify the product title, the review headline and review text, seperated by semicolon. Make sure to name the use case directly."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case, because parts are missing. The product should belong to the category: Home Improvement"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Upgradelights Slip Uno Adapter and Harp for Lamp Using Uno Euro Fitter with 1-9/16 I.d.; I couldn't find the product any where else; I couldn't find the product any where else, I went ahead and purchased it. It comes without a lampshade nut, so that has to be purchased separately. Also, it comes with only one size frame so it is proportioned for mid sized lamp shades and bulbs no larger than 150 watt.."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case, because parts are missing. The product should belong to the category: Pet Products"
+                },
+                {
+                    "role": "assistant",
+                    "content": "Warne 25In/Lb T-15 Torque Wrench TW1; breaks easily - get the Wheeler Fat Wrench; The torque break also works in reverse (shouldn't the fasten nut is missing) so you must use an allen wrech to loosen the screws previously torqued down. The tip is also wearing fast having only used this to install three scopes. Not well made. Probably should just buy a regular smaller torque wrench in the TOOLS section. I'm going to get the Wheeler Fat Wrench and see if it's any better."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write a review for the product that you ordered and does not fulfill the use case, because parts are missing. The product should belong to the category: "
+                }
+            ]
+        }
     }
 }
