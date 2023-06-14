@@ -284,5 +284,5 @@ class ReviewModel(pl.LightningModule):
         )
 
     def on_save_checkpoint(self, checkpoint):
-        checkpoint["model"] = self.model_name
+        checkpoint["model_name"] = self.model_name
         return checkpoint

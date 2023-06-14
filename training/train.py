@@ -62,7 +62,13 @@ for key, value in args_config.copy().items():
 
 config |= args_config
 
-model_config = utils.get_model_config(config["model"], config["artifact"])
+# the method below will also check if either model_name or artifact is provided
+model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
+    config["artifact"]
+    if config["artifact"]["name"] is not None
+    else config["model_name"]
+)
+
 cluster_config = config["cluster"]
 test_run = config["test_run"]
 seed = config["seed"] if config["seed"] else None
@@ -102,10 +108,10 @@ trainer = pl.Trainer(
 )
 
 model = ReviewModel(
-    model=model_config[0],
-    model_name=config["model"],
-    tokenizer=model_config[1],
-    max_length=model_config[2],
+    model=model,
+    model_name=model_name,
+    tokenizer=tokenizer,
+    max_length=max_length,
     active_layers=config["active_layers"],
     optimizer=optimizer,
     optimizer_args=optimizer_args,
@@ -140,7 +146,7 @@ if not test_run:
         label_id = f"model-{wandb.run.name}-auto"
 
         generator = Generator(
-            wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint=model.get_best_epoch()
+            wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint="best"
         )
         generator.generate_label(test_dataset, label_id=label_id, verbose=True)
 

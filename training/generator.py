@@ -1,5 +1,6 @@
 import torch
 from typing import List, Optional
+from typing import Union
 
 from training import utils
 from helpers.review_set import ReviewSet
@@ -24,19 +25,20 @@ class Generator:
         self,
         artifact_name,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
-        checkpoint: Optional[int] = None,
+        checkpoint: Optional[Union[int, str]] = None,
     ) -> None:
         global device
+
+        self.config = utils.load_config_from_artifact_name(artifact_name)
+
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
+        (
+            self.model,
+            self.tokenizer,
+            self.max_length,
+            self.model_name,
+        ) = utils.initialize_model_tuple(self.model_artifact)
 
-        self.config = utils.get_config_from_artifact(artifact_name)
-
-        checkpoint = torch.load(utils.get_model_path(self.model_artifact))
-        model_config = utils.get_model_config_from_checkpoint(
-            checkpoint["model"], checkpoint
-        )
-
-        self.model, self.tokenizer, self.max_length = model_config
         self.model.to(device)
         self.model.eval()
         self.generation_config = get_config(
@@ -91,7 +93,10 @@ class Generator:
         label_metadata = {
             "generator": {
                 "artifact_name": self.model_artifact["name"],
-                "checkpoint": self.model_artifact["checkpoint"] or "last",
+                "checkpoint": self.model_artifact["checkpoint"]
+                if self.model_artifact["checkpoint"] is not None
+                else "last",
+                "model_name": self.model_name,
                 "generation_config": self.generation_config,
             }
         }

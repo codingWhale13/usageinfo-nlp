@@ -1,5 +1,6 @@
 import os
 import glob
+from functools import singledispatch
 import yaml
 from transformers import (
     T5Tokenizer,
@@ -16,7 +17,7 @@ from typing import Tuple
 
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 
-models = {
+model_tuples = {
     "t5-small": lambda: (
         T5ForConditionalGeneration.from_pretrained("t5-small"),
         T5Tokenizer.from_pretrained("t5-small", model_max_length=512),
@@ -62,13 +63,23 @@ def get_dataset_path(dataset: str, review_set_name: str = "reviews.json") -> str
     return os.path.join(dataset_dir, review_set_name)
 
 
-def get_model_path(model_artifact: dict) -> str:
-    if model_artifact["checkpoint"] is None:
-        checkpoint_name = "last.ckpt"
+def get_model_artifact_path(model_artifact: dict) -> str:
+    checkpoint_name = model_artifact["checkpoint"]
+    if checkpoint_name is None:
+        checkpoint_file_name = "last.ckpt"
+    elif isinstance(checkpoint_name, int) or checkpoint_name.isdigit():
+        checkpoint_file_name = f"epoch={checkpoint_name}.ckpt"
     else:
-        checkpoint_name = f"epoch={model_artifact['checkpoint']}.ckpt"
+        checkpoint_file_name = f"{checkpoint_name}.ckpt"
 
-    return os.path.join(get_model_dir(model_artifact["name"]), checkpoint_name)
+    checkpoint_path = os.path.join(
+        get_model_dir(model_artifact["name"]), checkpoint_file_name
+    )
+    if not os.path.exists(checkpoint_path):
+        raise ValueError(
+            f"Checkpoint {checkpoint_name} does not exist for artifact {model_artifact['name']}"
+        )
+    return checkpoint_path
 
 
 def get_config_path(name: str) -> dict:
@@ -97,26 +108,45 @@ def get_model_dir(artifact_name: str) -> str:
     return model_dirs[0]
 
 
-def get_config_from_artifact(artifact_name: str) -> dict:
+def load_config_from_artifact_name(artifact_name: str) -> dict:
     model_dir = get_model_dir(artifact_name)
     with open(os.path.join(model_dir, "config.yml"), "r") as file:
         return yaml.safe_load(file)
 
 
-def get_model_config(model_name: str, model_artifact: dict) -> tuple:
-    checkpoint = None
-    if model_artifact["name"] is not None:
-        checkpoint = torch.load(get_model_path(model_artifact))
-    return get_model_config_from_checkpoint(model_name, checkpoint)
+@singledispatch
+def initialize_model_tuple(model):
+    """Returns a tuple of model, tokenizer, max_length, model_name."""
+    raise NotImplementedError(
+        f"model must be string or artifact dict, not {type(model)}"
+    )
 
 
-def get_model_config_from_checkpoint(model_name: str, checkpoint: dict) -> tuple:
-    model_config = models[model_name]()
-    if checkpoint is not None:
-        model_config[0].load_state_dict(
-            {k[6:]: v for k, v in checkpoint["state_dict"].items()}
-        )
-    return model_config
+@initialize_model_tuple.register(str)
+def _(model_name: str):
+    """Returns a tuple of model, tokenizer, max_length, model_name.
+
+    Args:
+        model_name (str): name of model type (i.e. t5-small)
+    """
+    return model_tuples[model_name]() + (model_name,)
+
+
+@initialize_model_tuple.register(dict)
+def _(artifact: dict):
+    """Returns a tuple of model, tokenizer, max_length, model_name.
+
+    Args:
+        artifact (dict): dictionary containing the name (wandb run name)
+            and checkpoint (i.e. "best")
+    """
+    checkpoint = torch.load(get_model_artifact_path(artifact))
+    model_name = checkpoint.get("model_name", checkpoint.get("model"))
+    model_tuple = model_tuples[model_name]()
+    model_tuple[0].load_state_dict(
+        {k[6:]: v for k, v in checkpoint["state_dict"].items()}
+    )
+    return model_tuple + (model_name,)
 
 
 def get_optimizer(optimizer_args: dict) -> torch.optim.Optimizer:
@@ -140,9 +170,8 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
     return pl.callbacks.ModelCheckpoint(
         dirpath=dirpath,
         save_last=True,
-        filename="{epoch}",
+        filename="best",
         save_weights_only=True,
-        save_top_k=2,
         monitor="epoch_val_loss",
     )
 

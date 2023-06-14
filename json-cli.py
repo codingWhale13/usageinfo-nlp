@@ -178,7 +178,6 @@ def parse_args():
     annotate_parser.add_argument(
         "--checkpoint",
         "-c",
-        type=int,
         help="Optional checkpoint of the artifact to use for annotation (default is the last checkpoint)",
     )
     annotate_parser.add_argument(
@@ -543,7 +542,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
     generator = Generator(
         args.artifact_name,
         args.generation_config or DEFAULT_GENERATION_CONFIG,
-        args.checkpoint,
+        int(args.checkpoint) if args.checkpoint.is_digit() else args.checkpoint,
     )
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)

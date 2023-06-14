@@ -7,10 +7,10 @@ from training import utils
 
 logging.set_verbosity_error()
 num_token_options = 4
-model = "t5-small"
+# model_type = "t5-small"
 artifact = {"name": "bright-salad-245", "checkpoint": None}
 
-model, tokenizer, max_length = utils.get_model_config(model, artifact)
+model, tokenizer, max_length, _ = utils.initialize_model_tuple(artifact=artifact)
 
 
 def format_token_pos_output(tokens_with_probs: list, token_number: int):
