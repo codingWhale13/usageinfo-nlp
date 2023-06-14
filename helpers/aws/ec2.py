@@ -34,7 +34,8 @@ class EC2State:
     NOT_FOUND = "not-found"
 
 
-IMAGE_IDS = {"anaconda3": "ami-0a925c3db0ea64491"}
+IMAGE_IDS = {"anaconda3": "ami-0a925c3db0ea64491", "ubuntu": "ami-04e601abe3e1a910f", "ubuntu-vpn-miniconda": "ami-0d2a6730eb086e476", "ubuntu-vpn-miniconda-2": "ami-05878ba6e31e2efc9"}
+DEFAULT_IMAGE = "ubuntu-vpn-miniconda-2"
 
 EC2_CONFIG_PATH = f"{os.path.dirname(__file__)}/ec2_config.yml"
 
@@ -123,7 +124,7 @@ class EC2Launcher:
         return f"ec2_ssh_key_pair_{self.__username()}"
 
     def ssh_username(self):
-        return "ec2-user"
+        return "ubuntu" #"ec2-user" is the username for the anaconda image
 
     def generate_key_pair(self):
         info = self.ec2.describe_key_pairs()
@@ -134,7 +135,7 @@ class EC2Launcher:
             is_key_pair_attached_to_ec2 = self.key_pair_name() in [
                 key_pair["KeyName"] for key_pair in info["KeyPairs"]
             ]
-            if not os.path.isfile(self.key_pair_name()):
+            if not os.path.isfile(self.identity_file_path()):
                 is_a_valid_key_pair_available = False
                 if is_key_pair_attached_to_ec2:
                     self.log(
@@ -147,10 +148,10 @@ class EC2Launcher:
         if is_a_valid_key_pair_available is False:
             self.log("No keypairs available. Generating a new key pair")
             response = self.ec2.create_key_pair(KeyName=self.key_pair_name())
-            with open(self.key_pair_name(), "w") as file:
+            with open(self.identity_file_path(), "w") as file:
                 file.write(response["KeyMaterial"])
             # ec2 ssh keys must have this type of permission (only read for current user)
-            os.chmod(self.key_pair_name(), 0o400)
+            os.chmod(self.identity_file_path(), 0o400)
             self.log(f"Written new keypair to {self.key_pair_name()}")
         else:
             self.log(f"Found existing key: {self.key_pair_name()}")
@@ -177,7 +178,7 @@ class EC2Launcher:
     def launch_instance(self):
         instance = self.ec2.run_instances(
             InstanceType=self.config["InstanceType"],  # "t2.micro",
-            ImageId=IMAGE_IDS["anaconda3"],
+            ImageId=IMAGE_IDS[DEFAULT_IMAGE],
             MaxCount=1,
             MinCount=1,
             DryRun=False,
