@@ -34,7 +34,12 @@ class EC2State:
     NOT_FOUND = "not-found"
 
 
-IMAGE_IDS = {"anaconda3": "ami-0a925c3db0ea64491", "ubuntu": "ami-04e601abe3e1a910f", "ubuntu-vpn-miniconda": "ami-0d2a6730eb086e476", "ubuntu-vpn-miniconda-2": "ami-05878ba6e31e2efc9"}
+IMAGE_IDS = {
+    "anaconda3": "ami-0a925c3db0ea64491",
+    "ubuntu": "ami-04e601abe3e1a910f",
+    "ubuntu-vpn-miniconda": "ami-0d2a6730eb086e476",
+    "ubuntu-vpn-miniconda-2": "ami-05878ba6e31e2efc9",
+}
 DEFAULT_IMAGE = "ubuntu-vpn-miniconda-2"
 
 EC2_CONFIG_PATH = f"{os.path.dirname(__file__)}/ec2_config.yml"
@@ -124,7 +129,7 @@ class EC2Launcher:
         return f"ec2_ssh_key_pair_{self.__username()}"
 
     def ssh_username(self):
-        return "ubuntu" #"ec2-user" is the username for the anaconda image
+        return "ubuntu"  # "ec2-user" is the username for the anaconda image
 
     def generate_key_pair(self):
         info = self.ec2.describe_key_pairs()
@@ -165,7 +170,7 @@ class EC2Launcher:
         return self.describe_instance()["PublicIpAddress"]
 
     def describe_instance_status(self):
-        if self.config["InstanceId"] is None:
+        if "InstanceId" not in self.config or self.config["InstanceId"] is None:
             raise EC2InstanceNotFound()
         response = self.ec2.describe_instance_status(
             InstanceIds=[self.config["InstanceId"]], IncludeAllInstances=True
