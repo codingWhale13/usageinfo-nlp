@@ -5,11 +5,12 @@ from typing import Union
 from pathlib import Path
 import numpy as np
 import argparse
-from utils import get_slurm_client
 import pandas as pd
 from data_loading import read_data
 from helpers.review import Review
 from helpers.review_set import ReviewSet
+from dask.diagnostics import ProgressBar
+import dask as dd
 
 
 def parse_args():
@@ -51,6 +52,21 @@ def parse_args():
         help="Number of samples",
     )
     parser.add_argument(
+        "-r",
+        "--star-rating",
+        action="store_true",
+        default=False,
+        help="Sample star_rating equally",
+    )
+    parser.add_argument(
+        "-c",
+        "--product-category",
+        action="store_true",
+        default=False,
+        help="Sample product category equally",
+    ),
+
+    parser.add_argument(
         "-q",
         "--quiet",
         action="store_true",
@@ -82,6 +98,8 @@ def sample_data(
     n_samples: int = 1,
     input_type="parquet",
     output_type="tsv",
+    sample_star_rating_equally=False,
+    sample_product_category_equally=False,
 ):
     """Expects dataframes to have `product_category` column which specifies original category of entries"""
 
@@ -91,6 +109,7 @@ def sample_data(
     if output_type not in ["parquet", "tsv", "json"]:
         raise ValueError(f"output type {output_type} not supported")
 
+    print("Reading data")
     df = read_data(data_source, input_type)
     dummy_df = pd.DataFrame(columns=df.columns)
     assert (
@@ -100,26 +119,55 @@ def sample_data(
     sampling_random_state = random.randint(0, 100000000)
     print(f"Using {sampling_random_state} to seed dask sampling function")
 
-    total_row_count = df.shape[0].compute()
+    PRODUCT_CATEGORY_COUNT = 28
+    STAR_RATING_COUNT = 5
 
-    sample_size = sample_size * n_samples
-    # if we use this fraction from each group, there should be roughly `sample_size` many results
-    fraction = sample_size / total_row_count
-    print(f"Retrieving {fraction * 100}% of all data")
+    def caluclate_sample_size(
+        total_df: dd.dataframe,
+        product_category_df: dd.dataframe,
+        star_rating_df: dd.dataframe,
+        total_sample_size,
+    ):
+        if sample_product_category_equally and sample_star_rating_equally:
+            return int(total_sample_size / (PRODUCT_CATEGORY_COUNT * STAR_RATING_COUNT))
+        elif sample_product_category_equally and not sample_star_rating_equally:
+            return int(
+                (total_sample_size / PRODUCT_CATEGORY_COUNT)
+                * (len(star_rating_df) / len(product_category_df))
+            )
+        elif not sample_product_category_equally and sample_star_rating_equally:
+            return int(
+                (total_sample_size / STAR_RATING_COUNT)
+                * (len(product_category_df) / len(total_df))
+            )
+        else:
+            return int(
+                (
+                    total_sample_size
+                    * (len(star_rating_df) / len(product_category_df))
+                    * (len(product_category_df) / len(total_df))
+                )
+            )
 
-    all_samples_df = (
-        df.groupby("product_category")
-        .apply(
-            lambda x: x.sample(
-                frac=fraction, random_state=sampling_random_state, axis="index"
-            ),
-            meta=dummy_df,
-        )
-        .compute()
+    all_samples_df = df.groupby("product_category").apply(
+        lambda x: x.groupby("star_rating").apply(
+            lambda x_2: x_2.sample(
+                n=caluclate_sample_size(df, x, x_2, sample_size * n_samples),
+                random_state=sampling_random_state,
+                axis="index",
+            )
+        ),
+        meta=dummy_df,
     )
 
-    # shuffle by sampling because you can't shuffle a dataframe. TODO: our seed is not respected here
-    all_samples_df = all_samples_df.sample(frac=1).reset_index(drop=True)
+    print("Starting sampling")
+    with ProgressBar():
+        all_samples_df = all_samples_df.compute().dropna()
+
+    # shuffle by sampling because you can't shuffle a dataframe
+    all_samples_df = all_samples_df.sample(
+        frac=1, random_state=sampling_random_state
+    ).reset_index(drop=True)
     samples = np.array_split(all_samples_df, n_samples)
 
     if not os.path.exists(output_dir):
@@ -138,20 +186,21 @@ def sample_data(
             )
         elif output_type == "json":
             # Create empty json to insert Reviews
-            json_v3 = {"version": ReviewSet.latest_version, "reviews": {}}
+            json_review_set = {"version": ReviewSet.latest_version, "reviews": {}}
             # iterate through all rows to insert data into json
             for index, row in sample_df.iterrows():
                 review_data = row.to_dict()
                 review_data["labels"] = {}
+                review_data["augmentations"] = []
                 review_data = {
                     k: v
                     for k, v in review_data.items()
                     if k in list(Review.review_attributes)
                 }
                 # dump review_data dict at the review_id key
-                json_v3["reviews"][row["review_id"]] = review_data
+                json_review_set["reviews"][row["review_id"]] = review_data
             with open(Path(output_dir, f"{base_name}.json"), "w") as file:
-                json.dump(json_v3, file)
+                json.dump(json_review_set, file)
 
         else:
             sample_df.repartition(partition_size="100MB").to_parquet(
@@ -164,14 +213,6 @@ def sample_data(
 def main():
     args, _ = parse_args()
 
-    get_slurm_client(
-        nodes=5,
-        cores=40,
-        processes=2,
-        memory="512GB",
-        suppress_output=args.quiet,
-    )
-
     sample_data(
         data_source=args.input_dir,
         output_dir=args.output_dir,
@@ -179,6 +220,8 @@ def main():
         n_samples=args.n_samples,
         input_type=args.input_type,
         output_type=args.output_type,
+        sample_product_category_equally=args.product_category,
+        sample_star_rating_equally=args.star_rating,
     )
 
 
