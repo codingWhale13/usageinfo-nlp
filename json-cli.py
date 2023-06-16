@@ -542,7 +542,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
     generator = Generator(
         args.artifact_name,
         args.generation_config or DEFAULT_GENERATION_CONFIG,
-        int(args.checkpoint) if args.checkpoint.is_digit() else args.checkpoint,
+        int(args.checkpoint) if args.checkpoint.isdigit() else args.checkpoint,
     )
 
     generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
