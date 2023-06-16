@@ -63,11 +63,14 @@ for key, value in args_config.copy().items():
 config |= args_config
 
 # the method below will also check if either model_name or artifact is provided
-model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
+model, tokenizer, max_length, is_transformer, model_name = utils.initialize_model_tuple(
     config["artifact"]
     if config["artifact"]["name"] is not None
     else config["model_name"]
 )
+
+if not tokenizer.pad_token:
+    tokenizer.pad_token = tokenizer.eos_token
 
 cluster_config = config["cluster"]
 test_run = config["test_run"]
@@ -112,6 +115,7 @@ model = ReviewModel(
     model_name=model_name,
     tokenizer=tokenizer,
     max_length=max_length,
+    is_transformer=is_transformer,
     active_layers=config["active_layers"],
     optimizer=optimizer,
     optimizer_args=optimizer_args,

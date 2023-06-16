@@ -3,17 +3,21 @@ import glob
 from functools import singledispatch
 import yaml
 from transformers import (
-    T5Tokenizer,
+    RwkvForCausalLM,
     T5ForConditionalGeneration,
-    BartTokenizer,
     BartForConditionalGeneration,
     optimization,
+    AutoTokenizer,
+    T5Tokenizer,
+    BartTokenizer,
 )
 import torch
 import dotenv
 import datetime
 from lightning import pytorch as pl
 from typing import Tuple
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 
@@ -22,26 +26,37 @@ model_tuples = {
         T5ForConditionalGeneration.from_pretrained("t5-small"),
         T5Tokenizer.from_pretrained("t5-small", model_max_length=512),
         512,
+        True,
     ),
     "t5-base": lambda: (
         T5ForConditionalGeneration.from_pretrained("t5-base"),
         T5Tokenizer.from_pretrained("t5-base", model_max_length=512),
         512,
+        True,
     ),
     "t5-large": lambda: (
         T5ForConditionalGeneration.from_pretrained("t5-large"),
         T5Tokenizer.from_pretrained("t5-large", model_max_length=512),
         512,
+        True,
     ),
     "bart-base": lambda: (
         BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
         BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
         1024,
+        True,
     ),
     "flan-t5-base": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/flan-t5-base"),
         T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
         512,
+        True,
+    ),
+    "RWKV": lambda: (
+        RwkvForCausalLM.from_pretrained("RWKV/rwkv-4-169m-pile"),
+        AutoTokenizer.from_pretrained("RWKV/rwkv-4-169m-pile", model_max_length=1024),
+        1024,
+        False,
     ),
 }
 

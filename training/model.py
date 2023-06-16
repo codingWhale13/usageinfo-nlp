@@ -26,6 +26,7 @@ class ReviewModel(pl.LightningModule):
         model_name: str,
         tokenizer,
         max_length: int,
+        is_transformer: bool,
         optimizer,
         hyperparameters: dict,
         data: dict,
@@ -43,6 +44,7 @@ class ReviewModel(pl.LightningModule):
         self.model_name = model_name
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.is_transformer = is_transformer
         self.optimizer = optimizer
         self.data = data
         self.hyperparameters = hyperparameters
@@ -67,7 +69,7 @@ class ReviewModel(pl.LightningModule):
         self.active_data_module.setup(self, self.reviews)
 
         # Skip freezing if a fake test model is loaded
-        if self.model is not None:
+        if self.model is not None and is_transformer:
             self.active_encoder_layers, self.active_decoder_layers = utils.freeze_model(
                 active_layers, model
             )
@@ -147,13 +149,14 @@ class ReviewModel(pl.LightningModule):
                 sync_dist=True,
                 batch_size=self.hyperparameters["batch_size"],
             )
-        utils.gradual_unfreeze(
-            self.model,
-            self.current_epoch,
-            self.gradual_unfreezing_mode,
-            self.active_encoder_layers,
-            self.active_decoder_layers,
-        )
+        if self.is_transformer:
+            utils.gradual_unfreeze(
+                self.model,
+                self.current_epoch,
+                self.gradual_unfreezing_mode,
+                self.active_encoder_layers,
+                self.active_decoder_layers,
+            )
 
     def validation_step(self, batch, batch_idx):
         outputs = self._step(batch)
