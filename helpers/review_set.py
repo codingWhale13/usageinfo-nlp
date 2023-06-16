@@ -289,6 +289,13 @@ class ReviewSet:
         ]
         return self.from_reviews(*relevant_reviews)
 
+    def correct_chatGPT(self, pattern: str) -> None:
+        n = 0
+        for review in self:
+            if review.correct_chatGPT(pattern):
+                n += 1
+        print("Num corrected:", n)
+
     def validate(self) -> None:
         if self.version != self.latest_version:
             raise ValueError(

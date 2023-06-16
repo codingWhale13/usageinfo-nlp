@@ -4,6 +4,8 @@ import random
 from copy import copy, deepcopy
 from datetime import datetime, timezone
 from typing import Iterable, Optional, Union, TYPE_CHECKING
+from pprint import pprint
+import fnmatch
 
 import json
 from pathlib import Path
@@ -164,6 +166,65 @@ class Review:
             "metadata": metadata,
             "augmentations": [],
         }
+
+    def correct_chatGPT(self, pattern: str) -> bool:
+        if self.get_label_for_id("bp-chat_gpt_correction"):
+            return False  # already corrected
+
+        chat_gpt_label_ids = self.get_label_ids_from_strategy(
+            ls.LabelIDSelectionStrategy("chat_gpt*")
+        )
+        if not chat_gpt_label_ids:
+            return False
+
+        label = None
+        for label_id in chat_gpt_label_ids:
+            label = self.get_labels()[label_id]
+            bad_usage_options = fnmatch.filter(label["usageOptions"], pattern)
+            if bad_usage_options:
+                break
+
+        if not bad_usage_options:
+            return False
+
+        revised_usage_options = [
+            usage_option
+            for usage_option in label["usageOptions"]
+            if usage_option not in bad_usage_options
+        ]
+        print("-----------------------------------")
+        if revised_usage_options:
+            print("Product title:", self["product_title"])
+            print("Review body:", self["review_body"])
+            print("ChatGPT usage options:", label["usageOptions"])
+        for usage_option in copy(revised_usage_options):
+            print("Usage option:", usage_option)
+            user_input = ""
+            while user_input not in ["y", "n"]:
+                user_input = input("keep? (y/n): ")
+            if user_input == "n":
+                revised_usage_options.remove(usage_option)
+                bad_usage_options.append(usage_option)
+            else:
+                print("Revised usage option (empty to keep as is):")
+                revised_usage_option = input()
+                if revised_usage_option:
+                    revised_usage_options.remove(usage_option)
+                    bad_usage_options.append(usage_option)
+                    revised_usage_options.append(revised_usage_option)
+
+        self.add_label(
+            "bp-chat_gpt_correction",
+            revised_usage_options,
+            metadata=copy(label["metadata"])
+            | {"correction": {"corrected_label": label_id, "pattern": pattern}},
+        )
+        print(f"Original: {label['usageOptions']}")
+        for usage_option in bad_usage_options:
+            print("-", usage_option)
+        print("Corrected:", revised_usage_options)
+        pprint(self.get_label_for_id("bp-chat_gpt_correction"))
+        return True
 
     def tokenize(
         self,
