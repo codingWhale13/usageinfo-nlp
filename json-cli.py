@@ -184,7 +184,7 @@ def parse_args():
         "--generation_config",
         "-g",
         type=str,
-        default=f"{os.path.dirname(os.path.realpath(__file__))}/training/generation_config.yml",
+        default=None,
         help="Generation config to use for the annotation",
     )
     annotate_parser.add_argument(
@@ -211,7 +211,6 @@ def parse_args():
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
     )
-
     score_parser = subparsers.add_parser(
         "score",
         help="Score labels against each other",
