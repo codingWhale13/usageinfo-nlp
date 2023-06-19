@@ -561,17 +561,17 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    with SustainabilityLogger(log_file=args.log_file):
-        generator = Generator(
-            args.artifact_name,
-            args.generation_config or DEFAULT_GENERATION_CONFIG,
-            int(args.checkpoint)
-            if (args.checkpoint is not None and args.checkpoint.isdigit())
-            else args.checkpoint,
-        )
+    generator = Generator(
+        args.artifact_name,
+        args.generation_config or DEFAULT_GENERATION_CONFIG,
+        checkpoint=int(args.checkpoint)
+        if args.checkpoint.isdigit()
+        else args.checkpoint,
+        output_probabilities=args.output_probs,
+    )
 
-        verbose = not args.quiet
-        generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)
+    verbose = not args.quiet
+    generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)
 
     if label_id:
         base_reviewset.save()
