@@ -21,7 +21,8 @@ GENERATION_CONFIGS = [
 from queue import PriorityQueue
 from training import utils
 from helpers.review_set import ReviewSet
-from math import exp
+from math import exp, log
+import time
 
 QUEUE_PROBABILITY_OFFSET = 1000_000_000
 
@@ -68,48 +69,33 @@ class Generator:
             result.append(num)
         return result
 
-    def generate_usage_options(self, batch) -> None:
-        # batch is dict with keys: "input", "output", "review_id", "source_id"
-        review_ids = list(batch["review_id"])
-        input_ids = batch["input"]["input_ids"].to(self.device)
-        attention_mask = batch["input"]["attention_mask"].to(self.device)
-        model_inputs = self.tokenizer.batch_decode(input_ids, skip_special_tokens=True)
-
-        with torch.no_grad():
-            outputs = self.model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                output_scores=True,
-                num_return_sequences=1,
-                return_dict_in_generate=True,
-                **self.generation_config,
-            )
-
-        predictions = self.tokenizer.batch_decode(
-            outputs.sequences, skip_special_tokens=True
+    def _get_ouput_with_probs_for_batch(
+        self, generation_canidates: list[tuple[float, dict]]
+    ):
+        input_ids = torch.tensor([x["input_ids"] for x in generation_canidates[1]])
+        decoder_input_ids = torch.tensor(
+            [[z[1] for z in x["forced_decoder_ids"]] for x in generation_canidates]
         )
 
-        predictions = [
-            self.format_usage_options(usage_options) for usage_options in predictions
-        ]
+        attention_mask = torch.tensor(
+            [x["attention_mask"] for x in generation_canidates]
+        )
 
-        return zip(review_ids, model_inputs, predictions)
+        with torch.no_grad():
+            ouputs = self.model(
+                input_ids=input_ids,
+                decoder_input_ids=decoder_input_ids,
+                attention_mask=attention_mask,
+            )
+
+        raise NotImplementedError()
 
     def _get_output_with_probs(
-        self, batch, forced_decoder_ids=[], current_probability=1.0
-    ):
-        res = [None for _ in range(len(predictions))]
-
-        if self.output_probabilities == "best":
-            predicted_tokens = [
-                [self.tokenizer.decode(token) for token in review[1:]]
-                for review in outputs["sequences"]
-            ]
-
-    def _get_output_with_probs(self, batch, generation_canidate: tuple[float, dict]):
+        self, batch, generation_canidate: tuple[float, dict]
+    ) -> list[tuple[float, dict]]:
         current_probability, canidate_info = generation_canidate
         forced_decoder_ids = canidate_info["forced_decoder_ids"]
-        sequence_length = canidate_info["sequence_length"]
+        sequence_token_length = canidate_info["sequence_token_length"]
 
         num_token_options = 5
         max_new_tokens = len(forced_decoder_ids) + 1
@@ -128,30 +114,29 @@ class Generator:
             )
         # print(output)
 
-        token_probs = f.softmax(output["scores"][-1][0], dim=0).log()
-        top_k_token_ids, top_k_token_probs = torch.topk(
-            token_probs, k=num_token_options, dim=0
-        )
-
+        token_probs = -(f.softmax(output["scores"][-1][0], dim=0).log())
+        _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=0)
         for token_id in top_k_token_ids:
             yield (
-                current_probability + top_k_token_probs[token_id],
+                current_probability + token_probs[int(token_id)],
                 {
                     "forced_decoder_ids": forced_decoder_ids
                     + [(max_new_tokens, int(token_id))],
-                    "sequence_length": sequence_length + 1,
+                    "sequence_token_length": sequence_token_length + 1,
                 },
             )
 
-    def generate_usage_options_prob_based(self, batch) -> None:
+    def generate_usage_options_prob_based(self, batch) -> list[list[dict]]:
         results = []
 
         total_probability = 0
-        MAX_ITERATIONS = 200
-
+        MAX_ITERATIONS = 100
+        MINIMUM_PROBAILITY = -log(0.02)
         generation_queue = PriorityQueue()
 
-        generation_queue.put((0, {"forced_decoder_ids": [], "token_length": 0}))
+        generation_queue.put(
+            (0, {"forced_decoder_ids": [], "sequence_token_length": 0})
+        )
 
         i = 0
         while (
@@ -165,7 +150,9 @@ class Generator:
             i += 1
 
             for generation in next_generations:
-                if generation[1]["forced_decoder_ids"][-1][1] == 1:
+                if generation[1]["forced_decoder_ids"][-1][1] == 1 or (
+                    len(results) > 0 and generation[0] > MINIMUM_PROBAILITY
+                ):
                     total_probability += exp(-generation[0])
                     results.append(generation)
                 else:
@@ -175,20 +162,104 @@ class Generator:
             [
                 [token_id for _, token_id in result[1]["forced_decoder_ids"]]
                 for result in results
-            ]
+            ],
+            skip_special_tokens=True,
         )
         decoded_results_with_probs = [
-            (
-                exp(
-                    -float(result[0])
-                ),  # casting current_probability to float because it is a tensor
-                result[1]["sequence_length"],
-                output,
-            )
-            for result, output in zip(results, decoded_results)
-        ]  # is a list with tuples (probability, length, prediction)
-
+            [
+                {
+                    "probability": exp(
+                        -float(result[0])
+                    ),  # casting current_probability to float because it is a tensor
+                    "sequence_token_length": result[1]["sequence_token_length"],
+                    "usageOptions": self.format_usage_options(output),
+                }
+                for result, output in zip(results, decoded_results)
+            ]
+        ]
         return decoded_results_with_probs
+
+    def generate_usage_options(self, batch: dict[str, list]) -> None:
+        # batch is dict with keys: "input", "output", "review_id", "source_id"
+        input_ids = batch["input"]["input_ids"].to(self.device)
+        attention_mask = batch["input"]["attention_mask"].to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                output_scores=True,
+                num_return_sequences=1,
+                return_dict_in_generate=True,
+                **self.generation_config,
+            )
+
+        predictions = self.tokenizer.batch_decode(
+            outputs.sequences, skip_special_tokens=True
+        )
+        predictions = [
+            self.format_usage_options(usage_options) for usage_options in predictions
+        ]
+
+        res = [None for _ in range(len(predictions))]
+
+        predicted_tokens = [
+            [self.tokenizer.decode(token) for token in review[1:]]
+            for review in outputs["sequences"]
+        ]
+
+        # Use softmax to map to actual scores
+        probs = [f.softmax(scores, dim=1) for scores in outputs["scores"]]
+
+        token_probs = [
+            torch.FloatTensor(
+                [
+                    probs[token_number][
+                        review_number * self.generation_config["num_beams"]
+                    ][
+                        token
+                    ]  # here we choose review_number * num_beams because we only want the first beam which is the best one for each review
+                    for token_number, token in enumerate(review[1:])
+                ]
+            )
+            for review_number, review in enumerate(outputs["sequences"])
+        ]
+
+        # outputs["sequences"] contains a lot of pad tokens, depending on the longest prediction in the batch (all predictions have equal length). We slice
+        # predicted_tokens and token_probs as soon as we see a pad token to only log relevant tokens
+        for i in range(len(predicted_tokens)):
+            for j in range(len(predicted_tokens[i])):
+                if predicted_tokens[i][j] == "<pad>":
+                    predicted_tokens[i] = predicted_tokens[i][:j]
+                    token_probs[i] = token_probs[i][:j]
+                    break
+
+        res = zip(
+            [float(torch.prod(token_probs[i])) for i in range(len(predicted_tokens))],
+            [len(predicted_tokens[i]) for i in range(len(predicted_tokens))],
+            predictions,
+        )
+
+        res = [
+            [
+                {
+                    "probability": x[0],
+                    "sequence_token_length": x[1],
+                    "usageOptions": x[2],
+                }
+            ]
+            for x in res
+        ]
+
+        return res
+
+    def pretty_print_format(self, probabilities: list[dict]):
+        output = [
+            (x["probability"], x["sequence_token_length"], x["usageOptions"])
+            for x in probabilities
+        ]
+        for x in output:
+            print(x)
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
@@ -237,28 +308,16 @@ class Generator:
             else:
                 usage_options_batch = self.generate_usage_options(batch)
 
-            for (
-                review_id,
-                model_input,
-                usage_options,
-                probabilities,
-            ) in usage_options_batch:
+            for review_id, usage_options in zip(
+                batch["review_id"], usage_options_batch
+            ):
+                label_metadata["probabilities"] = usage_options
                 if label_id is not None:
-                    if (
-                        self.output_probabilities == "best"
-                        or self.output_probabilities == "all"
-                    ) and probabilities is not None:  # None check might be redundant
-                        label_metadata["probabilities"] = probabilities
-                    else:
-                        # remove probabilities from metadata
-                        label_metadata.pop("probabilities", None)
                     reviews[review_id].add_label(
                         label_id=label_id,
-                        usage_options=usage_options,
+                        usage_options=usage_options[0]["usageOptions"],
                         metadata=dict(label_metadata),
                     )
                 if verbose:
                     print(f"Review: {review_id}")
-                    print(f"Model input:\n{model_input}")
-                    print(f"Usage options:\n\t{usage_options}", end="\n\n")
-                    print(f"Probabilities:\n\t{probabilities}", end="\n\n")
+                    self.pretty_print_format(usage_options)
