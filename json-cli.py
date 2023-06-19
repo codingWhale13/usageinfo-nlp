@@ -185,7 +185,7 @@ def parse_args():
         "-g",
         type=str,
         default=None,
-        help="Generation config to use for the annotation",
+        help="Generation config to use for the annotation (default is defined in the generator)",
     )
     annotate_parser.add_argument(
         "--output-probs",
@@ -211,6 +211,7 @@ def parse_args():
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
     )
+
     score_parser = subparsers.add_parser(
         "score",
         help="Score labels against each other",
