@@ -73,14 +73,19 @@ class Generator:
         input_ids = batch["input"]["input_ids"].to(self.device)
         attention_mask = batch["input"]["attention_mask"].to(self.device)
 
+        encoder_outputs = canidate_info["encoder_outputs"]
+        if encoder_outputs is None:
+            encoder_outputs = self.model.get_encoder()(
+                input_ids=input_ids, attention_mask=attention_mask
+            )
+
         with torch.no_grad():
-            output = self.model.generate(
+            output = self.model(
                 input_ids=input_ids,
-                attention_mask=attention_mask,
-                return_dict_in_generate=True,
-                output_scores=True,
+                encoder_outputs=encoder_outputs,
+                return_dict=True,
                 max_new_tokens=max_new_tokens,
-                forced_decoder_ids=forced_decoder_ids,
+                decoder_input_ids=decoder_input_ids,
             )
 
         # Go from percentage to log probablity
@@ -92,8 +97,7 @@ class Generator:
             yield (
                 current_probability + token_probs[int(token_id)],
                 {
-                    "forced_decoder_ids": forced_decoder_ids
-                    + [(max_new_tokens, int(token_id))],
+                    "forced_decoder_ids": forced_decoder_ids + [int(token_id)],
                     "sequence_token_length": sequence_token_length + 1,
                 },
             )
@@ -108,7 +112,7 @@ class Generator:
         generation_queue = PriorityQueue()
 
         generation_queue.put(
-            (0, {"forced_decoder_ids": [], "sequence_token_length": 0})
+            (0, {"forced_decoder_ids": [0], "sequence_token_length": 0})
         )
 
         i = 0
