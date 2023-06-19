@@ -550,7 +550,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         args.artifact_name,
         args.generation_config or DEFAULT_GENERATION_CONFIG,
         checkpoint=int(args.checkpoint)
-        if args.checkpoint.isdigit()
+        if args.checkpoint is not None and args.checkpoint.isdigit()
         else args.checkpoint,
         output_probabilities=args.output_probs,
     )
