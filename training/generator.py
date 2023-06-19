@@ -19,8 +19,19 @@ GENERATION_CONFIGS = [
     )
 ]
 
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass(order=True)
+class GenerationCanidate:
+    probability: float
+    data: Any = field(compare=False)
+
 
 class Generator:
+    MAX_SEQUENCE_LENGTH = 20
+
     def __init__(
         self,
         artifact_name,
@@ -61,14 +72,18 @@ class Generator:
         return result
 
     def __get_output_with_probs(
-        self, batch, generation_canidate: tuple[float, dict]
+        self, batch, generation_canidate: GenerationCanidate
     ) -> list[tuple[float, dict]]:
-        current_probability, canidate_info = generation_canidate
-        forced_decoder_ids = canidate_info["forced_decoder_ids"]
-        sequence_token_length = canidate_info["sequence_token_length"]
+        current_probability = generation_canidate.probability
+        canidate_info = generation_canidate.data
+        decoder_input_ids = canidate_info["forced_decoder_ids"].to(self.device)
 
+        sequence_token_length = canidate_info["sequence_token_length"]
+        decoder_attention_mask = torch.zeros(
+            [1, self.MAX_SEQUENCE_LENGTH + 1], dtype=torch.int32
+        ).to(self.device)
+        decoder_attention_mask[0][:sequence_token_length] = 1
         num_token_options = 5
-        max_new_tokens = len(forced_decoder_ids) + 1
 
         input_ids = batch["input"]["input_ids"].to(self.device)
         attention_mask = batch["input"]["attention_mask"].to(self.device)
@@ -84,21 +99,23 @@ class Generator:
                 input_ids=input_ids,
                 encoder_outputs=encoder_outputs,
                 return_dict=True,
-                max_new_tokens=max_new_tokens,
                 decoder_input_ids=decoder_input_ids,
             )
 
         # Go from percentage to log probablity
-        token_probs = -(f.softmax(output["scores"][-1][0], dim=0).log())
+        token_probs = -(f.softmax(output.logits[0][sequence_token_length], dim=0).log())
         # Using negative token_probs to get the highest probabilties because the probs are in log and in log the highest prob is the lowest number
         _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=0)
-
         for token_id in top_k_token_ids:
-            yield (
-                current_probability + token_probs[int(token_id)],
+            new_decoder_input_ids = decoder_input_ids.clone()
+            new_decoder_input_ids[0][sequence_token_length + 1] = int(token_id)
+
+            yield GenerationCanidate(
+                current_probability + float(token_probs[int(token_id)]),
                 {
-                    "forced_decoder_ids": forced_decoder_ids + [int(token_id)],
+                    "forced_decoder_ids": new_decoder_input_ids,
                     "sequence_token_length": sequence_token_length + 1,
+                    "encoder_outputs": encoder_outputs,
                 },
             )
 
@@ -107,12 +124,22 @@ class Generator:
 
         total_probability = 0
         MAX_ITERATIONS = 100
-        MINIMUM_PROBAILITY = -log(0.02)
+        MINIMUM_PROBAILITY = -log(0.001)
         MINIMUM_TOTAL_PROBABILITY = 0.95
+
         generation_queue = PriorityQueue()
 
         generation_queue.put(
-            (0, {"forced_decoder_ids": [0], "sequence_token_length": 0})
+            GenerationCanidate(
+                0,
+                {
+                    "forced_decoder_ids": torch.zeros(
+                        [1, self.MAX_SEQUENCE_LENGTH + 1], dtype=torch.int32
+                    ),
+                    "sequence_token_length": 0,
+                    "encoder_outputs": None,
+                },
+            )
         )
 
         i = 0
@@ -128,28 +155,30 @@ class Generator:
 
             for generation in next_generations:
                 # Add to result if the eos token is reached or we already have on result and the current path probability is lower than the minimum probability
-                if generation[1]["forced_decoder_ids"][-1][1] == 1 or (
-                    len(results) > 0 and generation[0] > MINIMUM_PROBAILITY
+                if (
+                    generation.data["forced_decoder_ids"][-1][
+                        generation.data["sequence_token_length"]
+                    ]
+                    == 1
+                    or generation.data["sequence_token_length"]
+                    >= self.MAX_SEQUENCE_LENGTH
                 ):
-                    total_probability += exp(-generation[0])
+                    total_probability += exp(-generation.probability)
                     results.append(generation)
-                else:
+                elif generation.probability < MINIMUM_PROBAILITY:
                     generation_queue.put(generation)
 
         decoded_results = self.tokenizer.batch_decode(
-            [
-                [token_id for _, token_id in result[1]["forced_decoder_ids"]]
-                for result in results
-            ],
+            [result.data["forced_decoder_ids"][0] for result in results],
             skip_special_tokens=True,
         )
         decoded_results_with_probs = [
             [
                 {
                     "probability": exp(
-                        -float(result[0])
+                        -float(result.probability)
                     ),  # casting current_probability to float because it is a tensor
-                    "sequence_token_length": result[1]["sequence_token_length"],
+                    "sequence_token_length": result.data["sequence_token_length"],
                     "usageOptions": self.format_usage_options(output),
                 }
                 for result, output in zip(results, decoded_results)
