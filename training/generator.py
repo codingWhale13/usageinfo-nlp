@@ -7,8 +7,8 @@ from training import utils
 from helpers.review_set import ReviewSet
 from training.utils import get_config
 import os
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from queue import PriorityQueue
+from math import exp, log
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
@@ -18,13 +18,6 @@ GENERATION_CONFIGS = [
         os.path.dirname(os.path.realpath(__file__)) + "/generation_configs/"
     )
 ]
-from queue import PriorityQueue
-from training import utils
-from helpers.review_set import ReviewSet
-from math import exp, log
-import time
-
-QUEUE_PROBABILITY_OFFSET = 1000_000_000
 
 
 class Generator:
@@ -35,8 +28,6 @@ class Generator:
         checkpoint: Optional[Union[int, str]] = None,
         output_probabilities: str = "best",  # can be "all", "best" or None
     ) -> None:
-        global device
-
         self.config = utils.load_config_from_artifact_name(artifact_name)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
@@ -47,7 +38,7 @@ class Generator:
             self.model_name,
         ) = utils.initialize_model_tuple(self.model_artifact)
 
-        self.model.to(device)
+        self.model.to(self.device)
         self.model.eval()
         self.generation_config = get_config(
             f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
@@ -69,28 +60,7 @@ class Generator:
             result.append(num)
         return result
 
-    def _get_ouput_with_probs_for_batch(
-        self, generation_canidates: list[tuple[float, dict]]
-    ):
-        input_ids = torch.tensor([x["input_ids"] for x in generation_canidates[1]])
-        decoder_input_ids = torch.tensor(
-            [[z[1] for z in x["forced_decoder_ids"]] for x in generation_canidates]
-        )
-
-        attention_mask = torch.tensor(
-            [x["attention_mask"] for x in generation_canidates]
-        )
-
-        with torch.no_grad():
-            ouputs = self.model(
-                input_ids=input_ids,
-                decoder_input_ids=decoder_input_ids,
-                attention_mask=attention_mask,
-            )
-
-        raise NotImplementedError()
-
-    def _get_output_with_probs(
+    def __get_output_with_probs(
         self, batch, generation_canidate: tuple[float, dict]
     ) -> list[tuple[float, dict]]:
         current_probability, canidate_info = generation_canidate
@@ -112,10 +82,12 @@ class Generator:
                 max_new_tokens=max_new_tokens,
                 forced_decoder_ids=forced_decoder_ids,
             )
-        # print(output)
 
+        # Go from percentage to log probablity
         token_probs = -(f.softmax(output["scores"][-1][0], dim=0).log())
+        # Using negative token_probs to get the highest probabilties because the probs are in log and in log the highest prob is the lowest number
         _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=0)
+
         for token_id in top_k_token_ids:
             yield (
                 current_probability + token_probs[int(token_id)],
@@ -132,6 +104,7 @@ class Generator:
         total_probability = 0
         MAX_ITERATIONS = 100
         MINIMUM_PROBAILITY = -log(0.02)
+        MINIMUM_TOTAL_PROBABILITY = 0.95
         generation_queue = PriorityQueue()
 
         generation_queue.put(
@@ -142,14 +115,15 @@ class Generator:
         while (
             not generation_queue.empty()
             and i < MAX_ITERATIONS
-            and total_probability <= 0.95
+            and total_probability <= MINIMUM_TOTAL_PROBABILITY
         ):
-            next_generations = self._get_output_with_probs(
+            next_generations = self.__get_output_with_probs(
                 batch, generation_queue.get()
             )
             i += 1
 
             for generation in next_generations:
+                # Add to result if the eos token is reached or we already have on result and the current path probability is lower than the minimum probability
                 if generation[1]["forced_decoder_ids"][-1][1] == 1 or (
                     len(results) > 0 and generation[0] > MINIMUM_PROBAILITY
                 ):
@@ -179,7 +153,7 @@ class Generator:
         ]
         return decoded_results_with_probs
 
-    def generate_usage_options(self, batch: dict[str, list]) -> None:
+    def generate_usage_options(self, batch: dict[str, list]) -> list[list[dict]]:
         # batch is dict with keys: "input", "output", "review_id", "source_id"
         input_ids = batch["input"]["input_ids"].to(self.device)
         attention_mask = batch["input"]["attention_mask"].to(self.device)
