@@ -39,9 +39,8 @@ def arg_parse():
 def main():
     args, _ = arg_parse()
     label_ids = args.label_ids
-
-    file_paths = args.reviewset_files
-    review_set = ReviewSet.from_files(file_paths)
+    files = args.reviewset_files
+    review_set = ReviewSet.from_files(*files)
     clustering_config = utils.get_config(args.clustering_config)
     review_set_df = DataLoader(
         review_set, ls.LabelIDSelectionStrategy(*label_ids), clustering_config["data"]
