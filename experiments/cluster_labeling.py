@@ -1,39 +1,59 @@
-import tkinter as tk
+import csv
+import pandas as pd
 
-pairs = [("cat", "dog"), ("apple", "banana"), ("car", "bicycle")]
+pairs = [("a", "b"), ("c", "d"), ("e", "f")]
 current_pair_index = 0
+results = []
+
+
+def get_next_pair():
+    global pairs
+    global current_pair_index
+    if current_pair_index < len(pairs):
+        print(f"Pair: {pairs[current_pair_index]}")
+        current_pair_index += 1
+    else:
+        save_results()
+        print("Labeling finished")
+        exit()
 
 
 def vote_similar():
-    print("Similar")
-    next_pair()
+    record_vote(True)
+    get_next_pair()
 
 
 def vote_not_similar():
-    print("Not similar")
-    next_pair()
+    record_vote(False)
+    get_next_pair()
 
 
-def next_pair():
-    global current_pair_index
-    current_pair_index += 1
-
-    if current_pair_index < len(pairs):
-        pair_label.config(text=f"Pair: {pairs[current_pair_index]}")
-    else:
-        pair_label.config(text="No more pairs!")
+def record_vote(similar):
+    global results
+    pair = pairs[current_pair_index - 1]
+    results.append([pair[0], pair[1], similar])
 
 
-root = tk.Tk()
-root.title("Word Similarity Labeling App")
+def save_results():
+    with open("results.csv", "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(results)
 
-pair_label = tk.Label(root, text=f"Pair: {pairs[current_pair_index]}")
-pair_label.pack(pady=10)
 
-similar_button = tk.Button(root, text="Similar", command=vote_similar)
-similar_button.pack(pady=5)
+def main():
+    get_next_pair()
+    while True:
+        print(
+            "Would you consider these usage options to appear in the same cluster? (y/n)"
+        )
+        vote = input()
+        if vote == "y":
+            vote_similar()
+        elif vote == "n":
+            vote_not_similar()
+        else:
+            print("Invalid input")
 
-not_similar_button = tk.Button(root, text="Not Similar", command=vote_not_similar)
-not_similar_button.pack(pady=5)
 
-root.mainloop()
+if __name__ == "__main__":
+    main()
