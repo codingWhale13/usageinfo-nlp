@@ -54,7 +54,6 @@ class DataLoader:
                 embedded_usage_option = get_embedding(
                     usage_option=usage_option, comparator=self.model_name
                 )
-                embedded_usage_options.append(embedded_usage_option)
                 review_set_list.append(
                     {
                         "review_id": review.review_id,
@@ -64,6 +63,9 @@ class DataLoader:
                     }
                 )
         review_set_df = pd.DataFrame(review_set_list)
+        df_to_cluster = review_set_df.drop_duplicates(
+            subset=["usage_option"], keep="first"
+        ).copy()
 
         EvaluationCache.get().save_to_disk()
 
@@ -78,14 +80,16 @@ class DataLoader:
             if self.dim_reduction in reducer_map:
                 reducer_class = reducer_map[self.dim_reduction]
                 reducer = reducer_class(self.n_components)
-                reduced_usage_options = reducer.reduce(np.array(embedded_usage_options))
-                review_set_df["reduced_embedding"] = reduced_usage_options.tolist()
+                reduced_usage_options = reducer.reduce(
+                    np.array(df_to_cluster["embedding"].tolist())
+                )
+                df_to_cluster["reduced_embedding"] = reduced_usage_options.tolist()
             else:
                 raise ValueError(
                     f"Unknown dimensionality reduction method '{self.dim_reduction}'"
                 )
 
-        return review_set_df
+        return review_set_df, df_to_cluster
 
 
 class TSNEReducer:

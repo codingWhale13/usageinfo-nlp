@@ -684,6 +684,7 @@ class ReviewSet:
         review_set_df = DataLoader(self, label_id, clustering_config["data"]).load()
 
         clustered_df = Clusterer(review_set_df, arg_dicts[0]).cluster()
+        clustered_df = utils.merge_duplicated_usage_options(clustered_df, review_set_df)
         total_usage_options = len(clustered_df)
 
         count_label_df = (

@@ -102,6 +102,15 @@ def get_arg_dicts(clustering_config, reviewset_length):
         )
 
 
+def merge_duplicated_usage_options(clustered_df, review_set_df):
+    return pd.merge(
+        review_set_df,
+        clustered_df[["usage_option", "label", "reduced_embedding", "centroid"]],
+        on="usage_option",
+        how="left",
+    )
+
+
 def save_clustered_df(clustered_df, arg_dict):
     if arg_dict["n_clusters"] is not None:
         key = f'nclusters-{arg_dict["n_clusters"]}'

@@ -7,8 +7,10 @@ clustering:
   algorithm: "agglomerative" # options are: kmeans, agglomerative, community_detection
   metric: "cosine" # options are: euclidean, cosine
   linkage: "average" # only for agglom, options are: ward, complete, average, single
-  save_to_disk: True # whether to save the clustering results to disk
   n_clusters:
     - 1000
   # distance_thresholds: # only for agglom and community detection, will be ignored if n_clusters is not None
   #   - 0.5
+evaluation:
+  save_to_disk: True # whether to save the evaluation results to disk
+  merge_duplicates: True # whether to merge duplicated usage options before saving

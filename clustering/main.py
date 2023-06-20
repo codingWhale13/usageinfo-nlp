@@ -42,7 +42,7 @@ def main():
     files = args.reviewset_files
     review_set = ReviewSet.from_files(*files)
     clustering_config = utils.get_config(args.clustering_config)
-    review_set_df = DataLoader(
+    review_set_df, df_to_cluster = DataLoader(
         review_set, ls.LabelIDSelectionStrategy(*label_ids), clustering_config["data"]
     ).load()
 
@@ -51,20 +51,25 @@ def main():
 
     for arg_dict in arg_dicts:
         print(f"Clustering with {arg_dict}...")
-        clustered_df = Clusterer(review_set_df, arg_dict).cluster()
+        clustered_df = Clusterer(df_to_cluster, arg_dict).cluster()
 
         if clustering_config["data"]["n_components"] == 2:
             utils.plot_clusters2d(
                 clustered_df, arg_dict, color="label", interactive=True
             )
 
-        if clustering_config["clustering"]["save_to_disk"]:
-            utils.save_clustered_df(clustered_df, arg_dict)
-
         print(f"Scoring clustering with {arg_dict}...")
         scores[[v for v in arg_dict.values() if v is not None][0]] = Scorer(
             clustered_df
         ).score()
+
+        if clustering_config["evaluation"]["merge_duplicates"]:
+            clustered_df = utils.merge_duplicated_usage_options(
+                clustered_df, review_set_df
+            )
+
+        if clustering_config["evaluation"]["save_to_disk"]:
+            utils.save_clustered_df(clustered_df, arg_dict)
 
     utils.plot_scores(scores, "scores.png")
 
