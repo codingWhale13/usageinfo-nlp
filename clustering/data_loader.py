@@ -58,6 +58,7 @@ class DataLoader:
                     {
                         "review_id": review.review_id,
                         "usage_option": usage_option,
+                        "product_id": review["product_id"],
                         "product_category": review["product_category"],
                         "embedding": embedded_usage_option,
                     }

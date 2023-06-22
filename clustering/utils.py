@@ -116,6 +116,16 @@ def save_clustered_df(clustered_df, arg_dict):
         key = f'nclusters-{arg_dict["n_clusters"]}'
     elif arg_dict["distance_threshold"] is not None:
         key = f'distance-{arg_dict["distance_threshold"]}'
-    clustered_df.to_csv(
+    clustered_df[
+        [
+            "review_id",
+            "usage_option",
+            "product_id",
+            "product_category",
+            "reduced_embedding",
+            "centroid",
+            "label",
+        ]
+    ].to_csv(
         f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/clustered_usage_options/clustered_df_{key}.csv"
     )
