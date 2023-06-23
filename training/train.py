@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 # %%
+import sys
 import warnings
 
 import torch
 import wandb
-import warnings
-import sys
 from lightning import pytorch as pl
-from sustainability_logger import SustainabilityLogger
-
 from model import ReviewModel
-from active_learning.module import ActiveDataModule
 
-import utils
-from generator import Generator, DEFAULT_GENERATION_CONFIG
-from helpers.review_set import ReviewSet
+from active_learning.module import ActiveDataModule
 from helpers.label_selection import DatasetSelectionStrategy
+from helpers.review_set import ReviewSet
+from helpers.sustainability_logger import SustainabilityLogger
+from generator import DEFAULT_GENERATION_CONFIG, Generator
+import utils
 
 wandb.login()
 
@@ -129,9 +127,9 @@ model = ReviewModel(
 
 # %% Training and testing
 if not test_run:
-    with SustainabilityLogger(experiment_description="training"):
+    with SustainabilityLogger(description="training"):
         trainer.fit(model)
-    with SustainabilityLogger(experiment_description="testing"):
+    with SustainabilityLogger(description="testing"):
         trainer.test()
 
     try:

@@ -6,6 +6,7 @@ import pprint
 import fnmatch
 
 from helpers.review_set import ReviewSet
+from helpers.sustainability_logger import SustainabilityLogger
 
 dash = "-" * 80
 
@@ -186,6 +187,13 @@ def parse_args():
         type=str,
         default=None,
         help="Generation config to use for the annotation (default is defined in the generator)",
+    )
+    annotate_parser.add_argument(
+        "--log_file",
+        "-l",
+        type=str,
+        default=None,
+        help="If set, data on energy consumption is saved here",
     )
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
@@ -539,13 +547,17 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    generator = Generator(
-        args.artifact_name,
-        args.generation_config or DEFAULT_GENERATION_CONFIG,
-        int(args.checkpoint) if args.checkpoint.isdigit() else args.checkpoint,
-    )
+    with SustainabilityLogger(log_file=args.log_file):
+        generator = Generator(
+            args.artifact_name,
+            args.generation_config or DEFAULT_GENERATION_CONFIG,
+            int(args.checkpoint)
+            if (args.checkpoint is not None and args.checkpoint.isdigit())
+            else args.checkpoint,
+        )
 
-    generator.generate_label(base_reviewset, label_id=label_id, verbose=not args.quiet)
+        verbose = not args.quiet
+        generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)
 
     if label_id:
         base_reviewset.save()
