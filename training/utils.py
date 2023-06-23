@@ -54,8 +54,8 @@ model_tuples = {
     ),
     "RWKV": lambda: (
         RwkvForCausalLM.from_pretrained("RWKV/rwkv-4-169m-pile"),
-        AutoTokenizer.from_pretrained("RWKV/rwkv-4-169m-pile", model_max_length=1024),
-        1024,
+        AutoTokenizer.from_pretrained("RWKV/rwkv-4-169m-pile", model_max_length=512),
+        512,
         False,
     ),
 }

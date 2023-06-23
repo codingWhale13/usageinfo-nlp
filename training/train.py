@@ -71,6 +71,7 @@ model, tokenizer, max_length, is_transformer, model_name = utils.initialize_mode
 
 if not tokenizer.pad_token:
     tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token_id = tokenizer.eos_token_id
 
 cluster_config = config["cluster"]
 test_run = config["test_run"]

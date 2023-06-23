@@ -1,15 +1,15 @@
-model_name: #"flan-t5-base"
+model_name: "RWKV"
 active_layers:
   encoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
   decoder: "-3:"
   lm_head: True
-gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
+gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 artifact:
-  name: swift-rain-565 #"scintillating-mandu-99"
+  name: #"scintillating-mandu-99"
   checkpoint: #9
-epochs: 1
-batch_size: 2
-accumulate_grad_batches: 2
+epochs: 10
+batch_size: 1
+accumulate_grad_batches: 8
 optimizer: #Set all parameters you do not want to null
   name: "AdamW"
   weight_decay: 0.01
@@ -24,9 +24,9 @@ dataset:
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
-test_run: False
-multiple_usage_options_strategy: "shuffle-3"
-prompt_id: "avetis_v1"
+test_run: True
+multiple_usage_options_strategy: "default"
+prompt_id: "original"
 seed: 42 # can be left empty
 
 # Options for 'multiple_usage_options_strategy':

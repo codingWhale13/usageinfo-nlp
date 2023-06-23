@@ -8,6 +8,8 @@ from functools import partial
 from pathlib import Path
 from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
+from torch.nn.utils.rnn import pack_sequence
+
 
 from numpy import mean, var
 import helpers.label_selection as ls
@@ -411,6 +413,7 @@ class ReviewSet:
             tokenized_reviews = filter(lambda x: 0 not in x.values(), tokenized_reviews)
 
         tokenized_reviews = list(tokenized_reviews)
+        print(f"Number of tokenized reviews: {tokenized_reviews[0]['input']}")
         random.shuffle(tokenized_reviews)
         return DataLoader(
             tokenized_reviews,
