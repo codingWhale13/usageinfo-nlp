@@ -22,7 +22,6 @@ def arg_parse():
     parser.add_argument(
         "label_ids",
         type=str,
-        nargs="+",
         help="Which label(s) (aka which usage options) to use for clustering",
     )
     parser.add_argument(
@@ -38,7 +37,7 @@ def arg_parse():
 
 def main():
     args, _ = arg_parse()
-    label_ids = args.label_ids
+    label_ids = args.label_ids.split(", ")
     files = args.reviewset_files
     review_set = ReviewSet.from_files(*files)
     clustering_config = utils.get_config(args.clustering_config)
