@@ -8,6 +8,8 @@ from transformers import (
     BartTokenizer,
     BartForConditionalGeneration,
     optimization,
+    PegasusForConditionalGeneration,
+    PegasusTokenizer,
 )
 import torch
 import dotenv
@@ -38,9 +40,19 @@ model_tuples = {
         BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
         1024,
     ),
+    "t5-v1_1": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/t5-v1_1-base"),
+        T5Tokenizer.from_pretrained("google/t5-v1_1-base", model_max_length=512),
+        512,
+    ),
     "flan-t5-base": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/flan-t5-base"),
         T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
+        512,
+    ),
+    "pegasus": lambda: (
+        PegasusForConditionalGeneration.from_pretrained("google/pegasus-xsum"),
+        PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
         512,
     ),
 }
@@ -178,7 +190,11 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
 
 def freeze_model(active_layers: dict, model) -> Tuple[int, int]:
     def unfreeze(component, slice_: str) -> int:
-        transformer_blocks = eval(f"list(component.block)[{slice_}]")
+        transformer_blocks = (
+            eval(f"list(component.layers)[{slice_}]")
+            if hasattr(component, "layers")
+            else eval(f"list(component.block)[{slice_}]")
+        )
         for block in transformer_blocks:
             for param in block.parameters():
                 param.requires_grad = True
@@ -192,8 +208,8 @@ def freeze_model(active_layers: dict, model) -> Tuple[int, int]:
         for param in model.lm_head.parameters():
             param.requires_grad = True
 
-    active_encoder_layers = unfreeze(model.encoder, active_layers["encoder"])
-    active_decoder_layers = unfreeze(model.decoder, active_layers["decoder"])
+    active_encoder_layers = unfreeze(model.get_encoder(), active_layers["encoder"])
+    active_decoder_layers = unfreeze(model.get_decoder(), active_layers["decoder"])
     return active_encoder_layers, active_decoder_layers
 
 
@@ -204,7 +220,8 @@ def gradual_unfreeze(
     active_encoder_layers,
     active_decoder_layers,
 ):
-    def unfreeze(blocks, epoch: int):
+    def unfreeze(module, epoch: int):
+        blocks = module.block if hasattr(module, "block") else module.layers
         for i in range(1, len(blocks) + 1):
             if epoch >= i:
                 for param in blocks[len(blocks) - i].parameters():
@@ -222,7 +239,7 @@ def gradual_unfreeze(
                     active_encoder_layers,
                     epoch,
                     int(mode.split(" ")[1]),
-                    model.encoder.block,
+                    model.get_encoder(),
                 )
 
             if "decoder" in mode:
@@ -230,5 +247,5 @@ def gradual_unfreeze(
                     active_decoder_layers,
                     epoch,
                     int(mode.split(" ")[1]),
-                    model.decoder.block,
+                    model.get_decoder(),
                 )
