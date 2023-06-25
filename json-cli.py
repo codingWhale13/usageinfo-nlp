@@ -6,7 +6,6 @@ import pprint
 import fnmatch
 
 from helpers.review_set import ReviewSet
-from helpers.sustainability_logger import SustainabilityLogger
 
 dash = "-" * 80
 
@@ -536,6 +535,7 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
     from training.generator import Generator, DEFAULT_GENERATION_CONFIG
+    from helpers.sustainability_logger import SustainabilityLogger
 
     label_id = None
     if args.last_part_of_label_id is not None:
