@@ -10,6 +10,8 @@ from transformers import (
     optimization,
     PegasusForConditionalGeneration,
     PegasusTokenizer,
+    LongT5ForConditionalGeneration,
+    AutoTokenizer,
 )
 import torch
 import dotenv
@@ -23,29 +25,19 @@ ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/
 MAX_OUTPUT_LENGTH = 128
 
 model_tuples = {
-    "t5-small": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-small"),
-        T5Tokenizer.from_pretrained("t5-small", model_max_length=512),
-        512,
-    ),
-    "t5-base": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-base"),
-        T5Tokenizer.from_pretrained("t5-base", model_max_length=512),
-        512,
-    ),
-    "t5-large": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-large"),
-        T5Tokenizer.from_pretrained("t5-large", model_max_length=512),
-        512,
-    ),
-    "bart-base": lambda: (
-        BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
-        BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
-        1024,
-    ),
     "t5-v1_1": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/t5-v1_1-base"),
         T5Tokenizer.from_pretrained("google/t5-v1_1-base", model_max_length=512),
+        512,
+    ),
+    "t5-lm-adapt": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/t5-base-lm-adapt"),
+        T5Tokenizer.from_pretrained("google/t5-base-lm-adapt", model_max_length=512),
+        512,
+    ),
+    "flan-t5-small": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/flan-t5-small"),
+        T5Tokenizer.from_pretrained("google/flan-t5-small", model_max_length=512),
         512,
     ),
     "flan-t5-base": lambda: (
@@ -53,8 +45,42 @@ model_tuples = {
         T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
         512,
     ),
+    "flan-t5-large": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/flan-t5-large"),
+        T5Tokenizer.from_pretrained("google/flan-t5-large", model_max_length=512),
+        512,
+    ),
+    "flan-t5-xl": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/flan-t5-xl"),
+        T5Tokenizer.from_pretrained("google/flan-t5-xl", model_max_length=512),
+        512,
+    ),
+    "flan-t5-xxl": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/flan-t5-xxl"),
+        T5Tokenizer.from_pretrained("google/flan-t5-xxl", model_max_length=512),
+        512,
+    ),
+    "long-t5-tglobal": lambda: (
+        LongT5ForConditionalGeneration.from_pretrained("google/long-t5-tglobal-base"),
+        AutoTokenizer.from_pretrained(
+            "google/long-t5-tglobal-base", model_max_length=512
+        ),
+        512,
+    ),
+    "long-t5-local": lambda: (
+        LongT5ForConditionalGeneration.from_pretrained("google/long-t5-local-base"),
+        AutoTokenizer.from_pretrained(
+            "google/long-t5-local-base", model_max_length=512
+        ),
+        512,
+    ),
+    "bart": lambda: (
+        BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
+        BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
+        1024,
+    ),
     "pegasus": lambda: (
-        PegasusForConditionalGeneration.from_pretrained("google/pegasus-xsum"),
+        PegasusForConditionalGeneration.from_pretrained("google/pegasus-large"),
         PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
         512,
     ),
