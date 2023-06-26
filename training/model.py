@@ -75,12 +75,6 @@ class ReviewModel(pl.LightningModule):
             return self.trainer.logger.experiment.name
         return "test-run"
 
-    def training_reviews(self) -> ReviewSet:
-        return self.train_reviews
-
-    def training_review_strategy(self) -> LabelSelectionStrategyInterface:
-        return self.train_reviews_strategy
-
     def forward(
         self,
         input_ids,
@@ -118,7 +112,7 @@ class ReviewModel(pl.LightningModule):
         return outputs.loss
 
     def on_train_epoch_end(self):
-        print("On train epoch end")
+        print("Self: on_train_epoch_end")
         self.active_data_module.on_train_epoch_end()
 
     def training_epoch_end(self, outputs):

@@ -9,9 +9,9 @@ from lightning import pytorch as pl
 from pprint import pprint
 
 from model import ReviewModel
-from active_learning.module import ActiveDataModule
 from helpers.sustainability_logger import SustainabilityLogger
 from generator import DEFAULT_GENERATION_CONFIG, Generator
+from active_learning.helpers import load_active_data_module
 import utils
 
 wandb.login()
@@ -74,8 +74,16 @@ model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
     else config["model_name"]
 )
 
+active_learning_params = config["active_learning"].get("parameters", {}) or {}
+
 cluster_config = config["cluster"]
 test_run = config["test_run"]
+active_learning_module = load_active_data_module(
+    config["active_learning"]["module"],
+    active_learning_params,
+)
+
+seed = config["seed"] if config["seed"] else None
 del config["cluster"], config["test_run"]
 
 hyperparameters = {
@@ -122,7 +130,7 @@ model = ReviewModel(
     multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
     lr_scheduler_type=config["lr_scheduler_type"],
     gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
-    active_data_module=ActiveDataModule(),
+    active_data_module=active_learning_module,
     prompt_id=config["prompt_id"],
 )
 

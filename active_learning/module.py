@@ -18,16 +18,25 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
     def train_datalaoder(self) -> DataLoader:
         raise NotImplementedError
 
-    def should_reset_train_dataloader(self) -> bool:
+    def __should_reset_train_dataloader(self) -> bool:
         raise NotImplementedError
 
     def process_step(self, batch_idx, batch, outputs, mode="training") -> None:
         raise NotImplementedError
 
+    def setup(self, model: ReviewModel, reviews: ReviewSet) -> None:
+        raise NotImplementedError
+
+    def on_train_epoch_end(self) -> None:
+        raise NotImplementedError
+
 
 class ActiveDataModule(AbstractActiveDataModule):
     def __init__(
-        self, model: Optional[ReviewModel] = None, reviews: Optional[ReviewSet] = None
+        self,
+        model: Optional[ReviewModel] = None,
+        reviews: Optional[ReviewSet] = None,
+        **kwargs,
     ) -> None:
         self.training_dynamics = {"loss": []}
         self.model = model
@@ -50,15 +59,15 @@ class ActiveDataModule(AbstractActiveDataModule):
             )
 
     def __initial_train_dataloader(self) -> DataLoader:
-        dataloader, _ = self.model.training_reviews().get_dataloader(
+        dataloader, _ = self.model.train_reviews.get_dataloader(
             **self.model.train_dataloader_args()
         )
         return dataloader
 
     def process_step(self, batch_idx, batch, outputs, mode="training") -> None:
-        self.process_individual_losses(batch_idx, batch, outputs, mode=mode)
+        self.__process_individual_losses(batch_idx, batch, outputs, mode=mode)
 
-    def should_reset_train_dataloader(self) -> bool:
+    def __should_reset_train_dataloader(self) -> bool:
         return False
 
     def dataframe(self, metric="loss") -> pd.DataFrame:
@@ -72,12 +81,12 @@ class ActiveDataModule(AbstractActiveDataModule):
         self.dataframe("loss").to_csv(save_path)
 
     def on_train_epoch_end(self):
-        if self.should_reset_train_dataloader():
+        if self.__should_reset_train_dataloader():
             self.model.trainer.reset_train_dataloader()
         if (self.model.current_epoch + 1) % SAVE_EVERY_N_EPOCHS == 0:
             self.__save_training_dynamics()
 
-    def process_individual_losses(self, batch_idx, batch, outputs, mode) -> None:
+    def __process_individual_losses(self, batch_idx, batch, outputs, mode) -> None:
         labels = batch["output"]["input_ids"]
         logits = outputs.logits.detach()
 
@@ -100,6 +109,27 @@ class ActiveDataModule(AbstractActiveDataModule):
             )
 
 
+# a null-object subclass of ActiveDataModule, which is used for test runs. all function calls should be no-ops
+class NullActiveDataModule(AbstractActiveDataModule):
+    def __init__(self) -> None:
+        pass
+
+    def train_dataloader(self):
+        pass
+
+    def __should_reset_train_dataloader(self):
+        pass
+
+    def process_step(self, batch_idx, batch, outputs, mode="training"):
+        pass
+
+    def setup(self, model: ReviewModel, reviews: ReviewSet):
+        pass
+
+    def on_train_epoch_end(self):
+        pass
+
+
 """
 class ActiveLearningLossBasedSampler(ActiveLearningModule):
     def train_dataloader(self):
@@ -109,12 +139,12 @@ class ActiveLearningLossBasedSampler(ActiveLearningModule):
                 review["star_rating"],
                 len(
                     review.get_label_from_strategy(
-                        self.model.training_review_strategy()
+                        self.model.train_review_strategy
                     )["usageOptions"]
                 )
                 > 0,
             )
-            for review in self.model.training_reviews()
+            for review in self.model.train_reviews
         ]
         df = pd.DataFrame(
             reviews, columns=["review_id", "star_rating", "has_usage_options"]

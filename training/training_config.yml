@@ -3,6 +3,9 @@ active_layers:
   decoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
   encoder: "-3:"
   lm_head: True
+active_learning: 
+ module: "ActiveDataModule"
+ parameters: 
 artifact:
   checkpoint: #9
   name: #"scintillating-mandu-99"
