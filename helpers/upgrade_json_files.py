@@ -123,7 +123,27 @@ def v3_to_v4(data_v3: dict) -> dict:
     return data_v4
 
 
-AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS = {1: v1_to_v2, 2: v2_to_v3, 3: v3_to_v4}
+def v4_to_v5(data_v4: dict) -> dict:
+    data_v5 = {"version": 5, "reviews": data_v4["reviews"]}
+
+    for review in data_v4["reviews"].values():
+        for label in review["labels"].values():
+            augmentations = label["augmentations"]
+            label["augmentations"] = {}
+            if augmentations:
+                label["augmentations"]["legacy"] = augmentations
+
+            label["datasets"] = list(label["datasets"].keys())
+
+    return data_v5
+
+
+AUTOMATIC_REVIEW_SET_UPGRADE_FUNCTIONS = {
+    1: v1_to_v2,
+    2: v2_to_v3,
+    3: v3_to_v4,
+    4: v4_to_v5,
+}
 
 
 def upgrade_json_version(

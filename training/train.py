@@ -2,15 +2,14 @@
 # %%
 import sys
 import warnings
-
+from copy import copy
 import torch
 import wandb
 from lightning import pytorch as pl
-from model import ReviewModel
+from pprint import pprint
 
+from model import ReviewModel
 from active_learning.module import ActiveDataModule
-from helpers.label_selection import DatasetSelectionStrategy
-from helpers.review_set import ReviewSet
 from helpers.sustainability_logger import SustainabilityLogger
 from generator import DEFAULT_GENERATION_CONFIG, Generator
 import utils
@@ -28,7 +27,7 @@ for arg in sys.argv[1:]:
     if not arg.startswith("--") or "=" not in arg:
         print(f"Unrecognized argument: {arg}")
         print(
-            "Please only provide arguments in the form --key=value or --key:key=value"
+            "Please only provide arguments in the form --key=value or --key:...:key=value (for nested parameters)"
         )
         exit(1)
 
@@ -43,10 +42,15 @@ for key, value in args_config.copy().items():
     try:
         if ":" in key:
             del args_config[key]
-            base_key, subkey = key.split(":")
-            args_config[base_key] = config[base_key] | {
-                subkey: type(config[base_key][subkey])(value)
-            }
+            keys = key.split(":")
+            current_key = keys.pop(0)
+            args_config[current_key] = copy(config[current_key])
+            current_config = args_config[current_key]
+            while len(keys) > 1:
+                current_key = keys.pop(0)
+                current_config = current_config[current_key]
+            value_type = type(current_config[keys[0]])
+            current_config[keys[0]] = value_type(value)
         else:
             args_config[key] = type(config[key])(value)
     except (KeyError, ValueError) as e:
@@ -59,6 +63,9 @@ for key, value in args_config.copy().items():
             exit(1)
 
 config |= args_config
+print("----------------------------------\nTraining config:")
+pprint(config)
+print("----------------------------------")
 
 # the method below will also check if either model_name or artifact is provided
 model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
@@ -69,7 +76,6 @@ model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
 
 cluster_config = config["cluster"]
 test_run = config["test_run"]
-seed = config["seed"] if config["seed"] else None
 del config["cluster"], config["test_run"]
 
 hyperparameters = {
@@ -77,12 +83,9 @@ hyperparameters = {
     "batch_size": config["batch_size"],
     "max_lr": config["optimizer"]["lr"],
 }
-dataset_parameters = {
-    "dataset_name": config["dataset"]["version"],
-    "validation_split": config["dataset"]["validation_split"],
-}
+dataset_parameters = copy(config["dataset"])
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
-pl.seed_everything(seed if seed else 42, workers=True)
+pl.seed_everything(seed=config["seed"], workers=True)
 
 if not test_run:
     logger = pl.loggers.WandbLogger(
@@ -114,10 +117,9 @@ model = ReviewModel(
     optimizer=optimizer,
     optimizer_args=optimizer_args,
     hyperparameters=hyperparameters,
-    data=dataset_parameters,
+    dataset_config=dataset_parameters,
     trainer=trainer,
     multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
-    seed=seed,
     lr_scheduler_type=config["lr_scheduler_type"],
     gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
     active_data_module=ActiveDataModule(),
@@ -133,13 +135,7 @@ if not test_run:
         trainer.test()
 
     try:
-        dataset = ReviewSet.from_files(
-            utils.get_dataset_path(config["dataset"]["version"])
-        )
-        test_dataset = dataset.filter_with_label_strategy(
-            DatasetSelectionStrategy((config["dataset"]["version"], "test")),
-            inplace=False,
-        )
+        test_dataset = model.test_reviews
 
         label_id = f"model-{wandb.run.name}-auto"
 
@@ -148,7 +144,7 @@ if not test_run:
         )
         generator.generate_label(test_dataset, label_id=label_id, verbose=True)
 
-        dataset.save()
+        test_dataset.save()
     except Exception as e:
         warnings.warn(
             "Could not generate label for the dataset. The run has probably failed.",

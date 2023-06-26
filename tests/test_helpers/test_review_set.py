@@ -95,12 +95,12 @@ def test_save(review_set, tmp_path):
 
     save_path = tmp_path / "mock_review_saved.json"
 
-    review_set.save_as(save_path)
+    review_set.save(save_path)
     loaded_review_set = ReviewSet.from_files(save_path)
     assert loaded_review_set == review_set
 
     os.remove(save_path)
-    review_set.save()  # saving again should work because we called save_as before
+    review_set.save()  # saving again should work because we called save with an explicit path before
     assert loaded_review_set == review_set
 
 

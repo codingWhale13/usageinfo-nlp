@@ -1,9 +1,8 @@
 import torch
 from lightning import pytorch as pl
-from torch.utils.data import DataLoader
-from copy import copy
 from typing import Optional
 import numpy as np
+import random
 
 import training.utils as utils
 from helpers.review_set import ReviewSet
@@ -28,10 +27,9 @@ class ReviewModel(pl.LightningModule):
         max_length: int,
         optimizer,
         hyperparameters: dict,
-        data: dict,
+        dataset_config: dict,
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
-        seed: int,
         active_data_module: ActiveDataModule,
         lr_scheduler_type: Optional[str],
         optimizer_args: dict,
@@ -44,14 +42,13 @@ class ReviewModel(pl.LightningModule):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.optimizer = optimizer
-        self.data = data
+        self.dataset_config = dataset_config
         self.hyperparameters = hyperparameters
         self.active_layers = active_layers
         self.trainer = trainer
         self.multiple_usage_options_strategy = multiple_usage_options_strategy
         self.lr_scheduler_type = lr_scheduler_type
         self.optimizer_args = optimizer_args
-        self.seed = seed
         self.prompt_id = prompt_id
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
         self.active_data_module = active_data_module
@@ -64,7 +61,7 @@ class ReviewModel(pl.LightningModule):
 
         self._initialize_datasets()
 
-        self.active_data_module.setup(self, self.reviews)
+        self.active_data_module.setup(self)
 
         # Skip freezing if a fake test model is loaded
         if self.model is not None:
@@ -81,7 +78,7 @@ class ReviewModel(pl.LightningModule):
         return self.train_reviews
 
     def training_review_strategy(self) -> LabelSelectionStrategyInterface:
-        return self.train_review_strategy
+        return self.train_reviews_strategy
 
     def forward(
         self,
@@ -225,63 +222,106 @@ class ReviewModel(pl.LightningModule):
         except ValueError:
             return None
 
-    def train_dataloader_args(self):
+    def _print_dataloader_stats(self, metadata: dict) -> None:
+        print("".join([f"\t{k}: {v}\n" for k, v in metadata.items()]))
+
+    def general_dataloader_args(self):
         return {
-            **self.tokenization_args,
-            "selection_strategy": self.train_review_strategy,
-            "include_augmentations": True,
             "batch_size": self.hyperparameters["batch_size"],
-            "drop_last": True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
-            "shuffle": True,  # Shuffles the training data every epoch.
             "num_workers": NUM_WORKERS,
             "multiple_usage_options_strategy": self.multiple_usage_options_strategy,
-            "seed": self.seed,  # only relevant if shuffle=True,
-            "pin_memory": True,
             "prompt_id": self.prompt_id,
         }
 
     def train_dataloader(self):
-        return self.train_reviews.get_dataloader(**self.train_dataloader_args())
+        training_set_config = self.dataset_config["training_set"]
+        dataloader, metadata = self.train_reviews.get_dataloader(
+            selection_strategy=self.train_reviews_strategy,
+            augmentation_set=training_set_config["augmentation_set"],
+            drop_out=training_set_config["drop_out"],
+            stratified_drop_out=training_set_config["stratified_drop_out"],
+            rng=random.Random(training_set_config["dataloader_setup_seed"]),
+            **self.tokenization_args,
+            drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
+            shuffle=True,  # Shuffles the training data every epoch.
+            pin_memory=True,
+            **self.general_dataloader_args(),
+        )
+        print("\n\nTrain dataloader stats:")
+        self._print_dataloader_stats(metadata | {"num_batches": len(dataloader)})
+        return dataloader
 
     def val_dataloader(self):
-        return self.val_reviews.get_dataloader(
+        dataloader, metadata = self.val_reviews.get_dataloader(
+            selection_strategy=self.val_reviews_strategy,
             **self.tokenization_args,
-            selection_strategy=self.train_review_strategy,
-            include_augmentations=True,
-            batch_size=self.hyperparameters["batch_size"],
-            num_workers=NUM_WORKERS,
-            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
-            prompt_id=self.prompt_id,
+            **self.general_dataloader_args(),
         )
+        print("\n\nValidation dataloader stats:")
+        self._print_dataloader_stats(metadata | {"num_batches": len(dataloader)})
+        return dataloader
 
     def test_dataloader(self):
-        return self.test_reviews.get_dataloader(
-            **self.tokenization_args,
+        dataloader, metadata = self.test_reviews.get_dataloader(
             selection_strategy=self.test_reviews_strategy,
-            include_augmentations=False,
-            batch_size=self.hyperparameters["batch_size"],
-            num_workers=NUM_WORKERS,
-            multiple_usage_options_strategy=self.multiple_usage_options_strategy,
-            prompt_id=self.prompt_id,
+            **self.tokenization_args,
+            **self.general_dataloader_args(),
         )
+        print("\n\nTest dataloader stats:")
+        self._print_dataloader_stats(metadata | {"num_batches": len(dataloader)})
+        return dataloader
+
+    def _prepare_training_set(
+        self, training_set_config: dict, test_reviews: ReviewSet
+    ) -> tuple[ReviewSet, LabelSelectionStrategyInterface]:
+        train_reviews_strategy = DatasetSelectionStrategy(training_set_config["name"])
+        reviews = (
+            ReviewSet.from_files(utils.get_dataset_path(training_set_config["name"]))
+            - test_reviews
+        )
+
+        usage_split = training_set_config["usage_split"]
+        if usage_split is not None:
+            reviews.reduce_to_usage_option_split(
+                train_reviews_strategy,
+                usage_split,
+                inplace=True,
+            )
+        return reviews, train_reviews_strategy
 
     def _initialize_datasets(self):
-        dataset_name = self.data["dataset_name"]
-        self.test_reviews_strategy = DatasetSelectionStrategy((dataset_name, "test"))
-        self.train_review_strategy = DatasetSelectionStrategy((dataset_name, "train"))
+        test_set_name = self.dataset_config["test_set"]["name"]
+        self.test_reviews_strategy = DatasetSelectionStrategy(test_set_name)
+        self.test_reviews = ReviewSet.from_files(utils.get_dataset_path(test_set_name))
 
-        self.reviews = ReviewSet.from_files(utils.get_dataset_path(dataset_name))
-        self.test_reviews = self.reviews.filter_with_label_strategy(
-            self.test_reviews_strategy, inplace=False
+        training_set_config = self.dataset_config["training_set"]
+        train_reviews, self.train_reviews_strategy = self._prepare_training_set(
+            training_set_config, self.test_reviews
         )
 
-        train_reviews = self.reviews.filter_with_label_strategy(
-            self.train_review_strategy, inplace=False
-        )
+        validation_set_name = self.dataset_config["validation_set"]["name"]
+        if validation_set_name:
+            self.val_reviews_strategy = DatasetSelectionStrategy(validation_set_name)
+            self.val_reviews = (
+                ReviewSet.from_files(utils.get_dataset_path(validation_set_name))
+                - self.test_reviews
+            )
+            self.train_reviews = train_reviews - self.val_reviews
+        else:
+            self.val_reviews, self.train_reviews = train_reviews.stratified_split(
+                training_set_config["validation_split"],
+                self.train_reviews_strategy,
+            )
+            self.val_reviews_strategy = self.train_reviews_strategy
 
-        self.val_reviews, self.train_reviews = train_reviews.split(
-            self.data["validation_split"], seed=self.seed
-        )
+        if (
+            len(self.train_reviews) == 0
+            or len(self.val_reviews) == 0
+            or len(self.test_reviews) == 0
+        ):
+            warnings.warn(
+                "One of the reviewsets (train, val or test) is empty. Please check your dataset configuration."
+            )
 
     def on_save_checkpoint(self, checkpoint):
         checkpoint["model_name"] = self.model_name

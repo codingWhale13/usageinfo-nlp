@@ -51,6 +51,7 @@ class Review:
     def __init__(self, review_id: str, data: dict) -> None:
         self.review_id = review_id
         self.data = data
+        self.tokenized_datapoints = None
 
     def __getitem__(self, key: str) -> Union[str, int, dict]:
         if key in self.data:
@@ -149,6 +150,7 @@ class Review:
         self,
         label_id: str,
         usage_options: list[str],
+        datasets: list[str] = [],
         metadata: dict = {},
         overwrite: bool = False,
     ) -> None:
@@ -162,9 +164,9 @@ class Review:
             "createdAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "usageOptions": usage_options,
             "scores": {},
-            "datasets": {},
+            "datasets": datasets,
             "metadata": metadata,
-            "augmentations": [],
+            "augmentations": {},
         }
 
     def correct_chatGPT(self, pattern: str) -> bool:
@@ -225,6 +227,52 @@ class Review:
         print("Corrected:", revised_usage_options)
         pprint(self.get_label_for_id("bp-chat_gpt_correction"))
         return True
+
+    def label_has_usage_options(
+        self, label_selection_strategy: LabelSelectionStrategyInterface
+    ) -> bool:
+        label = self.get_label_from_strategy(label_selection_strategy)
+        if not label:
+            raise ValueError(
+                f"Review {self.review_id} does not have any matching labels"
+            )
+        return len(label["usageOptions"]) > 0
+
+    def get_augmentations(
+        self,
+        label_selection_strategy: LabelSelectionStrategyInterface,
+        augmentation_set: str,
+    ) -> Iterable["Review"]:
+        label_id = self.get_label_id_from_strategy(label_selection_strategy)
+        if not label_id:
+            return []
+        label = self.get_label_for_id(label_id)
+        augmentations = deepcopy(label["augmentations"].get(augmentation_set, []))
+        for i, augmentation in enumerate(augmentations, start=1):
+            label = deepcopy(label)
+            try:
+                usage_options = augmentation["usageOptions"]
+                del augmentation["usageOptions"]
+            except KeyError:
+                usage_options = label["usageOptions"]
+
+            review = Review(
+                f"{self.review_id}.{augmentation_set}#{i}",
+                # review attributes are updated with the augmentation dict (e.g. self.data["review_body"] is replaced with augmentation["review_body"])
+                self.data | augmentation | {"labels": {}},
+            )
+            review.add_label(
+                label_id,
+                usage_options,
+                datasets=label["datasets"],
+                metadata=label["metadata"]
+                | {"augmentation": f"{augmentation_set}_{i}"},
+            )
+            yield review
+
+    def get_original_review_id(self) -> str:
+        """Returns the id of the original review for an augmented review"""
+        return self.review_id.split(".")[0]
 
     def tokenize(
         self,
@@ -292,15 +340,14 @@ class Review:
 
     def get_tokenized_datapoints(
         self,
-        selection_strategy: ls.LabelSelectionStrategyInterface = None,
-        multiple_usage_options_strategy: str = None,
-        include_augmentations: bool = False,
+        selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,
+        multiple_usage_options_strategy: Optional[str] = None,
         prompt_id: str = "avetis_v1",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
         from langchain import PromptTemplate
 
-        def get_prompt(prompt_id="avetis_v1", augmentation={}) -> str:
+        def get_prompt(prompt_id="avetis_v1") -> str:
             path = Path(__file__).parent.parent / "openai_api/prompts.json"
 
             with open(path) as f:
@@ -319,7 +366,7 @@ class Review:
 
             prompt = prompt.format(
                 **{
-                    key: augmentation.get(key, value)
+                    key: value
                     for key, value in self.data.items()
                     if key in prompt_input_variables
                 }
@@ -349,40 +396,23 @@ class Review:
             else None
         )
         if not label:
-            yield format_dict(model_input, 0, self.review_id, "original/no_label")
+            yield format_dict(model_input, 0, self.review_id, "no_label")
             return
+        output_texts = self._get_output_texts_from_strategy(
+            label["usageOptions"], strategy=multiple_usage_options_strategy
+        )
 
-        augmentations = [(model_input, label["usageOptions"], "original")]
-        if include_augmentations:
-            for id, augmentation in enumerate(label.get("augmentations", [])):
-                model_input = get_prompt(prompt_id=prompt_id, augmentation=augmentation)
-                model_input = self.tokenize(
-                    text=model_input,
-                    is_input=True,
+        for id, output_text in enumerate(output_texts):
+            yield format_dict(
+                model_input,
+                self.tokenize(
+                    text=output_text.lower(),  # we enforce lower case because model does not need to learn casing
+                    is_input=False,
                     **tokenization_kwargs,
-                )
-                augmentations.append(
-                    (
-                        model_input,
-                        augmentation.get("usageOptions") or label["usageOptions"],
-                        f"augmentation_{id}",
-                    )
-                )
-        for model_input, usage_options, source_id in augmentations:
-            output_texts = self._get_output_texts_from_strategy(
-                usage_options, strategy=multiple_usage_options_strategy
+                ),
+                self.review_id,
+                f"{multiple_usage_options_strategy}_{id}",
             )
-            for id, output_text in enumerate(output_texts):
-                yield format_dict(
-                    model_input,
-                    self.tokenize(
-                        text=output_text.lower(),  # we enforce lower case because model does not need to learn casing
-                        is_input=False,
-                        **tokenization_kwargs,
-                    ),
-                    self.review_id,
-                    f"{source_id}/{multiple_usage_options_strategy}_{id}",
-                )
 
     def remove_label(self, label_id: str, inplace=True) -> Optional["Review"]:
         review_without_label = (
@@ -498,7 +528,10 @@ class Review:
                         own_label["scores"][ref_id].update(other_score_dict)
 
                 # merge datasets and metadata
-                own_label["datasets"] |= other_label["datasets"]
+                own_label["datasets"] = list(
+                    set(own_label["datasets"]) | set(other_label["datasets"])
+                )
+                own_label["augmentations"] |= other_label["augmentations"]
                 own_label["metadata"] |= other_label["metadata"]
 
         if not inplace:
@@ -547,7 +580,7 @@ class Review:
                 raise ValueError(
                     f"{error_msg_prefix} 'scores' in label '{label_id}' is not of type dict but {type(label['scores'])}",
                 )
-            if not isinstance(label["datasets"], dict):
+            if not isinstance(label["datasets"], list):
                 raise ValueError(
                     f"{error_msg_prefix} 'datasets' in label '{label_id}' is not of type dict but {type(label['datasets'])}",
                 )

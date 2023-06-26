@@ -36,6 +36,9 @@ class LabelSelectionStrategyInterface(ABC):
 
 
 class AbstractLabelSelectionStrategy:
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.__dict__})"
+
     def retrieve_label(self, review: Review) -> Optional[dict]:
         try:
             return review.get_labels()[self.retrieve_label_id(review)]
@@ -65,27 +68,22 @@ class LabelIDSelectionStrategy(AbstractLabelSelectionStrategy):
         review_label_ids = review.get_label_ids()
         label_ids = []
         for label_id in self.label_ids:
-            matches = fnmatch.filter(review_label_ids, label_id)
+            matches = sorted(fnmatch.filter(review_label_ids, label_id))
             if matches:
                 label_ids += matches
         return label_ids
 
 
 class DatasetSelectionStrategy(AbstractLabelSelectionStrategy):
-    def __init__(self, *datasets: Union[str, tuple[str, str]]):
+    def __init__(self, *datasets: str):
         self.datasets = datasets
 
     def retrieve_label_ids(self, review: Review) -> list[str]:
         label_ids = []
         for dataset in self.datasets:
-            dataset_name, dataset_part = (
-                dataset if isinstance(dataset, tuple) else (dataset, None)
-            )
-
             for label_id, label in review.get_labels().items():
                 datasets = label["datasets"]
-                if dataset_name in datasets:
-                    if not dataset_part or dataset_part == datasets[dataset_name]:
-                        label_ids.append(label_id)
+                if dataset in datasets:
+                    label_ids.append(label_id)
 
         return label_ids

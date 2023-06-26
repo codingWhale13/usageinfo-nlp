@@ -24,7 +24,7 @@ class ReviewSet:
     Data can be loaded from and saved to JSON files in the appropriate format.
     """
 
-    latest_version = 4
+    latest_version = 5
 
     def __init__(
         self, version: str, reviews: dict, save_path: Optional[str] = None
@@ -68,6 +68,9 @@ class ReviewSet:
     def __ior__(self, other: "ReviewSet") -> "ReviewSet":
         self.merge(other, allow_new_reviews=True, inplace=True)
         return self
+
+    def __sub__(self, other: "ReviewSet") -> "ReviewSet":
+        return self.set_minus(other)
 
     def __copy__(self):
         return self.from_reviews(*self)
@@ -180,6 +183,9 @@ class ReviewSet:
 
     def count_new_reviews(self, other: "ReviewSet") -> int:
         return len(other) - self.count_common_reviews(other)
+
+    def set_minus(self, other: "ReviewSet") -> "ReviewSet":
+        return ReviewSet.from_reviews(*(set(self) - set(other)))
 
     def get_all_label_ids(self) -> set:
         label_ids = set()
@@ -377,202 +383,278 @@ class ReviewSet:
             invert=invert,
         )
 
+    def _split_by_label_has_usage_options(
+        self,
+        selection_strategy: ls.LabelSelectionStrategyInterface,
+    ) -> tuple["ReviewSet", "ReviewSet"]:
+        review_has_usage_options = lambda review: review.label_has_usage_options(
+            selection_strategy
+        )
+        try:
+            usage_option_reviews = self.filter(
+                review_has_usage_options,
+                inplace=False,
+            )
+            no_usage_option_reviews = self.filter(
+                review_has_usage_options,
+                inplace=False,
+                invert=True,
+            )
+        except ValueError as e:
+            raise ValueError(
+                f"Not all reviews have labels for {selection_strategy}\n\t-> {e}"
+            )
+        return usage_option_reviews, no_usage_option_reviews
+
+    def reduce_to_usage_option_split(
+        self,
+        selection_strategy: ls.LabelSelectionStrategyInterface,
+        target_fraction: float,
+        inplace: bool = False,
+        seed: int = None,
+    ) -> Optional["ReviewSet"]:
+        def reduce_to_target_fraction(
+            reducible_set: "ReviewSet",
+            static_set: "ReviewSet",
+            target_fraction: float,
+            inplace: bool,
+        ) -> Optional["ReviewSet"]:
+            static_set_target_fraction = 1 - target_fraction
+            target_size = len(static_set) / static_set_target_fraction
+
+            reducible_set_target_size = round(target_size * target_fraction)
+            assert reducible_set_target_size <= len(
+                reducible_set
+            ), "Reducible set needs to be larger than the target size (inferred from target fraction)"
+
+            reducible_set = list(reducible_set)
+            random.shuffle(reducible_set)
+
+            reduced_reviews = ReviewSet.from_reviews(
+                *reducible_set[:reducible_set_target_size], *static_set
+            )
+            if not inplace:
+                return reduced_reviews
+            # it is necessary to loop over all reviews in self to also remove those, that were discarded by _split_by_label_class
+            for review in copy(self):
+                if review not in reduced_reviews:
+                    self.drop_review(review)
+
+        if target_fraction < 0 or target_fraction > 1:
+            raise ValueError("Target fraction must be between 0 and 1")
+
+        if seed is not None:
+            random.seed(seed)
+
+        (
+            usage_option_reviews,
+            no_usage_option_reviews,
+        ) = self._split_by_label_has_usage_options(selection_strategy)
+        current_split = len(usage_option_reviews) / len(self)
+
+        if current_split < target_fraction:
+            return reduce_to_target_fraction(
+                reducible_set=no_usage_option_reviews,
+                static_set=usage_option_reviews,
+                target_fraction=1 - target_fraction,
+                inplace=inplace,
+            )
+        else:
+            return reduce_to_target_fraction(
+                reducible_set=usage_option_reviews,
+                static_set=no_usage_option_reviews,
+                target_fraction=target_fraction,
+                inplace=inplace,
+            )
+
     def get_dataloader(
         self,
         tokenizer,
         model_max_length: int,
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
-        multiple_usage_options_strategy: str = None,
-        include_augmentations: bool = False,
-        seed: int = None,
+        multiple_usage_options_strategy: Optional[str] = None,
+        augmentation_set: Optional[str] = None,
         prompt_id: str = "avetis_v1",
+        drop_out: float = 0.0,
+        stratified_drop_out: bool = False,
+        seed: int = None,
+        rng: random.Random = random,
         **dataloader_args: dict,
-    ):
+    ) -> tuple[any, dict]:
+        def are_all_valid_data_points(data_points: list[dict]) -> bool:
+            for datapoint in data_points:
+                # If None is in the values of a datapoint, the tokenized input or label was too long for the model
+                # If selection_strategy is specified the output should not be 0 which is used as the default value
+                if None in datapoint.values() or (
+                    selection_strategy is not None and 0 in datapoint.values()
+                ):
+                    return False
+            return True
+
         from torch.utils.data import DataLoader
-        import random
 
         if seed is not None:
-            random.seed(seed)
-        tokenized_reviews = (
-            data_point
-            for data_points in (
+            rng.seed(seed)
+
+        # Unpack all normal reviews and their augmentations into single ReviewSet
+        all_reviews = (
+            ReviewSet.from_reviews(
+                *self,
+                *itertools.chain(
+                    *(
+                        review.get_augmentations(selection_strategy, augmentation_set)
+                        for review in self
+                    )  # unpack interable with lists of augmented reviews
+                ),
+            )
+            if augmentation_set is not None and selection_strategy is not None
+            else copy(self)
+        )
+        for review in copy(all_reviews):
+            review.tokenized_datapoints = list(
                 review.get_tokenized_datapoints(
                     selection_strategy=selection_strategy,
                     tokenizer=tokenizer,
                     max_length=model_max_length,
                     for_training=for_training,
                     multiple_usage_options_strategy=multiple_usage_options_strategy,
-                    include_augmentations=include_augmentations,
                     prompt_id=prompt_id,
                 )
-                for review in self
             )
-            for data_point in data_points
-            if None
-            not in data_point.values()  # remove datapoints with None values, since there was an error with the tokenization
+        valid_reviews = all_reviews.filter(
+            lambda review: are_all_valid_data_points(review.tokenized_datapoints),
+            inplace=False,
         )
 
-        # If selection_strategy is specified the output should not be 0 which is used as the default value
-        if selection_strategy:
-            tokenized_reviews = filter(lambda x: 0 not in x.values(), tokenized_reviews)
+        if stratified_drop_out and not selection_strategy:
+            print(
+                "Warning: Stratified drop out is only possible when a label is specified.\nResorting to simple random drop out."
+            )
+        dropped_reviews, remaining_reviews = (
+            valid_reviews.stratified_split(drop_out, selection_strategy, rng=rng)
+            if stratified_drop_out and selection_strategy
+            else valid_reviews.split(drop_out, rng=rng)
+        )
 
-        tokenized_reviews = list(tokenized_reviews)
-        random.shuffle(tokenized_reviews)
-        return DataLoader(
-            tokenized_reviews,
-            **dataloader_args,
+        tokenized_datapoints = [
+            data_point
+            for review in remaining_reviews
+            for data_point in review.tokenized_datapoints
+        ]
+        rng.shuffle(tokenized_datapoints)
+        return (
+            DataLoader(tokenized_datapoints, **dataloader_args),
+            {
+                "selection_strategy": selection_strategy,
+                "num_reviews": len(self),
+                "num_augmented_reviews": len(all_reviews) - len(self),
+                "num_invalid_reviews": len(all_reviews)
+                - len(
+                    valid_reviews
+                ),  # invalid due to tokenized length or selection strategy
+                "num_dropped_reviews": len(
+                    dropped_reviews
+                ),  # dropped due to random drop out
+                "num_remaining_reviews": len(remaining_reviews),
+                "num_datapoints": len(tokenized_datapoints),
+            },
         )
 
     def split(
-        self, fraction: float, seed: int = None
+        self,
+        fraction: float,
+        seed: int = None,
+        rng: random.Random = random,
     ) -> tuple["ReviewSet", "ReviewSet"]:
-        random.seed(seed)
+        if fraction < 0 or fraction > 1:
+            raise ValueError("Fraction must be between 0 and 1")
+        if fraction == 0:
+            return ReviewSet.from_reviews(), ReviewSet.from_reviews(*self)
+        if fraction == 1:
+            return ReviewSet.from_reviews(*self), ReviewSet.from_reviews()
 
-        reviews = copy(list(self))
-        random.shuffle(reviews)
-        split_index = max(1, int(len(reviews) * fraction))
+        if seed is not None:
+            rng.seed(seed)
 
+        reviews = sorted(list(self), key=lambda review: review.review_id)
+        rng.shuffle(reviews)
+
+        split_index = min(len(reviews) - 1, max(1, int(len(reviews) * fraction)))
         return (
             ReviewSet.from_reviews(*reviews[:split_index]),
             ReviewSet.from_reviews(*reviews[split_index:]),
         )
 
+    def stratified_split(
+        self,
+        fraction: float,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        seed: Optional[int] = None,
+        rng: random.Random = random,
+    ) -> tuple["ReviewSet", "ReviewSet"]:
+        """Split the ReviewSet while keeping ratio of label classes.
+
+        Args:
+            fraction (float): Fraction of reviews to be in the first set.
+            label_selection_strategy (ls.LabelSelectionStrategyInterface): Label selection strategy that specifies which label to use for stratification.
+            seed (int, optional): Seed for random number generator. Defaults to None.
+        """
+        if seed is not None:
+            rng.seed(seed)
+
+        (
+            usage_option_reviews,
+            no_usage_option_reviews,
+        ) = self._split_by_label_has_usage_options(label_selection_strategy)
+
+        set1_usage, set2_usage = usage_option_reviews.split(fraction, rng=rng)
+        set1_no_usage, set2_no_usage = no_usage_option_reviews.split(fraction, rng=rng)
+
+        return set1_usage | set1_no_usage, set2_usage | set2_no_usage
+
     def create_dataset(
         self,
         dataset_name: str,
         label_selection_strategy: ls.LabelSelectionStrategyInterface,
-        test_split: float,
-        contains_usage_split: Optional[float] = None,
-        augmentation: da_core.ReviewAugmentation = None,
-        seed: int = None,
     ) -> tuple["ReviewSet", dict]:
-        def reduce_reviews(
-            filtered_reviews: list[Review], target_num: int, all_reviews: ReviewSet
-        ):
-            if len(filtered_reviews) < target_num:
-                raise ValueError(
-                    f"Can't reduce list with length {len(filtered_reviews)} to {target_num}"
-                )
-            random.shuffle(filtered_reviews)
-            for review in copy(filtered_reviews)[target_num:]:
-                all_reviews.drop_review(review)
-            return filtered_reviews[:target_num]
-
-        random.seed(seed)
-
         reviews = deepcopy(
             self.filter_with_label_strategy(label_selection_strategy, inplace=False)
         )
-        has_usage_options = lambda review: bool(
-            review.get_label_from_strategy(label_selection_strategy)["usageOptions"]
-        )
-        reviews_with_usage = list(reviews.filter(has_usage_options, inplace=False))
-        reviews_without_usage = list(
-            reviews.filter(has_usage_options, inplace=False, invert=True)
-        )
+        dataset_length = len(reviews)
+        if dataset_length == 0:
+            raise ValueError("There is no review that has any of the specified labels.")
 
+        label_id_counts = {}
         for review in reviews:
-            dataset_label = review.get_label_from_strategy(label_selection_strategy)
+            dataset_label_id = review.get_label_id_from_strategy(
+                label_selection_strategy
+            )
+            dataset_label = review.get_label_for_id(dataset_label_id)
 
             for label_id, label in copy(review["labels"]).items():
                 if label is not dataset_label:
                     del review["labels"][label_id]
 
             # when creating a dataset the datasets field in a review will only contain the dataset that is currently being created, same for test
-            dataset_label["datasets"] = {dataset_name: "train"}
-            dataset_label["augmentations"] = []
+            dataset_label["datasets"] = [dataset_name]
+            if dataset_label_id not in label_id_counts:
+                label_id_counts[dataset_label_id] = 1
+            else:
+                label_id_counts[dataset_label_id] += 1
 
-        dataset_length = len(reviews)
-        if dataset_length == 0:
-            raise ValueError("There is no review that has any of the specified labels.")
-
-        if augmentation is not None:
-            augmentation.augment(label_selection_strategy, *reviews)
-
-        if contains_usage_split is not None:
-            target_usage_split = (
-                contains_usage_split * (1 - test_split) + 0.5 * test_split
+        num_reviews_with_usage = len(
+            reviews.filter(
+                lambda review: review.label_has_usage_options(label_selection_strategy),
+                inplace=False,
             )
-            target_no_usage_split = 1 - target_usage_split
-
-            dataset_length = min(
-                len(reviews_with_usage) / target_usage_split,
-                len(reviews_without_usage) / target_no_usage_split,
-            )
-            reviews_with_usage = reduce_reviews(
-                reviews_with_usage, round(dataset_length * target_usage_split), reviews
-            )
-            reviews_without_usage = reduce_reviews(
-                reviews_without_usage,
-                round(dataset_length * target_no_usage_split),
-                reviews,
-            )
-
-        if len(reviews_with_usage) > 0 and len(reviews_without_usage) > 0:
-            test_reviews = random.sample(
-                reviews_with_usage,
-                round(dataset_length * (test_split * 0.5)),
-            ) + random.sample(
-                reviews_without_usage,
-                round(dataset_length * (test_split * 0.5)),
-            )
-        else:
-            print(
-                "Not enough reviews to create custom usage split.\nProceeding with random split..."
-            )
-            test_reviews = random.sample(
-                list(reviews),
-                round(dataset_length * test_split),
-            )
-
-        for review in test_reviews:
-            label = review.get_label_from_strategy(label_selection_strategy)
-            label["datasets"] = {dataset_name: "test"}
-
-        dataset_length = len(reviews)
+        )
 
         return reviews, {
-            "num_test_reviews": len(test_reviews),
-            "num_train_reviews": dataset_length - len(test_reviews),
-            "test_split": round(len(test_reviews) / dataset_length, 3),
-            "train_usage_split": round(
-                len(set(reviews_with_usage) - set(test_reviews))
-                / (dataset_length - len(test_reviews)),
-                3,
-            ),
-            "test_usage_split": round(
-                len(test_reviews)
-                and len(set(reviews_with_usage) & set(test_reviews))
-                / len(test_reviews),
-                3,
-            ),
+            "num_reviews": dataset_length,
+            "num_reviews_for_labels": label_id_counts,
+            "original_usage_split": round(num_reviews_with_usage / dataset_length, 3),
         }
-
-    def get_dataset(self, dataset_name: str) -> tuple[dict, dict]:
-        train_data = {}
-        test_data = {}
-        data = self.reviews.copy()
-        for review_id, review in data.items():
-            label = review.get_label_for_dataset(dataset_name)
-            if label is None:
-                continue
-
-            data_point = {
-                "product_title": review["product_title"],
-                "review_body": review["review_body"],
-                "usage_options": label["usageOptions"],
-            }
-            if label["datasets"][dataset_name] == "train":
-                train_data[review_id] = data_point
-            elif label["datasets"][dataset_name] == "test":
-                test_data[review_id] = data_point
-            else:
-                raise ValueError(
-                    f"Unknown dataset type {label['datasets'][dataset_name]}"
-                )
-
-        return train_data, test_data
 
     def score_labels_pairwise(
         self, label_ids: list[str] = None, metric_ids: list[str] = DEFAULT_METRICS
@@ -673,14 +755,12 @@ class ReviewSet:
 
             return result
 
-    def save_as(self, path: Union[str, Path]) -> None:
-        self.save_path = path
-        with open(path, "w") as file:
-            json.dump(self.get_data(), file)
-
-    def save(self) -> None:
+    def save(self, path: Optional[Union[str, Path]] = None) -> None:
+        if path:
+            self.save_path = path
         assert (
             self.save_path is not None
-        ), "ReviewSet has no `save_path`; use 'save_as' method instead"
+        ), "ReviewSet has no `save_path`; please supply a path when calling `save`"
+
         with open(self.save_path, "w") as file:
             json.dump(self.get_data(), file)

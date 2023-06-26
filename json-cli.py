@@ -440,7 +440,7 @@ def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
     if input("\nDo you want to save the file? [Y/n]: ").lower() == "n":
         print(f"{bcolors.DARKYELLOW}Aborted!{bcolors.ENDC}")
         return
-    base_reviewset.save_as(args.out_file)
+    base_reviewset.save(args.out_file)
     print(f"{bcolors.GREEN}Saved!{bcolors.ENDC}")
 
 
@@ -527,7 +527,7 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
         if not file_path_okay(args.output):
             return
 
-        cut_reviewset.save_as(args.output)
+        cut_reviewset.save(args.output)
         print(
             f"\nSuccessfully saved {bcolors.BLUE}{args.n}{bcolors.ENDC} sampled reviews them to {bcolors.BLUE}{args.output}{bcolors.ENDC}"
         )

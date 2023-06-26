@@ -48,6 +48,7 @@ class TestTextAugmentation(TextAugmentation):
 class ReviewAugmentation(metaclass=abc.ABCMeta):
     def augment(
         self,
+        augmentation_set_name: str,
         label_selection_strategy: ls.LabelSelectionStrategyInterface,
         *reviews: r.Review,
     ) -> None:
@@ -66,6 +67,7 @@ class PartialReviewAugementation(ReviewAugmentation):
 
     def augment(
         self,
+        augmentation_set_name: str,
         label_selection_strategy: ls.LabelSelectionStrategyInterface,
         *reviews: r.Review,
     ) -> None:
@@ -85,9 +87,13 @@ class PartialReviewAugementation(ReviewAugmentation):
         augmented_data = decode_batch(augmented_batch, instructions)
         for review_text_augmentations, review in zip(augmented_data, reviews):
             if len(review_text_augmentations) > 0:
-                label = review.get_label_from_strategy(label_selection_strategy)
-                label["augmentations"] = label.get("augmentations", [])
-                label["augmentations"].append(
+                label_augmentations = review.get_label_from_strategy(
+                    label_selection_strategy
+                )["augmentations"]
+                label_augmentations[augmentation_set_name] = label_augmentations.get(
+                    augmentation_set_name, []
+                )
+                label_augmentations[augmentation_set_name].append(
                     review_text_augmentations | {"metadata": metadata}
                 )
 
@@ -98,8 +104,11 @@ class MultiAugmentation(ReviewAugmentation):
 
     def augment(
         self,
+        augmentation_set_name: str,
         label_selection_strategy: ls.LabelSelectionStrategyInterface,
         *reviews: r.Review,
     ) -> None:
         for review_augmentation in self.review_augmentations:
-            review_augmentation.augment(label_selection_strategy, *reviews)
+            review_augmentation.augment(
+                augmentation_set_name, label_selection_strategy, *reviews
+            )

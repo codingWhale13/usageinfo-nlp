@@ -37,7 +37,7 @@ class ActiveDataModule(AbstractActiveDataModule):
             ignore_index=-100, reduction="mean"
         )
 
-    def setup(self, model: ReviewModel, reviews: ReviewSet):
+    def setup(self, model: ReviewModel, reviews: Optional[ReviewSet] = None) -> None:
         self.model = model
         self.reviews = reviews
 
@@ -50,9 +50,10 @@ class ActiveDataModule(AbstractActiveDataModule):
             )
 
     def __initial_train_dataloader(self) -> DataLoader:
-        return self.model.training_reviews().get_dataloader(
+        dataloader, _ = self.model.training_reviews().get_dataloader(
             **self.model.train_dataloader_args()
         )
+        return dataloader
 
     def process_step(self, batch_idx, batch, outputs, mode="training") -> None:
         self.process_individual_losses(batch_idx, batch, outputs, mode=mode)

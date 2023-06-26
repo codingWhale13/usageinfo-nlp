@@ -21,7 +21,7 @@ for label_id in rs.get_all_label_ids():
             print(f"{metric_id}: {metric_value['mean']}")
         print()
 
-rs.save_as(path)
+rs.save(path)
 
 """
 RESULT:

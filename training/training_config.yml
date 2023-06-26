@@ -1,33 +1,43 @@
-model_name: #"flan-t5-base"
+accumulate_grad_batches: 8
 active_layers:
-  encoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
-  decoder: "-3:"
+  decoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  encoder: "-3:"
   lm_head: True
-gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 artifact:
-  name: swift-rain-565 #"scintillating-mandu-99"
   checkpoint: #9
-epochs: 1
-batch_size: 2
-accumulate_grad_batches: 2
-optimizer: #Set all parameters you do not want to null
-  name: "AdamW"
-  weight_decay: 0.01
-  scale_parameter: False
-  relative_step: False
-  warmup_init: null
-  lr: 0.0001
-lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
-dataset:
-  version: "pipeline-test-new"
-  validation_split: 0.10
+  name: #"scintillating-mandu-99"
+batch_size: 16
 cluster:
   devices: 1 #Number of gpus per node
   num_nodes: 1 #Number of nodes
-test_run: False
-multiple_usage_options_strategy: "shuffle-3"
+dataset:
+  test_set:
+    name: "silver-test-69"
+  training_set:
+    augmentation_set: # "legacy"
+    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
+    name: "botched-6644"
+    dataloader_setup_seed: 42
+    stratified_drop_out: True # stratification based on if the review has usage options or not
+    usage_split: # 0.5
+    validation_split: 0.10
+  validation_set:
+    name: # if you choose a specific validation set, the validation split will be ignored
+epochs: 1
+gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
+lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
+model_name: "flan-t5-base"
+multiple_usage_options_strategy: "default"
+optimizer: #Set all parameters you do not want to null
+  lr: 0.0001
+  name: "AdamW"
+  relative_step: False
+  scale_parameter: False
+  warmup_init: null
+  weight_decay: 0.01
 prompt_id: "avetis_v1"
 seed: 42 # can be left empty
+test_run: False
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält

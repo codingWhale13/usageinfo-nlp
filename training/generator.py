@@ -81,7 +81,7 @@ class Generator:
                 "Specify either a label_id to save the labels or set verbose to True. (Or both)"
             )
 
-        dataloader = reviews.get_dataloader(
+        dataloader, _ = reviews.get_dataloader(
             batch_size=32,
             num_workers=0,
             tokenizer=self.tokenizer,

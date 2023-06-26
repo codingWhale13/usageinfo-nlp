@@ -71,8 +71,13 @@ def get_dataset_path(dataset: str, review_set_name: str = "reviews.json") -> str
     dataset_dir = os.path.join(
         os.getenv("DATASETS", default=ARTIFACT_PATH + "datasets"), dataset
     )
+    if not os.path.isdir(dataset_dir):
+        raise ValueError(f"Dataset {dataset} does not exist")
 
-    return os.path.join(dataset_dir, review_set_name)
+    dataset_file = os.path.join(dataset_dir, review_set_name)
+    if not os.path.exists(dataset_file):
+        raise ValueError(f"File {review_set_name} does not exist for dataset {dataset}")
+    return dataset_file
 
 
 def get_model_artifact_path(model_artifact: dict) -> str:
