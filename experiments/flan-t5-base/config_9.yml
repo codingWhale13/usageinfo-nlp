@@ -1,0 +1,45 @@
+accumulate_grad_batches: 11
+active_layers:
+  decoder: '-4:'
+  encoder: '-6:'
+  lm_head: 'False'
+active_learning:
+  module: ActiveDataModule
+  parameters: null
+artifact:
+  checkpoint: null
+  name: null
+batch_size: 8
+cluster:
+  devices: 1
+  num_nodes: 1
+dataset:
+  test_set:
+    name: ba-30k-test
+  training_set:
+    augmentation_set: null
+    dataloader_setup_seed: 42
+    drop_out: 0.0
+    name: ba-30k-train
+    stratified_drop_out: true
+    usage_split: null
+    validation_split: 0.1
+  validation_set:
+    name: ba-30k-val
+epochs: 20
+gradual_unfreezing_mode: ''
+lr_scheduler_type: OneCycleLR
+model_name: flan-t5-base
+module: null
+multiple_usage_options_strategy: default
+optimizer:
+  lr: 0.0007722532928637838
+  name: AdamW
+  relative_step: false
+  scale_parameter: false
+  warmup_init: null
+  weight_decay: 0.014684586776075108
+parameters: null
+prompt_id: original
+seed: 42
+test_run: false

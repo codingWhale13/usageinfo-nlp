@@ -4,8 +4,8 @@ from pathlib import Path
 
 import yaml
 
-EXPERIMENT_COUNT = 5
-CONFIG_FOLDER = "/home/ubuntu/bsc2022-usageinfo/experiments/flan-t5-base"  # EC2 path
+EXPERIMENT_COUNT = 10
+CONFIG_FOLDER = "/hpi/fs00/home/nils.kiele/code/bsc2022-usageinfo/experiments/flan-t5-base"  # EC2 path
 Path(CONFIG_FOLDER).mkdir(parents=True, exist_ok=True)
 
 
@@ -17,7 +17,7 @@ for experiment_id in range(1, EXPERIMENT_COUNT + 1):
             break
 
     optimizer = random.choice(["AdamW", "AdaFactor"])
-    lr_scheduler =random.choice(["null", True])
+    lr_scheduler = random.choice(["null", True])
     if lr_scheduler != "null":
         lr_scheduler = "AdaFactor" if optimizer == "AdaFactor" else "OneCycleLR"
 
@@ -27,11 +27,11 @@ active_layers:
   decoder: "-{active_encoder}:"
   encoder: "-{active_decoder}:"
   lm_head: "{random.choice([True, False])}"
-active_learning: 
+active_learning:
  module: "ActiveDataModule"
- parameters: 
+ parameters:
 module:
-parameters: 
+parameters:
 artifact:
   checkpoint: #9
   name:
@@ -41,17 +41,17 @@ cluster:
   num_nodes: 1
 dataset:
   test_set:
-    name: "silver-test-69"
+    name: "ba-30k-test"
   training_set:
     augmentation_set:
     drop_out: 0.0
-    name: "blinding-light-99"
+    name: "ba-30k-train"
     dataloader_setup_seed: 42
     stratified_drop_out: True
     usage_split:
     validation_split: 0.1
   validation_set:
-    name:
+    name: "ba-30k-val"
 epochs: 20
 gradual_unfreezing_mode: ""
 lr_scheduler_type: {lr_scheduler}
