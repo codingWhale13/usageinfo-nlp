@@ -123,10 +123,7 @@ def get_model_dir(artifact_name: str) -> str:
             os.getenv("MODELS", default=ARTIFACT_PATH + "models"), f"*{artifact_name}"
         )
     )
-<<<<<<< HEAD
-=======
 
->>>>>>> 65f0a49f ([nk/small-fix]: Use dotenv for model if possible)
     if len(model_dirs) == 0:
         raise ValueError("No model found with the given name")
     if len(model_dirs) > 1:
