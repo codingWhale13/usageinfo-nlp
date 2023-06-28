@@ -72,29 +72,23 @@ class Generator:
         return result
 
     def __get_output_with_probs(
-        self, batch, generation_canidate: GenerationCanidate
+        self, generation_canidates: list[GenerationCanidate]
     ) -> list[tuple[float, dict]]:
-        current_probability = generation_canidate.probability
-        canidate_info = generation_canidate.data
-        decoder_input_ids = canidate_info["forced_decoder_ids"].to(self.device)
-
-        sequence_token_length = canidate_info["sequence_token_length"]
-        decoder_attention_mask = torch.zeros(
-            [1, self.MAX_SEQUENCE_LENGTH + 1], dtype=torch.int32
+        decoder_input_ids = torch.stack(
+            x.data["forced_decoder_ids"] for x in generation_canidates
         ).to(self.device)
-        decoder_attention_mask[0][:sequence_token_length] = 1
+        input_ids = torch.stack(x.data["input_ids"] for x in generation_canidates).to(
+            self.device
+        )
+        attention_mask = torch.stack(
+            x.data["attention_mask"] for x in generation_canidates
+        ).to(self.device)
+        encoder_outputs = torch.stack(
+            x.data["encoder_outputs"] for x in generation_canidates
+        ).to(self.device)
         num_token_options = 5
 
-        input_ids = batch["input"]["input_ids"].to(self.device)
-        attention_mask = batch["input"]["attention_mask"].to(self.device)
-
-        encoder_outputs = canidate_info["encoder_outputs"]
-        if encoder_outputs is None:
-            encoder_outputs = self.model.get_encoder()(
-                input_ids=input_ids, attention_mask=attention_mask
-            )
-
-        with torch.no_grad():
+        with torch.inference_mode():
             output = self.model(
                 input_ids=input_ids,
                 encoder_outputs=encoder_outputs,
@@ -103,21 +97,26 @@ class Generator:
             )
 
         # Go from percentage to log probablity
-        token_probs = -(f.softmax(output.logits[0][sequence_token_length], dim=0).log())
+        token_probs = -f.log_softmax(output.logits, dim=-1)
         # Using negative token_probs to get the highest probabilties because the probs are in log and in log the highest prob is the lowest number
-        _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=0)
-        for token_id in top_k_token_ids:
-            new_decoder_input_ids = decoder_input_ids.clone()
-            new_decoder_input_ids[0][sequence_token_length + 1] = int(token_id)
+        _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=-1)
+        for x, generation_canidate in zip(top_k_token_ids, generation_canidates):
+            sequence_token_length = generation_canidate.data["sequence_token_length"]
+            current_probability = generation_canidate.probability
+            for token_id in x:
+                new_decoder_input_ids = generation_canidate.data["decoder_input_ids"]
+                new_decoder_input_ids[0][sequence_token_length + 1] = int(token_id)
 
-            yield GenerationCanidate(
-                current_probability + float(token_probs[int(token_id)]),
-                {
-                    "forced_decoder_ids": new_decoder_input_ids,
-                    "sequence_token_length": sequence_token_length + 1,
-                    "encoder_outputs": encoder_outputs,
-                },
-            )
+                yield GenerationCanidate(
+                    current_probability + float(token_probs[int(token_id)]),
+                    {
+                        "forced_decoder_ids": new_decoder_input_ids,
+                        "sequence_token_length": sequence_token_length + 1,
+                        "encoder_outputs": generation_canidate.data["encoder_outputs"],
+                        "input_ids": generation_canidate.data["input_ids"],
+                        "attention_mask": generation_canidate.data["input_ids"],
+                    },
+                )
 
     def generate_usage_options_prob_based(self, batch) -> list[list[dict]]:
         results = []
@@ -138,6 +137,8 @@ class Generator:
                     ),
                     "sequence_token_length": 0,
                     "encoder_outputs": None,
+                    "input_ids": batch["input"]["input_ids"],
+                    "attention_mask": batch["input"]["attention_mask"],
                 },
             )
         )
@@ -276,7 +277,6 @@ class Generator:
                 "Specify either a label_id to save the labels or set verbose to True. (Or both)"
             )
 
-       
         # you need to enforce batch size of 1 to allow proper calculation of probabilities; will slow down generation a lot
         if self.output_probabilities == "all":
             batch_size = 1
