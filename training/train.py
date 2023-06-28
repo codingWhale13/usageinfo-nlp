@@ -139,25 +139,27 @@ model = ReviewModel(
 if not test_run:
     with SustainabilityLogger(description="training"):
         trainer.fit(model)
-    with SustainabilityLogger(description="testing"):
-        trainer.test()
 
-    try:
-        test_dataset = model.test_reviews
+    if False:  # temporarily disabled for more AWS training runs
+        with SustainabilityLogger(description="testing"):
+            trainer.test()
 
-        label_id = f"model-{wandb.run.name}-auto"
+        try:
+            test_dataset = model.test_reviews
 
-        generator = Generator(
-            wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint="best"
-        )
-        generator.generate_label(test_dataset, label_id=label_id, verbose=True)
+            label_id = f"model-{wandb.run.name}-auto"
 
-        test_dataset.save()
-    except Exception as e:
-        warnings.warn(
-            "Could not generate label for the dataset. The run has probably failed.",
-            e,
-        )
+            generator = Generator(
+                wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint="best"
+            )
+            generator.generate_label(test_dataset, label_id=label_id, verbose=True)
+
+            test_dataset.save()
+        except Exception as e:
+            warnings.warn(
+                "Could not generate label for the dataset. The run has probably failed.",
+                e,
+            )
 else:
     trainer.fit(model)
     trainer.test()
