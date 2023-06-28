@@ -118,7 +118,11 @@ def get_model_dir_file_path(artifact_name: str, file_name: str):
 
 
 def get_model_dir(artifact_name: str) -> str:
-    model_dirs = glob.glob(os.path.join(ARTIFACT_PATH, "models", f"*{artifact_name}"))
+    model_dirs = glob.glob(
+        os.path.join(
+            os.getenv("MODELS", default=ARTIFACT_PATH + "models"), f"*{artifact_name}"
+        )
+    )
     if len(model_dirs) == 0:
         raise ValueError("No model found with the given name")
     if len(model_dirs) > 1:

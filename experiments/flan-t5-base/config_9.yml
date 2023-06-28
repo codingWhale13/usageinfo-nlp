@@ -26,7 +26,7 @@ dataset:
     validation_split: 0.1
   validation_set:
     name: ba-30k-val
-epochs: 20
+epochs: 15
 gradual_unfreezing_mode: ''
 lr_scheduler_type: OneCycleLR
 model_name: flan-t5-base
