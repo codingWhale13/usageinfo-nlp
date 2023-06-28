@@ -1,10 +1,13 @@
 import json
 import random
+from pathlib import Path
 
 import yaml
 
 EXPERIMENT_COUNT = 5
 CONFIG_FOLDER = "/home/ubuntu/bsc2022-usageinfo/experiments/flan-t5-base"  # EC2 path
+Path(CONFIG_FOLDER).mkdir(parents=True, exist_ok=True)
+
 
 for experiment_id in range(1, EXPERIMENT_COUNT + 1):
     while True:
@@ -14,12 +17,12 @@ for experiment_id in range(1, EXPERIMENT_COUNT + 1):
             break
 
     optimizer = random.choice(["AdamW", "AdaFactor"])
-    lr_scheduler =random.choice([True, False])
-    if lr_scheduler:
+    lr_scheduler =random.choice(["null", True])
+    if lr_scheduler != "null":
         lr_scheduler = "AdaFactor" if optimizer == "AdaFactor" else "OneCycleLR"
 
     config_str = f"""
-accumulate_grad_batches: {random.randint(4, 16)}
+accumulate_grad_batches: {random.randint(8, 32)}
 active_layers:
   decoder: "-{active_encoder}:"
   encoder: "-{active_decoder}:"
@@ -32,7 +35,7 @@ parameters:
 artifact:
   checkpoint: #9
   name:
-batch_size: 16
+batch_size: 8
 cluster:
   devices: 1
   num_nodes: 1
@@ -42,7 +45,7 @@ dataset:
   training_set:
     augmentation_set:
     drop_out: 0.0
-    name: "botched-6644"
+    name: "blinding-light-99"
     dataloader_setup_seed: 42
     stratified_drop_out: True
     usage_split:
