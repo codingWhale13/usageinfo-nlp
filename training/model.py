@@ -303,6 +303,21 @@ class ReviewModel(pl.LightningModule):
             )
             self.train_reviews = train_reviews - self.val_reviews
         else:
+            if (
+                self.dataset_config["training_set"]["outlier_removal"]["percentage"]
+                > 0.0
+            ):
+                print(
+                    f"Size of training set before removing outliers: {len(train_reviews)}"
+                )
+                train_reviews.remove_outliers(
+                    training_set_config["outlier_removal"]["distance_threshold"],
+                    training_set_config["outlier_removal"]["percentage"],
+                    self.train_reviews_strategy,
+                )
+                print(
+                    f"Size of training set after removing outliers: {len(train_reviews)}"
+                )
             self.val_reviews, self.train_reviews = train_reviews.stratified_split(
                 training_set_config["validation_split"],
                 self.train_reviews_strategy,

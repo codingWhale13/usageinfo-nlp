@@ -16,6 +16,7 @@ from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
+from helpers.label_selection import DatasetSelectionStrategy
 
 
 class ReviewSet:
@@ -754,6 +755,65 @@ class ReviewSet:
                 )
 
             return result
+
+    def remove_outliers(
+        self,
+        distance_threshold: float,
+        remove_percentage: float,
+        selection_strategy: DatasetSelectionStrategy,
+    ):
+        from clustering import utils
+        from clustering.clusterer import Clusterer
+        from clustering.data_loader import DataLoader
+        import pandas as pd
+
+        clustering_config = {
+            "data": {
+                "model_name": "all-mpnet-base-v2",
+            },
+            "clustering": {
+                "use_reduced_embeddings": False,
+                "algorithm": "agglomerative",
+                "metric": "cosine",
+                "linkage": "average",
+                "save_to_disk": False,
+                "distance_thresholds": [distance_threshold],
+            },
+        }
+
+        if remove_percentage == 0:
+            return
+
+        arg_dicts = utils.get_arg_dicts(clustering_config, len(self))
+        assert len(arg_dicts) == 1
+        review_set_df, df_to_cluster = DataLoader(
+            self, selection_strategy, clustering_config["data"]
+        ).load()
+
+        clustered_df = Clusterer(
+            df_to_cluster, arg_dicts[0]
+        ).cluster()  # arg_dicts[0] is the only arg_dict
+        clustered_df = utils.merge_duplicated_usage_options(clustered_df, review_set_df)
+        total_usage_options = len(clustered_df)
+
+        count_label_df = (
+            clustered_df.groupby("label")
+            .count()
+            .reset_index()
+            .sort_values(ascending=True, by="review_id")
+        )
+        outlier_df = pd.DataFrame()
+        for label in count_label_df["label"]:
+            if outlier_df.shape[0] / total_usage_options >= remove_percentage:
+                break
+            outlier_df = outlier_df.append(clustered_df[clustered_df["label"] == label])
+        review_ids_to_drop = set(outlier_df["review_id"].tolist())
+
+        print(
+            f"{outlier_df.shape[0]}/{total_usage_options} usage options are outliers -> removing {len(review_ids_to_drop)}/{len(self)} reviews"
+        )
+        for outlier_id in review_ids_to_drop:
+            self.drop_review(outlier_id)
 
     def save(self, path: Optional[Union[str, Path]] = None) -> None:
         if path:

@@ -3,9 +3,9 @@ active_layers:
   decoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
   encoder: "-3:"
   lm_head: True
-active_learning: 
+active_learning:
  module: "ActiveDataModule"
- parameters: 
+ parameters:
 artifact:
   checkpoint: #9
   name: #"scintillating-mandu-99"
@@ -18,9 +18,12 @@ dataset:
     name: "silver-test-69"
   training_set:
     augmentation_set: # "legacy"
-    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
-    name: "botched-6644"
     dataloader_setup_seed: 42
+    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
+    name: "blinding-light-99"
+    outlier_removal:
+      percentage: 0.0 # fraction of data to remove from training set (validation set stays untouched), use only when drop_out is 0.0
+      distance_threshold: 0.53 # distance threshold for outlier removal, default is 0.53
     stratified_drop_out: True # stratification based on if the review has usage options or not
     usage_split: # 0.5
     validation_split: 0.10
