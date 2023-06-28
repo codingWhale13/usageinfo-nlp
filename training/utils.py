@@ -17,6 +17,8 @@ import datetime
 from lightning import pytorch as pl
 from typing import Tuple
 
+dotenv.load_dotenv()
+
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 
 model_tuples = {
@@ -67,7 +69,6 @@ optimizers = {
 
 
 def get_dataset_path(dataset: str, review_set_name: str = "reviews.json") -> str:
-    dotenv.load_dotenv()
     dataset_dir = os.path.join(
         os.getenv("DATASETS", default=ARTIFACT_PATH + "datasets"), dataset
     )
@@ -178,7 +179,9 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
     time = datetime.datetime.now().strftime("%m_%d_%H_%M")
 
     run_name = f"{time}_{logger.experiment.name}"
-    dirpath = f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/models/{run_name}"
+    dirpath = os.path.join(
+        os.getenv("MODELS", default=ARTIFACT_PATH + "models"), run_name
+    )
 
     os.mkdir(dirpath)
     with open(os.path.join(dirpath, "config.yml"), "w+") as file:
