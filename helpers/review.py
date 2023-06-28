@@ -283,9 +283,11 @@ class Review:
         max_length: int = float("inf"),
     ) -> Optional[dict]:
         tokens = tokenizer(
-            text, return_tensors="pt", padding="max_length", truncation=not for_training
+            text,
+            return_tensors="pt",
+            padding="max_length",
+            truncation=not for_training,
         )
-
         # Remove batch dimension, since we only have one example
         tokens["input_ids"] = tokens["input_ids"][0]
         tokens["attention_mask"] = tokens["attention_mask"][0]
@@ -338,6 +340,33 @@ class Review:
         else:
             raise ValueError(f"strategy '{strategy}' not supported")
 
+    def get_prompt(self, prompt_id="avetis_v1") -> str:
+        from langchain import PromptTemplate
+
+        path = Path(__file__).parent.parent / "openai_api/prompts.json"
+
+        with open(path) as f:
+            prompts = json.load(f)
+
+        prompt_text = prompts["model-training"][prompt_id]["prompt"]
+        prompt_input_variables = prompts["model-training"][prompt_id]["input_variables"]
+
+        prompt = PromptTemplate(
+            template=prompt_text,
+            input_variables=prompt_input_variables,
+            validate_template=False,
+        )
+
+        prompt = prompt.format(
+            **{
+                key: value
+                for key, value in self.data.items()
+                if key in prompt_input_variables
+            }
+        )
+
+        return prompt
+
     def get_tokenized_datapoints(
         self,
         selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,
@@ -345,35 +374,6 @@ class Review:
         prompt_id: str = "avetis_v1",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
-        from langchain import PromptTemplate
-
-        def get_prompt(prompt_id="avetis_v1") -> str:
-            path = Path(__file__).parent.parent / "openai_api/prompts.json"
-
-            with open(path) as f:
-                prompts = json.load(f)
-
-            prompt_text = prompts["model-training"][prompt_id]["prompt"]
-            prompt_input_variables = prompts["model-training"][prompt_id][
-                "input_variables"
-            ]
-
-            prompt = PromptTemplate(
-                template=prompt_text,
-                input_variables=prompt_input_variables,
-                validate_template=False,
-            )
-
-            prompt = prompt.format(
-                **{
-                    key: value
-                    for key, value in self.data.items()
-                    if key in prompt_input_variables
-                }
-            )
-
-            return prompt
-
         def format_dict(model_input, output, review_id, source_id) -> dict:
             return {
                 "input": model_input,
@@ -382,7 +382,7 @@ class Review:
                 "source_id": source_id,
             }
 
-        model_input = get_prompt(prompt_id=prompt_id)
+        model_input = self.get_prompt(prompt_id=prompt_id)
         model_input = self.tokenize(
             text=model_input,
             is_input=True,
