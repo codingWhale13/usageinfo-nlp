@@ -120,12 +120,12 @@ class Generator:
 
     def generate_usage_options_prob_based(self, batch) -> list[list[dict]]:
         results = []
-
+        
         total_probability = 0
         MAX_ITERATIONS = 100
         MINIMUM_PROBAILITY = -log(0.001)
         MINIMUM_TOTAL_PROBABILITY = 0.95
-
+        
         generation_queue = PriorityQueue()
 
         generation_queue.put(
@@ -144,6 +144,7 @@ class Generator:
         )
 
         i = 0
+
         while (
             not generation_queue.empty()
             and i < MAX_ITERATIONS
