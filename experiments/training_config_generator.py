@@ -3,18 +3,22 @@ import random
 
 import yaml
 
-while True:
-    active_encoder = random.randint(1, 8)
-    active_decoder = random.randint(1, 8)
-    if 4 <= active_encoder + active_decoder <= 12:
-        break
+EXPERIMENT_COUNT = 5
+CONFIG_FOLDER = "/home/ubuntu/bsc2022-usageinfo/experiments/flan-t5-base"  # EC2 path
 
-optimizer = random.choice(["AdamW", "AdaFactor"])
-if random.choice([True, False]):
-    lr_scheduler = "AdaFactor" if optimizer == "AdaFactor" else "OneCycleLR"
+for experiment_id in range(1, EXPERIMENT_COUNT + 1):
+    while True:
+        active_encoder = random.randint(1, 8)
+        active_decoder = random.randint(1, 8)
+        if 4 <= active_encoder + active_decoder <= 12:
+            break
 
+    optimizer = random.choice(["AdamW", "AdaFactor"])
+    lr_scheduler =random.choice([True, False])
+    if lr_scheduler:
+        lr_scheduler = "AdaFactor" if optimizer == "AdaFactor" else "OneCycleLR"
 
-config_str = f"""
+    config_str = f"""
 accumulate_grad_batches: {random.randint(4, 16)}
 active_layers:
   decoder: "-{active_encoder}:"
@@ -23,24 +27,26 @@ active_layers:
 active_learning: 
  module: "ActiveDataModule"
  parameters: 
+module:
+parameters: 
 artifact:
   checkpoint: #9
-  name: #"scintillating-mandu-99"
+  name:
 batch_size: 16
 cluster:
-  devices: 1 #Number of gpus per node
+  devices: 1
   num_nodes: 1
 dataset:
   test_set:
     name: "silver-test-69"
   training_set:
     augmentation_set:
-    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
+    drop_out: 0.0
     name: "botched-6644"
     dataloader_setup_seed: 42
     stratified_drop_out: True
-    usage_split: # 0.5
-    validation_split: 0.0
+    usage_split:
+    validation_split: 0.1
   validation_set:
     name:
 epochs: 20
@@ -60,5 +66,7 @@ seed: 42
 test_run: False
 """
 
-config = yaml.safe_load(config_str)
-print(json.dumps(config, indent=4))
+    config = yaml.safe_load(config_str)
+    with open(f"{CONFIG_FOLDER}/config_{experiment_id}.yml", "w") as file:
+        config_yml = yaml.dump(config)
+        file.write(config_yml)
