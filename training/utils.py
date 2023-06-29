@@ -20,6 +20,7 @@ from typing import Tuple
 dotenv.load_dotenv()
 
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
+MAX_OUTPUT_LENGTH = 128
 
 model_tuples = {
     "t5-small": lambda: (

@@ -282,11 +282,19 @@ class Review:
         is_input: bool,
         max_length: int = float("inf"),
     ) -> Optional[dict]:
+        from training.utils import MAX_OUTPUT_LENGTH
+
+        max_length = (
+            min(MAX_OUTPUT_LENGTH, max_length)
+            if (not is_input and for_training)
+            else max_length
+        )
         tokens = tokenizer(
             text,
             return_tensors="pt",
-            padding="max_length",
             truncation=not for_training,
+            max_length=max_length,
+            padding="max_length",
         )
         # Remove batch dimension, since we only have one example
         tokens["input_ids"] = tokens["input_ids"][0]
