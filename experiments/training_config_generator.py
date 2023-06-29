@@ -4,12 +4,16 @@ from pathlib import Path
 
 import yaml
 
-EXPERIMENT_COUNT = 10
-CONFIG_FOLDER = "/hpi/fs00/home/nils.kiele/code/bsc2022-usageinfo/experiments/flan-t5-base"  # EC2 path
+EXPERIMENT_COUNT = 30
+CONFIG_FOLDER = "experiments/flan-t5-base"
 Path(CONFIG_FOLDER).mkdir(parents=True, exist_ok=True)
 
 
-for experiment_id in range(1, EXPERIMENT_COUNT + 1):
+for experiment_id in range(1111,1112):
+    file_name = f"{CONFIG_FOLDER}/config_{experiment_id}.yml"
+    if Path(file_name).is_file():
+        continue
+
     while True:
         active_encoder = random.randint(1, 8)
         active_decoder = random.randint(1, 8)
@@ -18,8 +22,8 @@ for experiment_id in range(1, EXPERIMENT_COUNT + 1):
 
     optimizer = random.choice(["AdamW", "AdaFactor"])
     lr_scheduler = random.choice(["null", True])
-    if lr_scheduler != "null":
-        lr_scheduler = "AdaFactor" if optimizer == "AdaFactor" else "OneCycleLR"
+    if lr_scheduler != "null" and optimizer == "OneCycleLR":
+        lr_scheduler = "OneCycleLR"
 
     config_str = f"""
 accumulate_grad_batches: {random.randint(8, 32)}
@@ -52,7 +56,7 @@ dataset:
     validation_split: 0.1
   validation_set:
     name: "ba-30k-val"
-epochs: 20
+epochs: 15
 gradual_unfreezing_mode: ""
 lr_scheduler_type: {lr_scheduler}
 model_name: "flan-t5-base"
@@ -70,6 +74,6 @@ test_run: False
 """
 
     config = yaml.safe_load(config_str)
-    with open(f"{CONFIG_FOLDER}/config_{experiment_id}.yml", "w") as file:
+    with open(file_name, "w") as file:
         config_yml = yaml.dump(config)
         file.write(config_yml)
