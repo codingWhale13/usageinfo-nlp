@@ -130,15 +130,18 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-        if self.lr_scheduler_type != None:
-            self.log(
-                "epoch_end_lr",
-                self.lr_scheduler.get_last_lr()[0],
-                on_epoch=True,
-                logger=True,
-                sync_dist=True,
-                batch_size=self.hyperparameters["batch_size"],
-            )
+
+        self.log(
+            "epoch_end_lr",
+            self.hyperparameters["max_lr"]
+            if self.lr_scheduler_type is None
+            else self.lr_scheduler.get_last_lr()[0],
+            on_epoch=True,
+            logger=True,
+            sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
+        )
+
         utils.gradual_unfreeze(
             self.model,
             self.current_epoch,
