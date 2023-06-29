@@ -15,7 +15,11 @@ cluster:
   num_nodes: 1 #Number of nodes
 dataset:
   test_set:
+<<<<<<< HEAD
     name: "ba-30k-test"
+=======
+    name: "silver-test-69"
+>>>>>>> f382eb52 (experiments [feat]: add BP config)
   training_set:
     augmentation_set: # "legacy"
     dataloader_setup_seed: 42
@@ -43,7 +47,11 @@ optimizer: #Set all parameters you do not want to null
   weight_decay: 0.01
 prompt_id: "original"
 seed: 42 # can be left empty
+<<<<<<< HEAD
 test_run: False
+=======
+test_run: True
+>>>>>>> f382eb52 (experiments [feat]: add BP config)
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
