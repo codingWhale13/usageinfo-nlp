@@ -28,13 +28,13 @@ dataset:
     name: ba-30k-val
 epochs: 15
 gradual_unfreezing_mode: ''
-lr_scheduler_type: true
+lr_scheduler_type: OneCycleLR
 model_name: flan-t5-base
 module: null
 multiple_usage_options_strategy: default
 optimizer:
   lr: 5.2560512168081124e-05
-  name: AdaFactor
+  name: AdamW
   relative_step: false
   scale_parameter: false
   warmup_init: null
