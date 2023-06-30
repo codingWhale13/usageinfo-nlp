@@ -9,21 +9,23 @@ CONFIG_FOLDER = "experiments/flan-t5-base"
 Path(CONFIG_FOLDER).mkdir(parents=True, exist_ok=True)
 
 
-for experiment_id in range(1111,1112):
+for experiment_id in range(31, 36):
     file_name = f"{CONFIG_FOLDER}/config_{experiment_id}.yml"
     if Path(file_name).is_file():
         continue
 
     while True:
-        active_encoder = random.randint(1, 8)
-        active_decoder = random.randint(1, 8)
-        if 4 <= active_encoder + active_decoder <= 12:
+        active_encoder = random.randint(1, 4)  # !
+        active_decoder = random.randint(1, 4)  # !
+        if 4 <= active_encoder + active_decoder <= 6:  # !
             break
 
     optimizer = random.choice(["AdamW", "AdaFactor"])
     lr_scheduler = random.choice(["null", True])
-    if lr_scheduler != "null" and optimizer == "OneCycleLR":
+    if lr_scheduler != "null" and optimizer == "AdamW":
         lr_scheduler = "OneCycleLR"
+    else:
+        lr_scheduler = "null"
 
     config_str = f"""
 accumulate_grad_batches: {random.randint(8, 32)}

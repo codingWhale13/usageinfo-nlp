@@ -15,7 +15,7 @@ cluster:
   num_nodes: 1 #Number of nodes
 dataset:
   test_set:
-    name: "silver-test-69"
+    name: "ba-30k-test"
   training_set:
     augmentation_set: # "legacy"
     dataloader_setup_seed: 42
@@ -29,7 +29,7 @@ dataset:
     validation_split: 0.00
   validation_set:
     name: "ba-30k-val" # if you choose a specific validation set, the validation split will be ignored
-epochs: 20
+epochs: 15
 gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 model_name: "flan-t5-base"
@@ -43,7 +43,7 @@ optimizer: #Set all parameters you do not want to null
   weight_decay: 0.01
 prompt_id: "original"
 seed: 42 # can be left empty
-test_run: True
+test_run: False
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
