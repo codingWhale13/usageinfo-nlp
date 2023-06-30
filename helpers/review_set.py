@@ -892,6 +892,19 @@ class ReviewSet:
         for outlier_id in review_ids_to_drop:
             self.drop_review(outlier_id)
 
+    def merge_labels(self, *label_ids: str, new_label_id: str) -> None:
+        assert new_label_id not in self.get_all_label_ids()
+
+        strategy = ls.LabelIDSelectionStrategy(*label_ids)
+        for review in self:
+            label = review.get_label_from_strategy(strategy)
+            review.add_label(
+                label_id=new_label_id,
+                usage_options=label["usageOptions"],
+                datasets=label["datasets"],
+                metadata=label["metadata"],
+            )
+
     def save(self, path: Optional[Union[str, Path]] = None) -> None:
         if path:
             self.save_path = path
