@@ -140,10 +140,10 @@ if not test_run:
     with SustainabilityLogger(description="training"):
         trainer.fit(model)
 
-    if False:  # temporarily disabled for more AWS training runs
-        with SustainabilityLogger(description="testing"):
-            trainer.test()
+    with SustainabilityLogger(description="testing"):
+        trainer.test()
 
+    if False:
         try:
             test_dataset = model.test_reviews
 
