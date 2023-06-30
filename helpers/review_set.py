@@ -10,6 +10,8 @@ from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
 
 from numpy import mean, var
+import numpy as np
+import pandas as pd
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.evaluation_cache import EvaluationCache
@@ -201,6 +203,78 @@ class ReviewSet:
 
         if not inplace:
             return review_set
+
+    def stratified_ttv_split(
+        self,
+        train_split: float = 0.7,
+        test_split: float = 0.2,
+        val_split: float = 0.1,
+        label_ids: list[str] = ["bp-chat_gpt_correction", "chat_gpt-vanilla-baseline"],
+    ):
+        def get_first_label_match(labels: dict, label_ids: list[str]):
+            for label_id in label_ids:
+                if label_id in labels:
+                    return label_id
+            return None
+
+        assert train_split + test_split + val_split == 1.0
+
+        df = self.to_pandas()
+        train_list = []
+        test_list = []
+        val_list = []
+
+        df["contains_usage_options"] = df["labels"].apply(
+            lambda x: True
+            if len(x[get_first_label_match(x, label_ids)]["usageOptions"]) > 0
+            else False
+        )
+
+        df1 = df.groupby(
+            [
+                "contains_usage_options",
+                "product_category",
+                "star_rating",
+                "vine",
+                "verified_purchase",
+            ]
+        )
+
+        for key, item in df1:
+            train, test, val = np.split(
+                item,
+                [
+                    int(train_split * len(item)),
+                    int((train_split + test_split) * len(item)),
+                ],
+            )
+
+            train_list.append(train)
+            test_list.append(test)
+            val_list.append(val)
+
+        final_train = pd.concat(train_list).drop(columns=["contains_usage_options"])
+        final_test = pd.concat(test_list).drop(columns=["contains_usage_options"])
+        final_val = pd.concat(val_list).drop(columns=["contains_usage_options"])
+
+        final_train_dict = {
+            "version": 5,
+            "reviews": final_train.to_dict(orient="index"),
+        }
+        final_test_dict = {
+            "version": 5,
+            "reviews": final_test.to_dict(orient="index"),
+        }
+        final_val_dict = {
+            "version": 5,
+            "reviews": final_val.to_dict(orient="index"),
+        }
+
+        return (
+            ReviewSet.from_dict(final_train_dict),
+            ReviewSet.from_dict(final_test_dict),
+            ReviewSet.from_dict(final_val_dict),
+        )
 
     def get_usage_options(self, label_id: str) -> list:
         usage_options = list(
@@ -467,6 +541,9 @@ class ReviewSet:
                 target_fraction=target_fraction,
                 inplace=inplace,
             )
+
+    def to_pandas(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(self.get_data()["reviews"], orient="index")
 
     def get_dataloader(
         self,
