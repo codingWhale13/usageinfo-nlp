@@ -26,12 +26,20 @@ class Generator:
         artifact_name,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
+        prompt_id="original",
     ) -> None:
         global device
 
-        self.config = utils.load_config_from_artifact_name(artifact_name)
+        if artifact_name in utils.model_tuples.keys():
+            self.prompt_id = prompt_id
+            self.model_artifact = artifact_name
 
-        self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
+        else:
+            self.prompt_id = utils.load_config_from_artifact_name(artifact_name)[
+                "prompt_id"
+            ]
+            self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
+
         (
             self.model,
             self.tokenizer,
@@ -87,19 +95,25 @@ class Generator:
             tokenizer=self.tokenizer,
             model_max_length=self.max_length,
             for_training=False,
-            prompt_id=self.config["prompt_id"],
+            prompt_id=self.prompt_id,
         )
 
         label_metadata = {
             "generator": {
-                "artifact_name": self.model_artifact["name"],
-                "checkpoint": self.model_artifact["checkpoint"]
-                if self.model_artifact["checkpoint"] is not None
-                else "last",
                 "model_name": self.model_name,
                 "generation_config": self.generation_config,
+                "prompt_id": self.prompt_id,
             }
         }
+        if self.model_name != self.model_artifact:
+            label_metadata["generator"].update(
+                {
+                    "artifact_name": self.model_artifact["name"],
+                    "checkpoint": self.model_artifact["checkpoint"]
+                    if self.model_artifact["checkpoint"] is not None
+                    else "last",
+                }
+            )
 
         if verbose:
             print(f"Generating label {label_id}...")
