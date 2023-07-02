@@ -1,5 +1,6 @@
 def get_config(name: str) -> dict:
     import os
+    import yaml
 
     config_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), rf"{name}.yml"
@@ -110,7 +111,7 @@ def merge_duplicated_usage_options(clustered_df, review_set_df):
     return pd.merge(
         review_set_df,
         clustered_df[
-            ["usage_option", "label", "centroid"]
+            ["usage_option", "label", "centroid", "reduced_embedding"]
         ],  # need reduced embedding in the future
         on="usage_option",
         how="left",
