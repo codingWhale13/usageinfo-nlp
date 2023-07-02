@@ -1,8 +1,11 @@
 import csv
 import pandas as pd
 import os
+import glob
 
-pairs = [("a", "b"), ("c", "d"), ("e", "f")]
+file_path = glob.glob("sample_pairs_*")
+data = pd.read_csv(file_path[0], sep=";", header=None)
+pairs = data.values.tolist()
 current_pair_index = 0
 results = []
 
@@ -37,6 +40,12 @@ def record_vote(similar):
     results.append([pair[0], pair[1], similar])
 
 
+def record_skip():
+    global results
+    pair = pairs[current_pair_index - 1]
+    results.append([pair[0], pair[1], "skip"])
+
+
 def save_results():
     with open("results.csv", "w", newline="") as file:
         writer = csv.writer(file)
@@ -59,7 +68,7 @@ def main():
             print(f"Usage option 1: {pair[0]}")
             print(f"Usage option 2: {pair[1]}")
             print(
-                "Do these usage options describe the same usage option and should therefore appear in the same cluster? (y/n)"
+                "Do these usage options describe the same usage option and should therefore appear in the same cluster? (y/n) (s to skip)"
             )
             vote = input()
 
@@ -68,6 +77,9 @@ def main():
                 break
             elif vote == "n":
                 record_vote(False)
+                break
+            elif vote == "s":
+                record_skip()
                 break
             else:
                 print("Invalid input")
