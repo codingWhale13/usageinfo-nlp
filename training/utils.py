@@ -12,6 +12,8 @@ from transformers import (
     PegasusTokenizer,
     LongT5ForConditionalGeneration,
     AutoTokenizer,
+    GPT2LMHeadModel,
+    GPT2Tokenizer,
 )
 import torch
 import dotenv
@@ -82,6 +84,13 @@ model_tuples = {
     "pegasus": lambda: (
         PegasusForConditionalGeneration.from_pretrained("google/pegasus-large"),
         PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
+        512,
+    ),
+    "gpt2": lambda: (
+        GPT2LMHeadModel.from_pretrained("gpt2"),
+        GPT2Tokenizer.from_pretrained(
+            "gpt2", model_max_length=512, padding_side="left"
+        ),
         512,
     ),
 }
