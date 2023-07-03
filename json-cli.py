@@ -768,6 +768,7 @@ def test(base_reviewset: ReviewSet, args: argparse.Namespace):
             confidence_level=args.confidence_level,
         )
 
+    print("------------------------------------------------------")
     for (test, metric_id, alternative), test_result in test_results.items():
         print(f"\n{bcolors.BLUE}Test type:{bcolors.ENDC}: {test}")
         print(f"{bcolors.BLUE}Metric: {bcolors.ENDC}: {metric_id}")
