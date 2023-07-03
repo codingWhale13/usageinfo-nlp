@@ -2,12 +2,13 @@ import csv
 import pandas as pd
 import os
 import glob
+import getch
 
 file_path = glob.glob("sample_pairs_*")
-data = pd.read_csv(file_path[0], sep=";", header=None)
-pairs = data.values.tolist()
-current_pair_index = 0
-results = []
+data = pd.read_csv(file_path[0], sep=";", header=0)
+# make new column with votes
+data["votes"] = ""
+current_index = 0
 
 
 def instructions():
@@ -22,11 +23,10 @@ def instructions():
 
 
 def get_next_pair():
-    global pairs
-    global current_pair_index
-    if current_pair_index < len(pairs):
-        pair = pairs[current_pair_index]
-        current_pair_index += 1
+    global current_index
+    if current_index < len(data):
+        pair = data.iloc[current_index]
+        current_index += 1
         return pair
     else:
         save_results()
@@ -35,21 +35,15 @@ def get_next_pair():
 
 
 def record_vote(similar):
-    global results
-    pair = pairs[current_pair_index - 1]
-    results.append([pair[0], pair[1], similar])
+    data["votes"][current_index - 1] = similar
 
 
 def record_skip():
-    global results
-    pair = pairs[current_pair_index - 1]
-    results.append([pair[0], pair[1], "skip"])
+    data["votes"][current_index - 1] = "s"
 
 
 def save_results():
-    with open("results.csv", "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerows(results)
+    data.to_csv("sample_labeled.csv", sep=";", index=False)
 
 
 def clear_terminal():
@@ -63,14 +57,14 @@ def main():
     instructions()
     while True:
         clear_terminal()
-        pair = get_next_pair()
+        row = get_next_pair()
         while True:
-            print(f"Usage option 1: {pair[0]}")
-            print(f"Usage option 2: {pair[1]}")
+            print(f"Usage option 1: {row[0]}")
+            print(f"Usage option 2: {row[1]}")
             print(
                 "Do these usage options describe the same usage option and should therefore appear in the same cluster? (y/n) (s to skip)"
             )
-            vote = input()
+            vote = getch.getch()  # input()
 
             if vote == "y":
                 record_vote(True)
