@@ -146,6 +146,10 @@ class Review:
     def get_label_for_id(self, *label_ids: str) -> Optional[dict]:
         return self.get_label_from_strategy(ls.LabelIDSelectionStrategy(*label_ids))
 
+    def reset_scores(self):
+        for label_id, label in self.get_labels().items():
+            label["scores"] = {}
+
     def add_label(
         self,
         label_id: str,
