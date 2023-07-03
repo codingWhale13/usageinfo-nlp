@@ -15,13 +15,26 @@ from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebl
 
 # NOTE: Do not change these values. They are directly linked with specific metric names
 # If you want to use other parameters, add new metric configurations in CUSTOM_METRIC_FUNCTIONS
-KWARGS_MPNET_V1 = {"use_lowercase": True, "comparator": "all-mpnet-base-v2"}
+KWARGS_MPNET_V1 = {
+    "use_lowercase": True,
+    "comparator": "all-mpnet-base-v2",
+    "distance_metric": "cosine_relu",
+}
 KWARGS_OPENAI_V1 = {
     "use_lowercase": True,
     "comparator": "openai",
     "openai_params": {
         "model": "gpt-3.5-turbo",
         "prompt_id": "nils_v1",
+        "temperature": 1.0,
+    },
+}
+KWARGS_OPENAI_V2 = {
+    "use_lowercase": True,
+    "comparator": "openai",
+    "openai_params": {
+        "model": "gpt-3.5-turbo",
+        "prompt_id": "avetis_v1",
         "temperature": 1.0,
     },
 }
@@ -47,6 +60,7 @@ CUSTOM_METRIC_FUNCTIONS = {
         {"modification": "lemmatize", **KWARGS_MPNET_V1},
     ),
     "custom_weighted_mean_f1_openai": (custom_f1_score_ak, KWARGS_OPENAI_V1),
+    "custom_weighted_mean_f1_openai_avetis": (custom_f1_score_ak, KWARGS_OPENAI_V2),
 }
 STANDARD_METRIC_FUNCTIONS = {
     "bleu": (bleu_score, {}),

@@ -391,6 +391,50 @@
                     "content": "How similar is \"####1####\" to \"####2####\"? Don't give an explanation, only output the similarity class."
                 }
             ]
+        },
+        "avetis_v1": {
+            "prompt": [
+                {
+                    "role": "system",
+                    "content": "You are a semantic string similarity algorithm, determining how similar two use cases of a product are. The similarity should be a naturual number between 0 and 10. Here are example what certain numbers could mean.\nA 10 indicates that the use cases are exactly the same or differ only slightly in their wording\nA 9 indicates that the use cases are not exactly the same but closely related\nA 4 indicates that the two phrases share some common elements, but also have some differences\nA 0 indicates that the two phrases have little to no overlap in their wording or meaning\nDon't give an explanation, only output the number."
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"yard work\" to \"working in the garden\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "10"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"blending fruits\" to \"blending vegetables\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "9"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"great for funerals\" to \"good for weddings\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "5"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"working out\" to \"taking study notes\"?"
+                },
+                {
+                    "role": "assistant",
+                    "content": "0"
+                },
+                {
+                    "role": "user",
+                    "content": "How similar is \"####1####\" to \"####2####\"? Don't give an explanation, only output the number."
+                }
+            ]
         }
     },
     "data-generation": {
