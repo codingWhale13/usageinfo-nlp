@@ -17,6 +17,10 @@ WORD_COUNT_CATEGORIES = {
 }
 METRIC_ID = "custom_weighted_mean_f1"
 TP_SAMPLE_SIZE = 10
+FP_SAMPLE_SIZE = 10
+HARD_SAMPLE_SIZE = 10
+FN_SAMPLE_SIZE = 10
+
 HARD_REVIEWS = [
     "R2ZOYVY2FQW5G",
     "R3CQGAL7I5VFXV",
@@ -156,10 +160,10 @@ def get_score_report(
     )
 
     reviews_sample = {
-        "FP": get_reviews(reviews_df, "usage_class", "FP"),
-        "FN": get_reviews(reviews_df, "usage_class", "FN"),
+        "FP": get_reviews(reviews_df, "usage_class", "FP", FP_SAMPLE_SIZE),
+        "FN": get_reviews(reviews_df, "usage_class", "FN", FN_SAMPLE_SIZE),
         "TP": get_reviews(reviews_df, "usage_class", "TP", TP_SAMPLE_SIZE),
-        "HARD": get_reviews(reviews_df, "hard_review", True),
+        "HARD": get_reviews(reviews_df, "hard_review", True, HARD_SAMPLE_SIZE),
     }
 
     reviews_df["reference_usage_options"] = reviews_df["reference_usage_options"].apply(
@@ -262,6 +266,7 @@ def get_count_plot(df, category: str):
 def get_reviews(df, category: str, class_label: str, n: Optional[int] = None):
     df = df[df[category] == class_label]
     if n:
+        n = min(n, len(df))
         df = df.sample(n=n)
     return df[
         [

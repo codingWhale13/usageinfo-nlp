@@ -18,6 +18,7 @@ from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
+from evaluation.scoring.h_tests import h_test
 from helpers.label_selection import DatasetSelectionStrategy
 
 
@@ -351,6 +352,61 @@ class ReviewSet:
                 for agg_name, agg_func in aggregations.items()
             }
         return agg_scores
+
+    def test(
+        self,
+        label_id_1: Union[str, ls.LabelSelectionStrategyInterface],
+        label_id_2: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
+        tests: list[str] = ["ttest"],
+        alternatives: list[str] = ["two-sided"],
+        metric_ids: Iterable[str] = DEFAULT_METRICS,
+        confidence_level: float = 0.95,  # only used for bootstrap
+    ):
+        import numpy as np
+
+        tests = (
+            ["ttest", "wilcoxon", "bootstrap", "permutation"]
+            if "all" in tests
+            else tests
+        )
+
+        # iterate over all reviews and score label_id_1 against reference_label_candidates and label_id_2 against reference_label_candidates
+        scores = {
+            metric_id: {label_id_1: [], label_id_2: []} for metric_id in metric_ids
+        }
+
+        for review in self:
+            score_1 = review.get_scores(
+                label_id_1, *reference_label_candidates, metric_ids=metric_ids
+            )
+            score_2 = review.get_scores(
+                label_id_2, *reference_label_candidates, metric_ids=metric_ids
+            )
+
+            if score_1 is None or score_2 is None:
+                continue
+
+            for metric_id in metric_ids:
+                scores[metric_id][label_id_1].append(score_1[metric_id])
+                scores[metric_id][label_id_2].append(score_2[metric_id])
+
+        test_results = {}
+
+        for test in tests:
+            for metric_id in metric_ids:
+                for alternative in alternatives:
+                    test_results[(test, metric_id, alternative)] = h_test(
+                        test,
+                        np.array(scores[metric_id][label_id_1]),
+                        np.array(scores[metric_id][label_id_2]),
+                        alternative=alternative,
+                        confidence_level=confidence_level,
+                    )
+
+        EvaluationCache.get().save_to_disk()
+
+        return test_results
 
     def generate_score_report(
         self,

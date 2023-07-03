@@ -134,7 +134,6 @@ async def generate_reviews(
     num_reviews_per_prompt: int,
     file_path: str,
 ):
-
     prompt_file_name = f"{BASE_PATH}/openai_api/prompts.json"
     prompts = []
     with open(prompt_file_name, "r") as prompt_file:
