@@ -24,8 +24,66 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Easily handle reviewset json files. Call the script with only a json file path to see some stats about that reviewset."
     )
-    subparsers = parser.add_subparsers(dest="command", metavar="command")
 
+    subparsers = parser.add_subparsers(dest="command", metavar="command", required=True)
+
+    test_parser = subparsers.add_parser(
+        "test",
+        help="Do a hypothesis test on the base reviewset regarding the performance of two labels",
+    )
+    test_parser.add_argument(
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+
+    test_parser.add_argument(
+        "reference_label_candidate_ids",
+        type=str,
+        metavar="reference_label_id((s))",
+        help="IDs of the reference label(s) to score the two labels against. The scores will be used to do a hypothesis test. Multiple candidates must be separated by a comma (also, wildcard labels need to be in quotes)",
+    )
+    test_parser.add_argument(
+        "label_id_1",
+        type=str,
+        metavar="label_id_1",
+        help="ID of the first label to test",
+    )
+    test_parser.add_argument(
+        "label_id_2",
+        type=str,
+        metavar="label_id_2",
+        help="ID of the second label to test",
+    )
+    test_parser.add_argument(
+        "--type",
+        "-t",
+        type=str,
+        default="ttest",
+        metavar="type",
+        help="Type of test to perform. Currently supported: ttest, wilcoxon, bootstrap, permutation or all. Can be comma separated to perform multiple tests. Default is ttest",
+    )
+    test_parser.add_argument(
+        "--alternative_hypothesis",
+        "-ah",
+        type=str,
+        default="greater",
+        metavar="alternative_hypothesis",
+        help="Alternative hypothesis to use. Can be 'two-sided', 'less' or 'greater'. Can be comma separated to perform multiple tests. Default is 'greater' which means that label1 is expected to perform better than label2",
+    )
+    test_parser.add_argument(
+        "--metrics",
+        "-m",
+        type=str,
+        help="Metrics to use for calculation of scores for test(s) (comma separated, default is defined in scoring/__init__.py)",
+    )
+    test_parser.add_argument(
+        "--confidence_level",
+        "-c",
+        default=0.95,
+        type=float,
+        help="The confidence level to use for the test(s) (default is 0.95). Is only relevant for bootstrap test",
+    )
     stats_parser = subparsers.add_parser(
         "stats",
         help="Just print some stats about the reviewset",
@@ -290,6 +348,8 @@ def print_stats(reviewset: ReviewSet, prefix: str = ""):
         (label_id, len(reviewset.reviews_with_labels({label_id})))
         for label_id in label_ids
     ]
+
+    label_ids_with_count = sorted(label_ids_with_count, key=lambda x: x[0])
 
     print(
         f"{prefix}The reviewset contains {bcolors.BLUE}{len(reviewset)}{bcolors.ENDC} reviews and the following {bcolors.BLUE}{len(reviewset.get_all_label_ids())}{bcolors.ENDC} label(s):\n{prefix}\t",
@@ -633,6 +693,89 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     )
     base_reviewset.save()
     print(f"\n{bcolors.GREEN}Scores saved!{bcolors.ENDC}")
+
+
+def test(base_reviewset: ReviewSet, args: argparse.Namespace):
+    try:
+        label_ids_1 = filter_invalid_label_ids(
+            base_reviewset,
+            [args.label_id_1],
+        )
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No label to report found in the base reviewset for {bcolors.DARKYELLOW}{args.label_id_1}{bcolors.ENDC}"
+        )
+        sys.exit(1)
+
+    try:
+        label_ids_2 = filter_invalid_label_ids(
+            base_reviewset,
+            [args.label_id_2],
+        )
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No label to report found in the base reviewset for {bcolors.DARKYELLOW}{args.label_id_2}{bcolors.ENDC}"
+        )
+        sys.exit(1)
+
+    if len(label_ids_1) > 1:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Multiple matches found for wildcard label {bcolors.DARKYELLOW}{args.label_id_1}{bcolors.ENDC}. Please be more precise."
+        )
+        sys.exit(1)
+    else:
+        label_id_1 = label_ids_1[0]
+    if len(label_ids_2) > 1:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} Multiple matches found for wildcard label {bcolors.DARKYELLOW}{args.label_id_2}{bcolors.ENDC}. Please be more precise."
+        )
+        sys.exit(1)
+    else:
+        label_id_2 = label_ids_2[0]
+
+    tests = args.type.split(",")
+    tests = ["all"] if "all" in tests else tests
+    alternatives = args.alternative_hypothesis.split(",")
+
+    try:
+        reference_label_ids = filter_invalid_label_ids(
+            base_reviewset,
+            args.reference_label_candidate_ids.split(","),
+        )
+    except ValueError:
+        print(
+            f"\n{bcolors.RED}Error:{bcolors.ENDC} No valid reference labels found in the base reviewset"
+        )
+        sys.exit(1)
+
+    if args.metrics is None:
+        test_results = base_reviewset.test(
+            label_id_1,
+            label_id_2,
+            *reference_label_ids,
+            tests=tests,
+            alternatives=alternatives,
+            confidence_level=args.confidence_level,
+        )
+    else:
+        test_results = base_reviewset.test(
+            label_id_1,
+            label_id_2,
+            *reference_label_ids,
+            tests=tests,
+            alternatives=alternatives,
+            metric_ids=args.metrics.split(","),
+            confidence_level=args.confidence_level,
+        )
+
+    for (test, metric_id, alternative), test_result in test_results.items():
+        print(f"\n{bcolors.BLUE}Test type:{bcolors.ENDC}: {test}")
+        print(f"{bcolors.BLUE}Metric: {bcolors.ENDC}: {metric_id}")
+        print(
+            f"{bcolors.BLUE}Alternative hypothesis:{bcolors.ENDC}: score of '{label_id_1}' is {bcolors.BLUE}{alternative}{bcolors.ENDC} than '{label_id_2}'"
+        )
+        print(f"\n{bcolors.RED}result{bcolors.ENDC}: {test_result}\n")
+        print("------------------------------------------------------")
 
 
 def report(base_reviewset: ReviewSet, args: argparse.Namespace):
