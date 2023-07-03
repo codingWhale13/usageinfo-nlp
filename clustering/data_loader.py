@@ -46,18 +46,20 @@ class DataLoader:
             label_id = review.get_label_id_from_strategy(self.label_selection_strategy)
             if label_id is not None:
                 for usage_option in review.get_usage_options(label_id):
-                    embedded_usage_option = get_embedding(
-                        usage_option=usage_option, comparator=self.model_name
-                    )
-                    review_set_list.append(
-                        {
-                            "review_id": review.review_id,
-                            "usage_option": usage_option,
-                            "product_id": review["product_id"],
-                            "product_category": review["product_category"],
-                            "embedding": embedded_usage_option,
-                        }
-                    )
+                    if usage_option is not None and usage_option != "":
+                        embedded_usage_option = get_embedding(
+                            usage_option=usage_option.lower(),
+                            comparator=self.model_name,
+                        )
+                        review_set_list.append(
+                            {
+                                "review_id": review.review_id,
+                                "usage_option": usage_option,
+                                "product_id": review["product_id"],
+                                "product_category": review["product_category"],
+                                "embedding": embedded_usage_option,
+                            }
+                        )
         review_set_df = pd.DataFrame(review_set_list)
         df_to_cluster = review_set_df.drop_duplicates(
             subset=["usage_option"], keep="first"

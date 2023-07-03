@@ -1,5 +1,6 @@
 def get_config(name: str) -> dict:
     import os
+    import yaml
 
     config_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), rf"{name}.yml"
