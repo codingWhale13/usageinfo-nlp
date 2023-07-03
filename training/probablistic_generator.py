@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as f
 from typing import List, Optional
 from typing import Union
-
+from transformers.models.t5.modeling_t5 import BaseModelOutput
 from training import utils
 from helpers.review_set import ReviewSet
 from training.utils import get_config
@@ -33,31 +33,42 @@ class GenerationCanidate:
 
 class ProbabilisticGenerator(Generator):
     MAX_SEQUENCE_LENGTH = 20
-    BATCH_SIZE = 128
+    BATCH_SIZE = 512
 
-    def __init__(self, artifact_name, generation_config: str = ..., checkpoint: int | str | None = None, output_probabilities: str = "best") -> None:
-        super().__init__(artifact_name, generation_config, checkpoint, output_probabilities)
+    def __init__(
+        self,
+        artifact_name,
+        generation_config: str = DEFAULT_GENERATION_CONFIG,
+        checkpoint: Optional[Union[int, str]] = None,
+        output_probabilities: str = "best",
+    ) -> None:
+        super().__init__(
+            artifact_name, generation_config, checkpoint, output_probabilities
+        )
 
     def __get_output_with_probs(
         self, generation_canidates: list[GenerationCanidate]
     ) -> list[tuple[float, dict]]:
         decoder_input_ids = torch.stack(
-            x.data["forced_decoder_ids"] for x in generation_canidates
+            [x.data["forced_decoder_ids"] for x in generation_canidates]
         ).to(self.device)
-        input_ids = torch.stack(x.data["input_ids"] for x in generation_canidates).to(
+        input_ids = torch.stack([x.data["input_ids"] for x in generation_canidates]).to(
             self.device
         )
-        attention_mask = torch.stack(
-            x.data["attention_mask"] for x in generation_canidates
-        ).to(self.device)
-        encoder_outputs = torch.stack(
-            x.data["encoder_outputs"] for x in generation_canidates
-        ).to(self.device)
+
+        # attention_mask = torch.stack(
+        #
+        #    [x.data["attention_mask"] for x in generation_canidates]
+        # x).to(self.device)
+        encoder_outputs = BaseModelOutput(
+            last_hidden_state=torch.stack(
+                [x.data["encoder_outputs"] for x in generation_canidates]
+            ).to(self.device)
+        )
         num_token_options = 5
 
         with torch.inference_mode():
             output = self.model(
-                input_ids=input_ids,
                 encoder_outputs=encoder_outputs,
                 return_dict=True,
                 decoder_input_ids=decoder_input_ids,
@@ -67,166 +78,120 @@ class ProbabilisticGenerator(Generator):
         token_probs = -f.log_softmax(output.logits, dim=-1)
         # Using negative token_probs to get the highest probabilties because the probs are in log and in log the highest prob is the lowest number
         _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=-1)
-        for x, generation_canidate in zip(top_k_token_ids, generation_canidates):
+        for x, generation_canidate, i in zip(
+            top_k_token_ids, generation_canidates, range(len(generation_canidates))
+        ):
             sequence_token_length = generation_canidate.data["sequence_token_length"]
             current_probability = generation_canidate.probability
-            for token_id in x:
-                new_decoder_input_ids = generation_canidate.data["decoder_input_ids"]
-                new_decoder_input_ids[0][sequence_token_length + 1] = int(token_id)
-
+            for token_id in x[sequence_token_length]:
+                new_decoder_input_ids = generation_canidate.data[
+                    "forced_decoder_ids"
+                ].clone()
+                new_decoder_input_ids[sequence_token_length + 1] = int(token_id)
                 yield GenerationCanidate(
-                    current_probability + float(token_probs[int(token_id)]),
+                    current_probability
+                    + float(token_probs[i][sequence_token_length][int(token_id)]),
                     {
                         "forced_decoder_ids": new_decoder_input_ids,
                         "sequence_token_length": sequence_token_length + 1,
                         "encoder_outputs": generation_canidate.data["encoder_outputs"],
                         "input_ids": generation_canidate.data["input_ids"],
                         "attention_mask": generation_canidate.data["input_ids"],
+                        "review_id": generation_canidate.data["review_id"],
                     },
                 )
 
-    def generate_usage_options_prob_based(self, batch) -> list[list[dict]]:
-        results = []
-        
-        total_probability = 0
-        MAX_ITERATIONS = 100
-        MINIMUM_PROBAILITY = -log(0.001)
-        MINIMUM_TOTAL_PROBABILITY = 0.95
-        
-        generation_queue = PriorityQueue()
-
-        generation_queue.put(
-            GenerationCanidate(
-                0,
-                {
-                    "forced_decoder_ids": torch.zeros(
-                        [1, self.MAX_SEQUENCE_LENGTH + 1], dtype=torch.int32
-                    ),
-                    "sequence_token_length": 0,
-                    "encoder_outputs": None,
-                    "input_ids": batch["input"]["input_ids"],
-                    "attention_mask": batch["input"]["attention_mask"],
-                },
-            )
-        )
-
-        i = 0
-
-        while (
-            not generation_queue.empty()
-            and i < MAX_ITERATIONS
-            and total_probability <= MINIMUM_TOTAL_PROBABILITY
-        ):
-            next_generations = self.__get_output_with_probs(
-                batch, generation_queue.get()
-            )
-            i += 1
-
-            for generation in next_generations:
-                # Add to result if the eos token is reached or we already have on result and the current path probability is lower than the minimum probability
-                if (
-                    generation.data["forced_decoder_ids"][-1][
-                        generation.data["sequence_token_length"]
-                    ]
-                    == 1
-                    or generation.data["sequence_token_length"]
-                    >= self.MAX_SEQUENCE_LENGTH
-                ):
-                    total_probability += exp(-generation.probability)
-                    results.append(generation)
-                elif generation.probability < MINIMUM_PROBAILITY:
-                    generation_queue.put(generation)
-
-        decoded_results = self.tokenizer.batch_decode(
-            [result.data["forced_decoder_ids"][0] for result in results],
-            skip_special_tokens=True,
-        )
-        decoded_results_with_probs = [
-            [
-                {
-                    "probability": exp(
-                        -float(result.probability)
-                    ),  # casting current_probability to float because it is a tensor
-                    "sequence_token_length": result.data["sequence_token_length"],
-                    "usageOptions": self.format_usage_options(output),
-                }
-                for result, output in zip(results, decoded_results)
-            ]
-        ]
-        return decoded_results_with_probs
-
-    def generate_usage_options_prob_based_batch(self, review_set: ReviewSet) -> list[dict]:
-        input_queue = Queue() 
+    def generate_usage_options_prob_based_batch(
+        self, review_set: ReviewSet
+    ) -> list[dict]:
+        print("Starting")
+        input_queue = Queue()
         for review in review_set:
+            tokenized_input = self.tokenizer(
+                review.get_prompt(),
+                padding="max_length",
+                max_length=512,
+                truncation=True,
+                return_tensors="pt",
+            )
             input_queue.put(
                 {
                     "review_id": review.review_id,
-                    ** self.tokenizer(review.get_prompt(), padding="max_length", max_length=512, truncation=True)
+                    "input_ids": tokenized_input["input_ids"][0],
+                    "attention_mask": tokenized_input["attention_mask"][0],
                 }
             )
-      
-        encoder_queue = Queue(maxsize=self.BATCH_SIZE*2)
-        decoder_queue = []
+
+        encoder_queue = Queue(maxsize=self.BATCH_SIZE * 2)
+        decoder_queue = {}
         results = []
 
-        while not input_queue.empty():
-            if len(decoder_queue) < self.BATCH_SIZE:
-                if len(encoder_queue) < self.BATCH_SIZE:
-                    encoder_input = []
+        while not input_queue.empty() or len(decoder_queue) > 0:
+            if len(decoder_queue) < self.BATCH_SIZE and not input_queue.empty():
+                encoder_input = []
+                if encoder_queue.qsize() < self.BATCH_SIZE:
                     for _ in range(self.BATCH_SIZE):
                         if input_queue.empty():
                             break
                         encoder_input.append(input_queue.get())
 
-                    
-                    input_ids = torch.stack([x["input_ids"] for x in encoder_input]).to(self.device)
-
+                    input_ids = torch.stack([x["input_ids"] for x in encoder_input]).to(
+                        self.device
+                    )
+                    attention_mask = torch.stack(
+                        [x["attention_mask"] for x in encoder_input]
+                    ).to(self.device)
                     with torch.inference_mode():
-                        encoder_output_batch = self.model.get_encoder(
-                            input_ids=input_ids
+                        encoder_output_batch = self.model.get_encoder()(
+                            input_ids=input_ids, attention_mask=attention_mask
                         )
-                        for encoder_output in zip(encoder_output_batch, encoder_input):
-                            encoder_queue.put({
-                                "review_id": encoder_input["review_id"],
-                                "encoder_output": encoder_output
-                            })
-                    
+                        for encoder_output, x in zip(
+                            encoder_output_batch.last_hidden_state, encoder_input
+                        ):
+                            encoder_queue.put(
+                                {
+                                    "review_id": x["review_id"],
+                                    "encoder_outputs": encoder_output,
+                                    "forced_decoder_ids": torch.zeros(
+                                        [self.MAX_SEQUENCE_LENGTH + 1],
+                                        dtype=torch.int32,
+                                    ),
+                                    "sequence_token_length": 0,
+                                    "input_ids": x["input_ids"],
+                                }
+                            )
 
             while not encoder_queue.empty() and len(decoder_queue) < self.BATCH_SIZE:
                 generation_queue = PriorityQueue()
-                generation_queue.put(
-                    GenerationCanidate(
-                        0,
-                        encoder_queue.get()
-                    )
-                )
-                decoder_queue.append({
+                generation_canidate_data = encoder_queue.get()
+                generation_queue.put(GenerationCanidate(0, generation_canidate_data))
+                decoder_queue[generation_canidate_data["review_id"]] = {
                     "generation_queue": generation_queue,
                     "total_probability": 0,
                     "results": [],
-                    "iteration": 0
-                })
-
+                    "iteration": 0,
+                    "review_id": generation_canidate_data["review_id"],
+                }
 
             generation_canidates = []
-            for generation_queue in decoder_queue:
-                generation_canidates.append(generation_queue.get())
-            
+            for generation_queue in decoder_queue.values():
+                generation_canidates.append(generation_queue["generation_queue"].get())
+
             next_generations = self.__get_output_with_probs(generation_canidates)
 
             MAX_ITERATIONS = 100
             MINIMUM_PROBAILITY = -log(0.001)
             MINIMUM_TOTAL_PROBABILITY = 0.95
-        
 
-            for i, generation in enumerate(next_generations):
+            for generation in next_generations:
                 # Add to result if the eos token is reached or we already have on result and the current path probability is lower than the minimum probability
 
-                current_review = decoder_queue[i]
+                review_id = generation.data["review_id"]
+                current_review = decoder_queue[review_id]
                 generation_queue = current_review["generation_queue"]
                 current_review["iteration"] += 1
                 if (
-                    generation.data["forced_decoder_ids"][-1][
+                    generation.data["forced_decoder_ids"][
                         generation.data["sequence_token_length"]
                     ]
                     == 1
@@ -238,21 +203,40 @@ class ProbabilisticGenerator(Generator):
                 elif generation.probability < MINIMUM_PROBAILITY:
                     generation_queue.put(generation)
 
-                if current_review["iteration"] > MAX_ITERATIONS or current_review["total_probability"] >= MINIMUM_TOTAL_PROBABILITY:
-                    decoder_queue.remove(current_review)
-                    results.append(current_review)
+            items_to_delete = []
+            for review_id, review in decoder_queue.items():
+                if (
+                    review["iteration"] > MAX_ITERATIONS
+                    or review["total_probability"] >= MINIMUM_TOTAL_PROBABILITY
+                    or review["generation_queue"].empty()
+                ):
+                    items_to_delete.append(review_id)
+                    results.append(review)
 
-        return results
+            for key in items_to_delete:
+                del decoder_queue[key]
 
-            
-            
+        formatted_results = []
+        for review in results:
+            review_results = []
+            for result in review["results"]:
+                prob = exp(-result.probability)
+                text = self.tokenizer.decode(
+                    result.data["forced_decoder_ids"], skip_special_tokens=True
+                )
 
+                review_results.append(
+                    {
+                        "probability": prob,
+                        "sequence_token_length": result.data["sequence_token_length"],
+                        "usageOptions": self.format_usage_options(text),
+                    }
+                )
+            formatted_results.append(review_results)
 
-
-            
-
+        return formatted_results
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
     ) -> None:
-        self.generate_usage_options_prob_based_batch([review.get_prompt() for review in reviews])
+        self.generate_usage_options_prob_based_batch(reviews)
