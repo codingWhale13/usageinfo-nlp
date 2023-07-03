@@ -695,6 +695,10 @@ class ReviewSet:
             },
         )
 
+    def reset_scores(self):
+        for review in self:
+            review.reset_scores()
+
     def split(
         self,
         fraction: float,
