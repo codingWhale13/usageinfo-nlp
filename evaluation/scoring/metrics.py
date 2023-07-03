@@ -15,7 +15,11 @@ from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebl
 
 # NOTE: Do not change these values. They are directly linked with specific metric names
 # If you want to use other parameters, add new metric configurations in CUSTOM_METRIC_FUNCTIONS
-KWARGS_MPNET_V1 = {"use_lowercase": True, "comparator": "all-mpnet-base-v2"}
+KWARGS_MPNET_V1 = {
+    "use_lowercase": True,
+    "comparator": "all-mpnet-base-v2",
+    "distance_metric": "cosine_relu",
+}
 KWARGS_OPENAI_V1 = {
     "use_lowercase": True,
     "comparator": "openai",

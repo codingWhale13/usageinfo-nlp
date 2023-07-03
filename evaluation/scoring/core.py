@@ -12,7 +12,7 @@ from openai_api.openai_backend import (
 )
 
 # models for string similarity will only be loaded when needed
-spacy_eval = bleu_eval = sacrebleu_eval = rouge_eval =  None
+spacy_eval = bleu_eval = sacrebleu_eval = rouge_eval = None
 st_eval = {}
 
 
@@ -35,7 +35,7 @@ OPENAI_SIMILIARITY_CLASSES = {
         "8": 0.8,
         "9": 0.9,
         "10": 1,
-    }
+    },
 }
 
 
@@ -75,11 +75,19 @@ def get_embedding(usage_option: str, comparator: str = "all-mpnet-base-v2") -> l
 
     cache = EvaluationCache.get()
     key = (comparator, usage_option)
-    
-    if key in cache and comparator not in ["sentence-t5-xxl", "gtr-t5-xxl", "all-mpnet-base-v2"]:
+
+    if key in cache and comparator not in [
+        "sentence-t5-xxl",
+        "gtr-t5-xxl",
+        "all-mpnet-base-v2",
+    ]:
         return cache[key]
 
-    if comparator == "all-mpnet-base-v2" or comparator == "sentence-t5-xxl" or comparator == "gtr-t5-xxl":
+    if (
+        comparator == "all-mpnet-base-v2"
+        or comparator == "sentence-t5-xxl"
+        or comparator == "gtr-t5-xxl"
+    ):
         if comparator not in st_eval:
             from sentence_transformers import SentenceTransformer
 
@@ -97,47 +105,67 @@ def get_embedding(usage_option: str, comparator: str = "all-mpnet-base-v2") -> l
     cache[key] = embedding
     return embedding
 
-def get_all_similarities(predictions: str, reference: str, use_lowercase: bool=True, openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS):
-    for comparator in ["all-mpnet-base-v2", "spacy", "bleu", "sacrebleu", "rouge1", "rouge2", "rougeL", "rougeLsum", "openai", "sentence-t5-xxl", "gtr-t5-xxl"]:
-        yield comparator, get_similarity(predictions, reference, comparator, use_lowercase, openai_params)
+
+def get_all_similarities(
+    predictions: str,
+    reference: str,
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,
+):
+    for comparator in [
+        "all-mpnet-base-v2",
+        "spacy",
+        "bleu",
+        "sacrebleu",
+        "rouge1",
+        "rouge2",
+        "rougeL",
+        "rougeLsum",
+        "openai",
+        "sentence-t5-xxl",
+        "gtr-t5-xxl",
+    ]:
+        yield comparator, get_similarity(
+            predictions, reference, comparator, use_lowercase, openai_params
+        )
 
 
 def get_similarity(
-    prediction: str,
-    reference: str,
+    label_1: str,
+    label_2: str,
     comparator: str = "all-mpnet-base-v2",
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine", # alternative: "euclidean"
+    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
 ) -> float:
     global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
 
     if use_lowercase:
-        prediction = prediction.lower()
-        reference = reference.lower()
+        label_1 = label_1.lower()
+        label_2 = label_2.lower()
 
     if modification == "stem":
         import nltk
 
         nltk.download("punkt", quiet=True)
         ps = nltk.stem.PorterStemmer()
-        prediction = " ".join(ps.stem(word) for word in prediction.split())
-        reference = " ".join(ps.stem(word) for word in reference.split())
+        label_1 = " ".join(ps.stem(word) for word in label_1.split())
+        label_2 = " ".join(ps.stem(word) for word in label_2.split())
     elif modification == "lemmatize":
         import nltk
 
         nltk.download("wordnet", quiet=True)
         nltk.download("omw-1.4", quiet=True)
         wnl = nltk.stem.WordNetLemmatizer()
-        prediction = " ".join(wnl.lemmatize(word) for word in prediction.split())
-        reference = " ".join(wnl.lemmatize(word) for word in reference.split())
+        label_1 = " ".join(wnl.lemmatize(word) for word in label_1.split())
+        label_2 = " ".join(wnl.lemmatize(word) for word in label_2.split())
 
     if comparator == "openai":
         cache = EvaluationCache.get()
         key = tuple(
             [comparator]
-            + list(sorted([prediction, reference]))
+            + list(sorted([label_1, label_2]))
             + [
                 openai_params["model"],
                 openai_params["prompt_id"],
@@ -149,7 +177,7 @@ def get_similarity(
             return cache[key]
 
         similiarity_class = get_phrase_similiarity_from_openai(
-            prediction, reference, **openai_params
+            label_1, label_2, **openai_params
         )
         prompt_id = openai_params["prompt_id"]
         if similiarity_class in OPENAI_SIMILIARITY_CLASSES[prompt_id]:
@@ -157,18 +185,24 @@ def get_similarity(
         else:
             similarity = 0
             print(
-                f"WARNING: '{similiarity_class}' is not a valid similarity class for prediction '{prediction}' and reference '{reference}'"
+                f"WARNING: '{similiarity_class}' is not a valid similarity class for prediction '{label_1}' and reference '{label_2}'"
             )
 
         cache[key] = similarity
         return similarity
-    elif comparator == "all-mpnet-base-v2" or comparator == "spacy" or comparator == "sentence-t5-xxl" or comparator == "gtr-t5-xxl":
-        prediction_tokens = get_embedding(prediction, comparator)
-        reference_tokens = get_embedding(reference, comparator)
+    elif (
+        comparator == "all-mpnet-base-v2"
+        or comparator == "spacy"
+        or comparator == "sentence-t5-xxl"
+        or comparator == "gtr-t5-xxl"
+    ):
+        prediction_tokens = get_embedding(label_1, comparator)
+        reference_tokens = get_embedding(label_2, comparator)
         from sentence_transformers import util
-        
+
         if distance_metric == "euclidean":
             from numpy import linalg
+
             # normalize to unit vectors
             prediction_tokens = prediction_tokens / linalg.norm(prediction_tokens)
             reference_tokens = reference_tokens / linalg.norm(reference_tokens)
@@ -176,25 +210,28 @@ def get_similarity(
         elif distance_metric == "cosine":
             similarity = util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()
         elif distance_metric == "cosine_relu":
-            similarity = min(1, max(0, util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()))
+            similarity = min(
+                1,
+                max(0, util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()),
+            )
         else:
-            raise ValueError(f"distance metric {distance_metric} not supported")  
+            raise ValueError(f"distance metric {distance_metric} not supported")
         return similarity
     elif comparator == "bleu":
         if bleu_eval is None:
             bleu_eval = evaluate.load("bleu")
-        pr, re = [prediction], [[reference]]
+        pr, re = [label_1], [[label_2]]
         return bleu_eval.compute(predictions=pr, references=re)["bleu"]
 
     elif comparator == "sacrebleu":
         if sacrebleu_eval is None:
             sacrebleu_eval = evaluate.load("sacrebleu")
-        res = sacrebleu_eval.compute(predictions=[prediction], references=[[reference]])
+        res = sacrebleu_eval.compute(predictions=[label_1], references=[[label_2]])
         return res["score"] * 0.01
     else:
         if rouge_eval is None:
             rouge_eval = evaluate.load("rouge")
-        pr, re = [prediction], [[reference]]
+        pr, re = [label_1], [[label_2]]
         rogue_metrics = rouge_eval.compute(predictions=pr, references=re)
         # currently available: rouge1, rouge2, rougeL, rougeLsum
         if comparator in rogue_metrics.keys():
@@ -210,6 +247,7 @@ def get_most_similar(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
+    distance_metric: str = "cosine_relu",
     threshold_word_sim: float = 0,
 ) -> tuple[float, str]:
     """For a single `label`, find the most similar match from `options`.
@@ -220,12 +258,13 @@ def get_most_similar(
     result = (0, None)
     for option in options:
         similarity = get_similarity(
-            prediction=option,
-            reference=label,
+            label_1=option,
+            label_2=label,
             comparator=comparator,
             use_lowercase=use_lowercase,
             openai_params=openai_params,
             modification=modification,
+            distance_metric=distance_metric,
         )
         if similarity >= max(result[0], threshold_word_sim):
             result = (similarity, option)
