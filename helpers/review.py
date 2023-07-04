@@ -146,6 +146,10 @@ class Review:
     def get_label_for_id(self, *label_ids: str) -> Optional[dict]:
         return self.get_label_from_strategy(ls.LabelIDSelectionStrategy(*label_ids))
 
+    def reset_scores(self):
+        for label_id, label in self.get_labels().items():
+            label["scores"] = {}
+
     def add_label(
         self,
         label_id: str,
@@ -289,6 +293,10 @@ class Review:
             if (not is_input and for_training)
             else max_length
         )
+
+        if not is_input and for_training and len(text) == 0:
+            text = "no usage options"
+
         tokens = tokenizer(
             text,
             return_tensors="pt",
@@ -311,14 +319,14 @@ class Review:
         self, usage_options: list[str], strategy: str = None
     ) -> list[str]:
         if not strategy or strategy == "default":
-            return [", ".join(usage_options)]
+            return ["; ".join(usage_options)]
         elif strategy == "flat":
             return usage_options or [""]
         elif strategy.startswith("shuffle"):
             usage_options = copy(usage_options)
             random.shuffle(usage_options)
             if not strategy.startswith("shuffle-"):
-                return [", ".join(usage_options)]
+                return ["; ".join(usage_options)]
 
             permutation_limit = strategy.split("-")[1]
             if permutation_limit == "all":
@@ -339,7 +347,7 @@ class Review:
                     )
 
             permutations = [
-                ", ".join(permutation)
+                "; ".join(permutation)
                 for permutation in itertools.islice(
                     itertools.permutations(usage_options), permutation_limit
                 )
