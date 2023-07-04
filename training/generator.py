@@ -54,9 +54,11 @@ class Generator:
         )
 
     def format_usage_options(self, text_completion: str) -> List[str]:
+        if text_completion.lower() == "no usage options":
+            return []
         return [
             usage_option.strip()
-            for usage_option in text_completion.split(", ")
+            for usage_option in text_completion.split("; ")
             if usage_option.strip()
         ]
 

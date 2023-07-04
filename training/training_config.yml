@@ -44,6 +44,8 @@ optimizer: #Set all parameters you do not want to null
 prompt_id: "original"
 seed: 42 # can be left empty
 test_run: False
+files_to_generate_on:
+  -
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
