@@ -92,7 +92,7 @@ class Generator:
             )
 
         dataloader, _ = reviews.get_dataloader(
-            batch_size=32,
+            batch_size=512,
             num_workers=0,
             tokenizer=self.tokenizer,
             model_max_length=self.max_length,
