@@ -10,12 +10,15 @@ from statistics import mean, quantiles, variance
 from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
 
 from numpy import mean, var
+import numpy as np
+import pandas as pd
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
+from helpers.label_selection import DatasetSelectionStrategy
 
 
 class ReviewSet:
@@ -200,6 +203,78 @@ class ReviewSet:
 
         if not inplace:
             return review_set
+
+    def stratified_ttv_split(
+        self,
+        train_split: float = 0.7,
+        test_split: float = 0.2,
+        val_split: float = 0.1,
+        label_ids: list[str] = ["bp-chat_gpt_correction", "chat_gpt-vanilla-baseline"],
+    ):
+        def get_first_label_match(labels: dict, label_ids: list[str]):
+            for label_id in label_ids:
+                if label_id in labels:
+                    return label_id
+            return None
+
+        assert train_split + test_split + val_split == 1.0
+
+        df = self.to_pandas()
+        train_list = []
+        test_list = []
+        val_list = []
+
+        df["contains_usage_options"] = df["labels"].apply(
+            lambda x: True
+            if len(x[get_first_label_match(x, label_ids)]["usageOptions"]) > 0
+            else False
+        )
+
+        df1 = df.groupby(
+            [
+                "contains_usage_options",
+                "product_category",
+                "star_rating",
+                "vine",
+                "verified_purchase",
+            ]
+        )
+
+        for key, item in df1:
+            train, test, val = np.split(
+                item,
+                [
+                    int(train_split * len(item)),
+                    int((train_split + test_split) * len(item)),
+                ],
+            )
+
+            train_list.append(train)
+            test_list.append(test)
+            val_list.append(val)
+
+        final_train = pd.concat(train_list).drop(columns=["contains_usage_options"])
+        final_test = pd.concat(test_list).drop(columns=["contains_usage_options"])
+        final_val = pd.concat(val_list).drop(columns=["contains_usage_options"])
+
+        final_train_dict = {
+            "version": 5,
+            "reviews": final_train.to_dict(orient="index"),
+        }
+        final_test_dict = {
+            "version": 5,
+            "reviews": final_test.to_dict(orient="index"),
+        }
+        final_val_dict = {
+            "version": 5,
+            "reviews": final_val.to_dict(orient="index"),
+        }
+
+        return (
+            ReviewSet.from_dict(final_train_dict),
+            ReviewSet.from_dict(final_test_dict),
+            ReviewSet.from_dict(final_val_dict),
+        )
 
     def get_usage_options(self, label_id: str) -> list:
         usage_options = list(
@@ -466,6 +541,9 @@ class ReviewSet:
                 target_fraction=target_fraction,
                 inplace=inplace,
             )
+
+    def to_pandas(self) -> pd.DataFrame:
+        return pd.DataFrame.from_dict(self.get_data()["reviews"], orient="index")
 
     def get_dataloader(
         self,
@@ -754,6 +832,78 @@ class ReviewSet:
                 )
 
             return result
+
+    def remove_outliers(
+        self,
+        distance_threshold: float,
+        remove_percentage: float,
+        selection_strategy: DatasetSelectionStrategy,
+    ):
+        from clustering import utils
+        from clustering.clusterer import Clusterer
+        from clustering.data_loader import DataLoader
+        import pandas as pd
+
+        clustering_config = {
+            "data": {
+                "model_name": "all-mpnet-base-v2",
+            },
+            "clustering": {
+                "use_reduced_embeddings": False,
+                "algorithm": "agglomerative",
+                "metric": "cosine",
+                "linkage": "average",
+                "save_to_disk": False,
+                "distance_thresholds": [distance_threshold],
+            },
+        }
+
+        if remove_percentage == 0:
+            return
+
+        arg_dicts = utils.get_arg_dicts(clustering_config, len(self))
+        assert len(arg_dicts) == 1
+        review_set_df, df_to_cluster = DataLoader(
+            self, selection_strategy, clustering_config["data"]
+        ).load()
+
+        clustered_df = Clusterer(
+            df_to_cluster, arg_dicts[0]
+        ).cluster()  # arg_dicts[0] is the only arg_dict
+        clustered_df = utils.merge_duplicated_usage_options(clustered_df, review_set_df)
+        total_usage_options = len(clustered_df)
+
+        count_label_df = (
+            clustered_df.groupby("label")
+            .count()
+            .reset_index()
+            .sort_values(ascending=True, by="review_id")
+        )
+        outlier_df = pd.DataFrame()
+        for label in count_label_df["label"]:
+            if outlier_df.shape[0] / total_usage_options >= remove_percentage:
+                break
+            outlier_df = outlier_df.append(clustered_df[clustered_df["label"] == label])
+        review_ids_to_drop = set(outlier_df["review_id"].tolist())
+
+        print(
+            f"{outlier_df.shape[0]}/{total_usage_options} usage options are outliers -> removing {len(review_ids_to_drop)}/{len(self)} reviews"
+        )
+        for outlier_id in review_ids_to_drop:
+            self.drop_review(outlier_id)
+
+    def merge_labels(self, *label_ids: str, new_label_id: str) -> None:
+        assert new_label_id not in self.get_all_label_ids()
+
+        strategy = ls.LabelIDSelectionStrategy(*label_ids)
+        for review in self:
+            label = review.get_label_from_strategy(strategy)
+            review.add_label(
+                label_id=new_label_id,
+                usage_options=label["usageOptions"],
+                datasets=label["datasets"],
+                metadata=label["metadata"],
+            )
 
     def save(self, path: Optional[Union[str, Path]] = None) -> None:
         if path:

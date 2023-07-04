@@ -282,10 +282,20 @@ class Review:
         is_input: bool,
         max_length: int = float("inf"),
     ) -> Optional[dict]:
-        tokens = tokenizer(
-            text, return_tensors="pt", padding="max_length", truncation=not for_training
-        )
+        from training.utils import MAX_OUTPUT_LENGTH
 
+        max_length = (
+            min(MAX_OUTPUT_LENGTH, max_length)
+            if (not is_input and for_training)
+            else max_length
+        )
+        tokens = tokenizer(
+            text,
+            return_tensors="pt",
+            truncation=not for_training,
+            max_length=max_length,
+            padding="max_length",
+        )
         # Remove batch dimension, since we only have one example
         tokens["input_ids"] = tokens["input_ids"][0]
         tokens["attention_mask"] = tokens["attention_mask"][0]
@@ -338,19 +348,16 @@ class Review:
         else:
             raise ValueError(f"strategy '{strategy}' not supported")
 
-   
-
     def get_prompt(self, prompt_id="avetis_v1") -> str:
         from langchain import PromptTemplate
+
         path = Path(__file__).parent.parent / "openai_api/prompts.json"
 
         with open(path) as f:
             prompts = json.load(f)
 
         prompt_text = prompts["model-training"][prompt_id]["prompt"]
-        prompt_input_variables = prompts["model-training"][prompt_id][
-            "input_variables"
-        ]
+        prompt_input_variables = prompts["model-training"][prompt_id]["input_variables"]
 
         prompt = PromptTemplate(
             template=prompt_text,
@@ -367,7 +374,7 @@ class Review:
         )
 
         return prompt
-    
+
     def get_tokenized_datapoints(
         self,
         selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,
@@ -375,8 +382,6 @@ class Review:
         prompt_id: str = "avetis_v1",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
-        
-
         def format_dict(model_input, output, review_id, source_id) -> dict:
             return {
                 "input": model_input,

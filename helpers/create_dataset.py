@@ -2,13 +2,11 @@
 import argparse
 import os, sys
 import yaml
-from typing import List
 import glob
 import dotenv
 
 from review_set import ReviewSet
 import helpers.label_selection as ls
-from data_augmentation.configuration import get_augmentations
 
 DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
 

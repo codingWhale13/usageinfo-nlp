@@ -4,7 +4,9 @@ from clusterer import Clusterer
 from data_loader import DataLoader
 from scorer import Scorer
 
+import helpers.label_selection as ls
 import utils
+from helpers.review_set import ReviewSet
 
 
 def arg_parse():
@@ -18,9 +20,9 @@ def arg_parse():
         help="All reviewset files to cluster usage options from",
     )
     parser.add_argument(
-        "label_id",
+        "label_ids",
         type=str,
-        help="Which label (aka which usage options) to use for clustering",
+        help="Which label(s) (aka which usage options) to use for clustering",
     )
     parser.add_argument(
         "-c",
@@ -35,39 +37,39 @@ def arg_parse():
 
 def main():
     args, _ = arg_parse()
-    label_id = args.label_id
-    file_paths = args.reviewset_files
+    label_ids = args.label_ids.split(", ")
+    files = args.reviewset_files
+    review_set = ReviewSet.from_files(*files)
     clustering_config = utils.get_config(args.clustering_config)
-
-    review_set_df = DataLoader(file_paths, label_id, clustering_config["data"]).load()
-
-    if len(review_set_df) < max(clustering_config["clustering"]["n_clusters"]):
-        raise ValueError(
-            f"Number of usage options ({len(review_set_df)}) is smaller than the maximum "
-            f"number of clusters ({max(clustering_config['clustering']['n_clusters'])})"
-        )
+    review_set_df, df_to_cluster = DataLoader(
+        review_set, ls.LabelIDSelectionStrategy(*label_ids), clustering_config["data"]
+    ).load()
 
     scores = {}
-    for n_clusters in clustering_config["clustering"]["n_clusters"]:
-        print(f"Clustering with {n_clusters} clusters...")
-        clustered_df = Clusterer(
-            review_set_df,
-            clustering_config["clustering"],
-            n_clusters,
-        ).cluster()
+    arg_dicts = utils.get_arg_dicts(clustering_config, len(review_set_df))
+
+    for arg_dict in arg_dicts:
+        print(f"Clustering with {arg_dict}...")
+        clustered_df = Clusterer(df_to_cluster, arg_dict).cluster()
 
         if clustering_config["data"]["n_components"] == 2:
             utils.plot_clusters2d(
-                clustered_df, n_clusters, color="label", interactive=False
+                clustered_df, arg_dict, color="label", interactive=True
             )
 
-        print(f"Scoring {n_clusters} clusters...")
-        scores[n_clusters] = Scorer(clustered_df).score()
+        print(f"Scoring clustering with {arg_dict}...")
+        scores[[v for v in arg_dict.values() if v is not None][0]] = Scorer(
+            clustered_df
+        ).score()
 
-    if clustering_config["data"]["n_components"] == 2:
-        utils.plot_clusters2d(
-            clustered_df, n_clusters, color="product_category", interactive=True
-        )
+        if clustering_config["evaluation"]["merge_duplicates"]:
+            clustered_df = utils.merge_duplicated_usage_options(
+                clustered_df, review_set_df
+            )
+
+        if clustering_config["evaluation"]["save_to_disk"]:
+            utils.save_clustered_df(clustered_df, arg_dict)
+
     utils.plot_scores(scores, "scores.png")
 
 

@@ -43,6 +43,8 @@ def log_power_consumption(power_samples):
 
 def compute_kWh(power_samples):
     """power_samples is a list of power measurements (in Watt) at time points"""
+    if len(power_samples) == 0 or sum(power_samples) == 0:
+        return 0  # avoid division by zero
     average_power = sum(power_samples) / len(power_samples) / 1000  # in kWh
     duration = MEASUREMENT_INTERVAL * len(power_samples)  # in seconds
     return average_power * duration / 3600

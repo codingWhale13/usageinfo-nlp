@@ -165,7 +165,7 @@ def parse_args():
         "artifact_name",
         type=str,
         metavar="model_artifact_name",
-        help="Name of the model artifact to use for annotation",
+        help="Name of the model artifact to use for annotation. This can either be the wandb run or one of the models for zero/few-shot generation",
     )
     annotate_parser.add_argument(
         "last_part_of_label_id",
@@ -178,7 +178,7 @@ def parse_args():
     annotate_parser.add_argument(
         "--checkpoint",
         "-c",
-        help="Optional checkpoint of the artifact to use for annotation (default is the last checkpoint)",
+        help="Optional checkpoint of the artifact to use for annotation (default is the last checkpoint). Not used when specifying a model.",
     )
     annotate_parser.add_argument(
         "--generation_config",
@@ -186,13 +186,6 @@ def parse_args():
         type=str,
         default=None,
         help="Generation config to use for the annotation (default is defined in the generator)",
-    )
-    annotate_parser.add_argument(
-        "--output-probs",
-        "-op",
-        type=str,
-        default="best",
-        help="Which type of logging to use for the probabilities of the labels. Can be 'best', 'all', or anything else, which will be equivalent to no logging (default: 'best').",
     )
     annotate_parser.add_argument(
         "--output-probs",
@@ -210,6 +203,13 @@ def parse_args():
     )
     annotate_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress output of the annotation"
+    )
+    annotate_parser.add_argument(
+        "--prompt_id",
+        "-p",
+        type=str,
+        default="original",
+        help="prompt_id to use for annotation, when specifying a model. This is not used when using a wandb-run, then the same prompt_id is used as for training.",
     )
 
     score_parser = subparsers.add_parser(
@@ -561,14 +561,16 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    generator = Generator(
-        args.artifact_name,
-        args.generation_config or DEFAULT_GENERATION_CONFIG,
-        checkpoint=int(args.checkpoint)
-        if args.checkpoint is not None and args.checkpoint.isdigit()
-        else args.checkpoint,
-        output_probabilities=args.output_probs,
-    )
+    with SustainabilityLogger(log_file=args.log_file):
+        generator = Generator(
+            args.artifact_name,
+            args.generation_config or DEFAULT_GENERATION_CONFIG,
+            int(args.checkpoint)
+            if (args.checkpoint is not None and args.checkpoint.isdigit())
+            else args.checkpoint,
+            prompt_id=args.prompt_id,
+            output_probabilities=args.output_probs,
+        )
 
     verbose = not args.quiet
     generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)

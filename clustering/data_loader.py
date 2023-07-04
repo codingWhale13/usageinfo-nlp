@@ -1,8 +1,11 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE, Isomap
 
+import helpers.label_selection as ls
 from evaluation.scoring.core import get_embedding
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review_set import ReviewSet
@@ -25,33 +28,40 @@ class DataLoader:
             possibly reduced usage option data.
     """
 
-    def __init__(self, file_paths: list[str], label_id: str, config: dict):
-        self.file_paths = file_paths
-        self.label_id = label_id
+    def __init__(
+        self,
+        review_set: ReviewSet,
+        label_selection_strategy: ls.LabelSelectionStrategyInterface,
+        config: dict,
+    ):
+        self.review_set = review_set
+        self.label_selection_strategy = label_selection_strategy
         self.model_name = config["model_name"]
         self.dim_reduction = config.get("dim_reduction", None)  # optional parameter
         self.n_components = config.get("n_components", 2)
 
     def load(self):
-        review_set = ReviewSet.from_files(*self.file_paths)
-
-        embedded_usage_options = []
         review_set_list = []
-        for review in review_set:
-            for usage_option in review.get_usage_options(self.label_id):
-                embedded_usage_option = get_embedding(
-                    usage_option=usage_option, comparator=self.model_name
-                )
-                embedded_usage_options.append(embedded_usage_option)
-                review_set_list.append(
-                    {
-                        "review_id": review.review_id,
-                        "usage_option": usage_option,
-                        "product_category": review["product_category"],
-                        "embedding": embedded_usage_option,
-                    }
-                )
+        for review in self.review_set:
+            label_id = review.get_label_id_from_strategy(self.label_selection_strategy)
+            if label_id is not None:
+                for usage_option in review.get_usage_options(label_id):
+                    embedded_usage_option = get_embedding(
+                        usage_option=usage_option, comparator=self.model_name
+                    )
+                    review_set_list.append(
+                        {
+                            "review_id": review.review_id,
+                            "usage_option": usage_option,
+                            "product_id": review["product_id"],
+                            "product_category": review["product_category"],
+                            "embedding": embedded_usage_option,
+                        }
+                    )
         review_set_df = pd.DataFrame(review_set_list)
+        df_to_cluster = review_set_df.drop_duplicates(
+            subset=["usage_option"], keep="first"
+        ).copy()
 
         EvaluationCache.get().save_to_disk()
 
@@ -66,14 +76,16 @@ class DataLoader:
             if self.dim_reduction in reducer_map:
                 reducer_class = reducer_map[self.dim_reduction]
                 reducer = reducer_class(self.n_components)
-                reduced_usage_options = reducer.reduce(np.array(embedded_usage_options))
-                review_set_df["reduced_embedding"] = reduced_usage_options.tolist()
+                reduced_usage_options = reducer.reduce(
+                    np.array(df_to_cluster["embedding"].tolist())
+                )
+                df_to_cluster["reduced_embedding"] = reduced_usage_options.tolist()
             else:
                 raise ValueError(
                     f"Unknown dimensionality reduction method '{self.dim_reduction}'"
                 )
 
-        return review_set_df
+        return review_set_df, df_to_cluster
 
 
 class TSNEReducer:

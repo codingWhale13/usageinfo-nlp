@@ -176,7 +176,10 @@ async def label_review_set_async(
                 prompt_id=prompt_id,
             )
             review_set[review_id].add_label(
-                label_id, usageOptions, metadata, overwrite_label
+                label_id=label_id,
+                usage_options=usageOptions,
+                metadata=metadata,
+                overwrite=overwrite_label,
             )
 
             if count % intermediate_save_size == 0 and count != 0:

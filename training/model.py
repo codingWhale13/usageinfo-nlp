@@ -130,15 +130,18 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-        if self.lr_scheduler_type != None:
-            self.log(
-                "epoch_end_lr",
-                self.lr_scheduler.get_last_lr()[0],
-                on_epoch=True,
-                logger=True,
-                sync_dist=True,
-                batch_size=self.hyperparameters["batch_size"],
-            )
+
+        self.log(
+            "epoch_end_lr",
+            self.hyperparameters["max_lr"]
+            if self.lr_scheduler_type is None
+            else self.lr_scheduler.get_last_lr()[0],
+            on_epoch=True,
+            logger=True,
+            sync_dist=True,
+            batch_size=self.hyperparameters["batch_size"],
+        )
+
         utils.gradual_unfreeze(
             self.model,
             self.current_epoch,
@@ -303,6 +306,21 @@ class ReviewModel(pl.LightningModule):
             )
             self.train_reviews = train_reviews - self.val_reviews
         else:
+            if (
+                self.dataset_config["training_set"]["outlier_removal"]["percentage"]
+                > 0.0
+            ):
+                print(
+                    f"Size of training set before removing outliers: {len(train_reviews)}"
+                )
+                train_reviews.remove_outliers(
+                    training_set_config["outlier_removal"]["distance_threshold"],
+                    training_set_config["outlier_removal"]["percentage"],
+                    self.train_reviews_strategy,
+                )
+                print(
+                    f"Size of training set after removing outliers: {len(train_reviews)}"
+                )
             self.val_reviews, self.train_reviews = train_reviews.stratified_split(
                 training_set_config["validation_split"],
                 self.train_reviews_strategy,
