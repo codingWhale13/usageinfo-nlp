@@ -88,12 +88,7 @@ class Generator:
         current_probability = generation_canidate.probability
         canidate_info = generation_canidate.data
         decoder_input_ids = canidate_info["forced_decoder_ids"].to(self.device)
-
         sequence_token_length = canidate_info["sequence_token_length"]
-        decoder_attention_mask = torch.zeros(
-            [1, self.MAX_SEQUENCE_LENGTH + 1], dtype=torch.int32
-        ).to(self.device)
-        decoder_attention_mask[0][:sequence_token_length] = 1
         num_token_options = 5
 
         input_ids = batch["input"]["input_ids"].to(self.device)
