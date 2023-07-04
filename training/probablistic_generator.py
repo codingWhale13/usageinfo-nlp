@@ -1,11 +1,9 @@
 import torch
 import torch.nn.functional as f
-from typing import List, Optional
+from typing import Optional
 from typing import Union
 from transformers.models.t5.modeling_t5 import BaseModelOutput
-from training import utils
 from helpers.review_set import ReviewSet
-from training.utils import get_config
 import os
 from queue import PriorityQueue, Queue
 
@@ -31,7 +29,7 @@ class GenerationCanidate:
     data: Any = field(compare=False)
 
 
-class ProbabilisticGenerator(Generator):
+class BatchProbabilisticGenerator(Generator):
     MAX_SEQUENCE_LENGTH = 20
     BATCH_SIZE = 512
 
@@ -40,11 +38,8 @@ class ProbabilisticGenerator(Generator):
         artifact_name,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
-        output_probabilities: str = "best",
     ) -> None:
-        super().__init__(
-            artifact_name, generation_config, checkpoint, output_probabilities
-        )
+        super().__init__(artifact_name, generation_config, checkpoint)
 
     def __get_output_with_probs(
         self, generation_canidates: list[GenerationCanidate]
@@ -52,14 +47,7 @@ class ProbabilisticGenerator(Generator):
         decoder_input_ids = torch.stack(
             [x.data["forced_decoder_ids"] for x in generation_canidates]
         ).to(self.device)
-        input_ids = torch.stack([x.data["input_ids"] for x in generation_canidates]).to(
-            self.device
-        )
 
-        # attention_mask = torch.stack(
-        #
-        #    [x.data["attention_mask"] for x in generation_canidates]
-        # x).to(self.device)
         encoder_outputs = BaseModelOutput(
             last_hidden_state=torch.stack(
                 [x.data["encoder_outputs"] for x in generation_canidates]
@@ -103,8 +91,7 @@ class ProbabilisticGenerator(Generator):
 
     def generate_usage_options_prob_based_batch(
         self, review_set: ReviewSet
-    ) -> list[dict]:
-        print("Starting")
+    ) -> dict[str, list[dict]]:
         input_queue = Queue()
         for review in review_set:
             tokenized_input = self.tokenizer(
@@ -184,8 +171,6 @@ class ProbabilisticGenerator(Generator):
             MINIMUM_TOTAL_PROBABILITY = 0.95
 
             for generation in next_generations:
-                # Add to result if the eos token is reached or we already have on result and the current path probability is lower than the minimum probability
-
                 review_id = generation.data["review_id"]
                 current_review = decoder_queue[review_id]
                 generation_queue = current_review["generation_queue"]
@@ -216,7 +201,7 @@ class ProbabilisticGenerator(Generator):
             for key in items_to_delete:
                 del decoder_queue[key]
 
-        formatted_results = []
+        formatted_results = {}
         for review in results:
             review_results = []
             for result in review["results"]:
@@ -232,11 +217,11 @@ class ProbabilisticGenerator(Generator):
                         "usageOptions": self.format_usage_options(text),
                     }
                 )
-            formatted_results.append(review_results)
+            formatted_results[review["review_id"]] = review_results
 
         return formatted_results
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
     ) -> None:
-        self.generate_usage_options_prob_based_batch(reviews)
+        raise NotImplementedError()
