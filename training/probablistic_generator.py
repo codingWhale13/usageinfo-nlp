@@ -6,7 +6,8 @@ from transformers.models.t5.modeling_t5 import BaseModelOutput
 from helpers.review_set import ReviewSet
 import os
 from queue import PriorityQueue, Queue
-
+from transformers.modeling_utils import PreTrainedModel
+from transformers.tokenization_utils import PreTrainedTokenizer
 from math import exp, log
 from training.generator import DEFAULT_GENERATION_CONFIG, Generator
 
@@ -35,11 +36,24 @@ class BatchProbabilisticGenerator(Generator):
 
     def __init__(
         self,
-        artifact_name,
+        artifact_name: Optional[str] = None,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
+        prompt_id="original",
+        model: Optional[PreTrainedModel] = None,
+        tokenizer: Optional[PreTrainedTokenizer] = None,
     ) -> None:
-        super().__init__(artifact_name, generation_config, checkpoint)
+        if artifact_name:
+            super().__init__(
+                artifact_name, generation_config, checkpoint, prompt_id=prompt_id
+            )
+        elif model and tokenizer:
+            self.model = model
+            self.tokenizer = tokenizer
+        else:
+            raise ValueError(
+                "You must either supply the artifact_name or the model and tokenizer"
+            )
 
     def __get_output_with_probs(
         self, generation_canidates: list[GenerationCanidate]
