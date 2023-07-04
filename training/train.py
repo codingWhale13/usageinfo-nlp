@@ -13,6 +13,7 @@ from helpers.sustainability_logger import SustainabilityLogger
 from generator import DEFAULT_GENERATION_CONFIG, Generator
 from active_learning.helpers import load_active_data_module
 import utils
+from helpers.review_set import ReviewSet
 
 wandb.login()
 
@@ -82,9 +83,9 @@ active_learning_module = load_active_data_module(
     config["active_learning"]["module"],
     active_learning_params,
 )
-
+files_to_generate_on = config["files_to_generate_on"]
 seed = config["seed"] if config["seed"] else None
-del config["cluster"], config["test_run"]
+del config["cluster"], config["test_run"], config["files_to_generate_on"]
 
 hyperparameters = {
     "weight_decay": config["optimizer"]["weight_decay"],
@@ -143,16 +144,17 @@ if not test_run:
         trainer.test()
 
     try:
-        test_dataset = model.test_reviews
-
         label_id = f"model-{wandb.run.name}-auto"
 
         generator = Generator(
             wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint="best"
         )
-        generator.generate_label(test_dataset, label_id=label_id, verbose=True)
+        for file in files_to_generate_on:
+            print(file)
+            review_set = ReviewSet.from_files(file)
+            generator.generate_label(review_set, label_id=label_id, verbose=True)
 
-        test_dataset.save()
+            review_set.save()
     except Exception as e:
         warnings.warn(
             "Could not generate label for the dataset. The run has probably failed.",

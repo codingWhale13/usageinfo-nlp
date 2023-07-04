@@ -15,22 +15,22 @@ cluster:
   num_nodes: 1 #Number of nodes
 dataset:
   test_set:
-    name: "silver-test-69"
+    name: "ba-30k-test"
   training_set:
     augmentation_set: # "legacy"
     dataloader_setup_seed: 42
     drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
-    name: "blinding-light-99"
+    name: "ba-30k-train"
     outlier_removal:
       percentage: 0.0 # fraction of data to remove from training set (validation set stays untouched), use only when drop_out is 0.0
       distance_threshold: 0.53 # distance threshold for outlier removal, default is 0.53
     stratified_drop_out: True # stratification based on if the review has usage options or not
     usage_split: # 0.5
-    validation_split: 0.10
+    validation_split: 0.00
   validation_set:
-    name: # if you choose a specific validation set, the validation split will be ignored
-epochs: 1
-gradual_unfreezing_mode: "decoder 3, encoder 3" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
+    name: "ba-30k-val" # if you choose a specific validation set, the validation split will be ignored
+epochs: 15
+gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
 model_name: "flan-t5-base"
 multiple_usage_options_strategy: "default"
@@ -44,6 +44,8 @@ optimizer: #Set all parameters you do not want to null
 prompt_id: "avetis_v1"
 seed: 42 # can be left empty
 test_run: False
+files_to_generate_on:
+  -
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
