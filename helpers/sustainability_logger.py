@@ -4,15 +4,10 @@ import time
 from typing import Optional
 
 import codecarbon
-import eco2ai
 import wandb
 
 MEASUREMENT_INTERVAL = 5  # in seconds
 experiment_running = False
-
-
-def extract_from_eco2ai_data(data, key):
-    return float(data[key][0])
 
 
 def log_power_consumption(power_samples):
@@ -51,7 +46,7 @@ def compute_kWh(power_samples):
 
 
 class SustainabilityLogger:
-    """This class tracks emissions and power consumption using CodeCarbon and Eco2AI."""
+    """This class tracks emissions and power consumption using CodeCarbon nvidia-smi."""
 
     def __init__(
         self, description: Optional[str] = None, log_file: Optional[str] = None
@@ -65,12 +60,6 @@ class SustainabilityLogger:
         experiment_running = True
 
         # start library trackers
-        self.eco2ai_tracker = eco2ai.Tracker(
-            project_name="default project",
-            experiment_description=self.description,
-            ignore_warnings=True,
-        )
-        self.eco2ai_tracker.start()
         self.codecarbon_tracker = codecarbon.EmissionsTracker(log_level="critical")
         self.codecarbon_tracker.start()
 
@@ -93,15 +82,9 @@ class SustainabilityLogger:
             f"{prefix}/NVIDIA power_consumption(kWh)": compute_kWh(
                 self.power_measurements
             ),
-        } | {
-            f"{prefix}/Eco2AI {metric}": extract_from_eco2ai_data(
-                self.eco2ai_tracker._construct_attributes_dict(), metric
-            )
-            for metric in ["power_consumption(kWh)", "CO2_emissions(kg)"]
         }
 
         self.power_thread.join()
-        self.eco2ai_tracker.stop()
 
         if wandb.run is not None:  # log to wandb if wandb.init() has been called
             wandb.log(results)
