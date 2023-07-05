@@ -149,12 +149,13 @@ if not test_run:
         generator = Generator(
             wandb.run.name, DEFAULT_GENERATION_CONFIG, checkpoint="best"
         )
-        for file in files_to_generate_on:
-            print(file)
-            review_set = ReviewSet.from_files(file)
-            generator.generate_label(review_set, label_id=label_id, verbose=True)
+        if files_to_generate_on:
+            for file in files_to_generate_on:
+                print(file)
+                review_set = ReviewSet.from_files(file)
+                generator.generate_label(review_set, label_id=label_id, verbose=True)
 
-            review_set.save()
+                review_set.save()
     except Exception as e:
         warnings.warn(
             "Could not generate label for the dataset. The run has probably failed.",
