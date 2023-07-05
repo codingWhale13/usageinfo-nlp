@@ -59,7 +59,7 @@ def main():
 
         print(f"Scoring clustering with {arg_dict}...")
         scores[[v for v in arg_dict.values() if v is not None][0]] = Scorer(
-            clustered_df
+            clustered_df, clustering_config["evaluation"]["golden_labels"]
         ).score()
 
         if clustering_config["evaluation"]["merge_duplicates"]:
@@ -70,7 +70,7 @@ def main():
         if clustering_config["evaluation"]["save_to_disk"]:
             utils.save_clustered_df(clustered_df, arg_dict)
 
-    utils.plot_scores(scores, "scores.png")
+    utils.generate_report(scores, "scores.html")
 
 
 if __name__ == "__main__":

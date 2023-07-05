@@ -8,9 +8,13 @@ clustering:
   metric: "cosine" # options are: euclidean, cosine
   linkage: "average" # only for agglom, options are: ward, complete, average, single
   n_clusters: #set exactly one list of n_clusters or distance_thresholds
+    - 20
+    - 200
     - 1000
+
   # distance_thresholds: # only for agglom and community detection
   #   - 0.5
 evaluation:
+  golden_labels: "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/golden_sample.csv"
   save_to_disk: True # whether to save the evaluation results to disk
   merge_duplicates: True # whether to merge duplicated usage options before saving

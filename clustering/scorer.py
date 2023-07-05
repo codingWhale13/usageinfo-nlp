@@ -7,13 +7,42 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 class Scorer:
-    def __init__(self, review_set_df: pd.DataFrame):
+    def __init__(self, review_set_df: pd.DataFrame, path_to_golden_labels: str):
+        self.clustered_df = review_set_df
         self.data = np.stack(review_set_df["embedding"].to_numpy())
         self.labels = review_set_df["label"].to_numpy()
         self.centroids = review_set_df[
             review_set_df["centroid"] == True
         ].index.to_numpy()
         self.cluster_distances = self.get_cluster_distances()
+        self.golden_labels = self.get_golden_labels(path_to_golden_labels)
+
+    def get_golden_labels(self, path):
+        print(self.clustered_df)
+        golden_labels_df = pd.read_csv(path, sep=";")
+        golden_labels_df = golden_labels_df[["usage_option1", "usage_option2", "votes"]]
+        # drop all rows where votes is "s"
+        golden_labels_df = golden_labels_df[golden_labels_df["votes"] != "s"]
+        # check wether usage_option1 or usage_option2 have the same label in the clustered_df
+        golden_labels_df["cluster_vote"] = golden_labels_df.apply(
+            lambda row: self.get_cluster_vote(row), axis=1
+        )
+        return golden_labels_df
+
+    def get_cluster_vote(self, row):
+        usage_option1 = row["usage_option1"]
+        usage_option2 = row["usage_option2"]
+        label1 = self.clustered_df[self.clustered_df["usage_option"] == usage_option1][
+            "label"
+        ].values[0]
+        label2 = self.clustered_df[self.clustered_df["usage_option"] == usage_option2][
+            "label"
+        ].values[0]
+        print(label1, label2)
+        if label1 == label2:
+            return True
+        else:
+            return False
 
     def get_cluster_distances(self):
         cluster_distances = [[] for _ in range(len(self.centroids))]
@@ -31,13 +60,16 @@ class Scorer:
         """
         return {
             "silhouette": self.silhouette(),
-            "davies_bouldin": self.davies_bouldin(),
-            "calinski_harabasz": self.calinski_harabasz(),
-            "avg_sim_in_cluster": self.average_sim_in_cluster(),
             "avg_sim_to_centroid": self.average_sim_to_centroid(),
             "worst_cluster": self.worst_cluster_index(),
             "best_cluster": self.best_cluster_index(),
+            "adjusted_rand": self.adjusted_rand(),
         }
+
+    def adjusted_rand(self):
+        cluster_labels = self.golden_labels["cluster_vote"].to_numpy()
+        golden_labels = self.golden_labels["votes"].to_numpy()
+        return metrics.adjusted_rand_score(cluster_labels, golden_labels)
 
     def silhouette(self):
         return metrics.silhouette_score(self.data, self.labels)

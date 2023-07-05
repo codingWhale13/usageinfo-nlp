@@ -12,6 +12,27 @@ def get_config(name: str) -> dict:
     return config
 
 
+def generate_report(scores: dict, output_path: str):
+    from pandas_profiling import ProfileReport
+    import pandas as pd
+
+    df = pd.DataFrame(scores.items(), columns=["n_clusters", "score"])
+    # extract all single scores as columns from the score dict, keep n_clusters as column
+    df = pd.concat([df["n_clusters"], pd.json_normalize(df["score"])], axis=1)
+    # create type schema
+    type_schema = {
+        "n_clusters": "numeric",
+        "silhouette": "numeric",
+        "avg_sim_in_cluster": "numeric",
+        "avg_sim_to_centroid": "numeric",
+        "adjusted_rand": "numeric",
+    }
+    profile = ProfileReport(
+        df, title="Pandas Profiling Report", type_schema=type_schema
+    )
+    profile.to_file(output_path)
+
+
 def plot_scores(scores: dict, output_path: str):
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -129,7 +150,7 @@ def save_clustered_df(clustered_df, arg_dict):
             "usage_option",
             "product_id",
             "product_category",
-            "reduced_embedding",
+            # "reduced_embedding",
             "centroid",
             "label",
         ]
