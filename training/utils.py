@@ -61,7 +61,7 @@ model_tuples = {
 }
 
 optimizers = {
-    "AdamW": (torch.optim.AdamW, ["weight_decay"]),
+    "AdamW": (torch.optim.AdamW, ["weight_decay", "lr"]),
     "AdaFactor": (
         optimization.Adafactor,
         ["scale_parameter", "relative_step", "warmup_init", "lr"],
