@@ -162,6 +162,10 @@ def custom_precision_ak(
                 ]
             )
 
+        # edge case: weights contain only zeros (happens with preds/refs like [" a", "a"])
+        if not weights.any():
+            weights = np.ones(len(weights))
+
         return np.dot(similarities, weights) / sum(weights)
 
 
@@ -216,6 +220,10 @@ def custom_recall_ak(
                     for i in range(len(similarity_matrix))
                 ]
             )
+
+        # edge case: weights contain only zeros (happens with preds/refs like [" a", "a"])
+        if not weights.any():
+            weights = np.ones(len(weights))
 
         return np.dot(similarities, weights) / sum(weights)
 
