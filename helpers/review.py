@@ -284,15 +284,24 @@ class Review:
         text: str,
         for_training: bool,
         is_input: bool,
+        model_name: str,
         max_length: int = float("inf"),
     ) -> Optional[dict]:
         from training.utils import MAX_OUTPUT_LENGTH
 
-        max_length = (
-            min(MAX_OUTPUT_LENGTH, max_length)
-            if (not is_input and for_training)
-            else max_length
-        )
+        if model_name == "gpt2":
+            tokenizer.pad_token = tokenizer.eos_token
+            if not for_training:
+                tokenizer.padding_side = "left"
+            else:
+                tokenizer.padding_side = "right"
+
+        else:
+            max_length = (
+                min(MAX_OUTPUT_LENGTH, max_length)
+                if (not is_input and for_training)
+                else max_length
+            )
 
         if not is_input and for_training and len(text) == 0:
             text = "no usage options"
@@ -385,6 +394,7 @@ class Review:
 
     def get_tokenized_datapoints(
         self,
+        model_name: str,
         selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,
         multiple_usage_options_strategy: Optional[str] = None,
         prompt_id: str = "avetis_v1",
@@ -402,6 +412,7 @@ class Review:
         model_input = self.tokenize(
             text=model_input,
             is_input=True,
+            model_name=model_name,
             **tokenization_kwargs,
         )
 
@@ -424,6 +435,7 @@ class Review:
                 self.tokenize(
                     text=output_text.lower(),  # we enforce lower case because model does not need to learn casing
                     is_input=False,
+                    model_name=model_name,
                     **tokenization_kwargs,
                 ),
                 self.review_id,

@@ -614,6 +614,7 @@ class ReviewSet:
         stratified_drop_out: bool = False,
         seed: int = None,
         rng: random.Random = random,
+        model_name: Optional[str] = None,
         **dataloader_args: dict,
     ) -> tuple[any, dict]:
         def are_all_valid_data_points(data_points: list[dict]) -> bool:
@@ -654,6 +655,7 @@ class ReviewSet:
                     for_training=for_training,
                     multiple_usage_options_strategy=multiple_usage_options_strategy,
                     prompt_id=prompt_id,
+                    model_name=model_name,
                 )
             )
         valid_reviews = all_reviews.filter(

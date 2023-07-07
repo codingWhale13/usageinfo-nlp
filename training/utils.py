@@ -97,9 +97,7 @@ model_tuples = {
     ),
     "gpt2": lambda: (
         GPT2LMHeadModel.from_pretrained("gpt2"),
-        GPT2Tokenizer.from_pretrained(
-            "gpt2", model_max_length=512, padding_side="left"
-        ),
+        GPT2Tokenizer.from_pretrained("gpt2", model_max_length=512),
         512,
     ),
 }

@@ -65,7 +65,7 @@ class ReviewModel(pl.LightningModule):
         self.active_data_module.setup(self)
 
         # Skip freezing if a fake test model is loaded
-        if self.model is not None:
+        if self.model is not None and model_name != "gpt2":
             self.active_encoder_layers, self.active_decoder_layers = utils.freeze_model(
                 active_layers, model
             )
@@ -141,14 +141,14 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-
-        utils.gradual_unfreeze(
-            self.model,
-            self.current_epoch,
-            self.gradual_unfreezing_mode,
-            self.active_encoder_layers,
-            self.active_decoder_layers,
-        )
+        if self.model_name != "gpt2":
+            utils.gradual_unfreeze(
+                self.model,
+                self.current_epoch,
+                self.gradual_unfreezing_mode,
+                self.active_encoder_layers,
+                self.active_decoder_layers,
+            )
 
     def validation_step(self, batch, batch_idx):
         outputs = self._step(batch)
@@ -229,6 +229,7 @@ class ReviewModel(pl.LightningModule):
             "num_workers": NUM_WORKERS,
             "multiple_usage_options_strategy": self.multiple_usage_options_strategy,
             "prompt_id": self.prompt_id,
+            "model_name": self.model_name,
         }
 
     def train_dataloader(self):

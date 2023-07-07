@@ -98,6 +98,7 @@ class Generator:
             model_max_length=self.max_length,
             for_training=False,
             prompt_id=self.prompt_id,
+            model_name=self.model_name,
         )
 
         label_metadata = {
