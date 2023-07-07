@@ -53,12 +53,21 @@ model_tuples = {
         512,
     ),
     "flan-t5-xl": lambda: (
-        T5ForConditionalGeneration.from_pretrained("google/flan-t5-xl"),
-        T5Tokenizer.from_pretrained("google/flan-t5-xl", model_max_length=512),
+        T5ForConditionalGeneration.from_pretrained(
+            "google/flan-t5-xl",
+            cache_dir="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/fs_ba/.cache",
+        ),
+        T5Tokenizer.from_pretrained(
+            "google/flan-t5-xl",
+            model_max_length=512,
+        ),
         512,
     ),
     "flan-t5-xxl": lambda: (
-        T5ForConditionalGeneration.from_pretrained("google/flan-t5-xxl"),
+        T5ForConditionalGeneration.from_pretrained(
+            "google/flan-t5-xxl",
+            cache_dir="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/fs_ba/.cache",
+        ),
         T5Tokenizer.from_pretrained("google/flan-t5-xxl", model_max_length=512),
         512,
     ),
