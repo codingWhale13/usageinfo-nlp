@@ -6,15 +6,24 @@ clustering:
   use_reduced_embeddings: False # whether to cluster on reduced or original embeddings
   algorithm: "agglomerative" # options are: kmeans, agglomerative, community_detection
   metric: "cosine" # options are: euclidean, cosine
-  linkage: "average" # only for agglom, options are: ward, complete, average, single
+  linkage: "ward" # only for agglom, options are: ward, complete, average, single
   n_clusters: #set exactly one list of n_clusters or distance_thresholds
-    - 20
-    - 200
+    - 250
+    - 400
+    - 500
     - 1000
-
+    - 2000
+    - 3500
+    - 4000
+    - 4500
+    - 5000
+    - 6500
+    - 8000
+    - 9500
+    - 11000
   # distance_thresholds: # only for agglom and community detection
   #   - 0.5
 evaluation:
-  golden_labels: "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/golden_sample.csv"
-  save_to_disk: True # whether to save the evaluation results to disk
+  golden_labels: "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/golden/pairs_golden.csv"
+  save_to_disk: False # whether to save the evaluation results to disk
   merge_duplicates: True # whether to merge duplicated usage options before saving

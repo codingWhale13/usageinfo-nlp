@@ -22,7 +22,12 @@ class Scorer:
         golden_labels_df = pd.read_csv(path, sep=";")
         golden_labels_df = golden_labels_df[["usage_option1", "usage_option2", "votes"]]
         # drop all rows where votes is "s"
-        golden_labels_df = golden_labels_df[golden_labels_df["votes"] != "s"]
+        golden_labels_df = golden_labels_df[golden_labels_df["votes"] != "5"]
+        # we have 5 votes, "1" indicates no similarity, "2" indicates same topic, "3" indicates similar usage option, "4" indicates synonym
+        for i in range(2, 5):
+            golden_labels_df[f"golden_{i}"] = golden_labels_df["votes"].apply(
+                lambda vote: 1 if vote >= i else 0
+            )
         # check wether usage_option1 or usage_option2 have the same label in the clustered_df
         golden_labels_df["cluster_vote"] = golden_labels_df.apply(
             lambda row: self.get_cluster_vote(row), axis=1
@@ -40,9 +45,9 @@ class Scorer:
         ].values[0]
         print(label1, label2)
         if label1 == label2:
-            return True
+            return 1
         else:
-            return False
+            return 0
 
     def get_cluster_distances(self):
         cluster_distances = [[] for _ in range(len(self.centroids))]
@@ -63,12 +68,14 @@ class Scorer:
             "avg_sim_to_centroid": self.average_sim_to_centroid(),
             "worst_cluster": self.worst_cluster_index(),
             "best_cluster": self.best_cluster_index(),
-            "adjusted_rand": self.adjusted_rand(),
+            "adjusted_rand_topic": self.adjusted_rand(2),
+            "adjusted_rand_similar": self.adjusted_rand(3),
+            "adjusted_rand_synonym": self.adjusted_rand(4),
         }
 
-    def adjusted_rand(self):
+    def adjusted_rand(self, similarity):
         cluster_labels = self.golden_labels["cluster_vote"].to_numpy()
-        golden_labels = self.golden_labels["votes"].to_numpy()
+        golden_labels = self.golden_labels[f"golden_{similarity}"].to_numpy()
         return metrics.adjusted_rand_score(cluster_labels, golden_labels)
 
     def silhouette(self):
