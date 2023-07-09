@@ -262,6 +262,13 @@ def parse_args():
         default="original",
         help="prompt_id to use for annotation, when specifying a model. This is not used when using a wandb-run, then the same prompt_id is used as for training.",
     )
+    annotate_parser.add_argument(
+        "--batch_size",
+        "-b",
+        type=int,
+        default=32,
+        help="Batch size to use for annotation (default is 32)",
+    )
 
     score_parser = subparsers.add_parser(
         "score",
@@ -622,6 +629,7 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
             if (args.checkpoint is not None and args.checkpoint.isdigit())
             else args.checkpoint,
             prompt_id=args.prompt_id,
+            batch_size=args.batch_size,
         )
 
         verbose = not args.quiet
