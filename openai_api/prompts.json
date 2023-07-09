@@ -333,7 +333,7 @@
             ]
         },
         "vanilla_zero_shot": {
-            "prompt": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\" Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\n Product title: {product_title} \nReview body: {review_body}\n",
+            "prompt": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\n Product title: {product_title} \nReview body: {review_body}\n",
             "input_variables": [
                 "product_title",
                 "review_body"

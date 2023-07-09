@@ -27,6 +27,7 @@ class Generator:
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
         prompt_id="original",
+        batch_size: int = 32,
     ) -> None:
         global device
 
@@ -52,6 +53,8 @@ class Generator:
         self.generation_config = get_config(
             f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
         )
+
+        self.batch_size = batch_size
 
     def format_usage_options(self, text_completion: str) -> List[str]:
         if text_completion.lower() == "no usage options":
@@ -92,7 +95,7 @@ class Generator:
             )
 
         dataloader, _ = reviews.get_dataloader(
-            batch_size=32,
+            batch_size=self.batch_size,
             num_workers=0,
             tokenizer=self.tokenizer,
             model_max_length=self.max_length,

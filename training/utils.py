@@ -27,6 +27,11 @@ ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/
 MAX_OUTPUT_LENGTH = 128
 
 model_tuples = {
+    "t5": lambda: (
+        T5ForConditionalGeneration.from_pretrained("t5-base"),
+        T5Tokenizer.from_pretrained("t5-base", model_max_length=512),
+        512,
+    ),
     "t5-v1_1": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/t5-v1_1-base"),
         T5Tokenizer.from_pretrained("google/t5-v1_1-base", model_max_length=512),
