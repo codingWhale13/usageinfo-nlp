@@ -249,13 +249,14 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
     )
 
 
-def freeze_model(active_layers: dict, model) -> Tuple[int, int]:
+def freeze_model(active_layers: dict, model, model_name) -> Tuple[int, int]:
     def unfreeze(component, slice_: str) -> int:
-        transformer_blocks = (
-            eval(f"list(component.layers)[{slice_}]")
-            if hasattr(component, "layers")
-            else eval(f"list(component.block)[{slice_}]")
-        )
+        if hasattr(component, "layers"):
+            transformer_blocks = eval(f"list(component.layers)[{slice_}]")
+        elif hasattr(component, "h"):
+            transformer_blocks = eval(f"list(component.h)[{slice_}]")
+        else:
+            transformer_blocks = eval(f"list(component.block)[{slice_}]")
         for block in transformer_blocks:
             for param in block.parameters():
                 param.requires_grad = True
@@ -268,9 +269,12 @@ def freeze_model(active_layers: dict, model) -> Tuple[int, int]:
     if active_layers["lm_head"]:
         for param in model.lm_head.parameters():
             param.requires_grad = True
-
-    active_encoder_layers = unfreeze(model.get_encoder(), active_layers["encoder"])
-    active_decoder_layers = unfreeze(model.get_decoder(), active_layers["decoder"])
+    if model_name == "gpt2":
+        active_encoder_layers = 0
+        active_decoder_layers = unfreeze(model.transformer, active_layers["decoder"])
+    else:
+        active_encoder_layers = unfreeze(model.get_encoder(), active_layers["encoder"])
+        active_decoder_layers = unfreeze(model.get_decoder(), active_layers["decoder"])
     return active_encoder_layers, active_decoder_layers
 
 

@@ -65,9 +65,9 @@ class ReviewModel(pl.LightningModule):
         self.active_data_module.setup(self)
 
         # Skip freezing if a fake test model is loaded
-        if self.model is not None and model_name != "gpt2":
+        if self.model is not None:
             self.active_encoder_layers, self.active_decoder_layers = utils.freeze_model(
-                active_layers, model
+                active_layers, model, model_name
             )
 
     def run_name(self) -> str:

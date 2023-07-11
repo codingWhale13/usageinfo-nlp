@@ -303,9 +303,6 @@ class Review:
                 else max_length
             )
 
-        if not is_input and for_training and len(text) == 0:
-            text = "no usage options"
-
         tokens = tokenizer(
             text,
             return_tensors="pt",
@@ -408,9 +405,9 @@ class Review:
                 "source_id": source_id,
             }
 
-        model_input = self.get_prompt(prompt_id=prompt_id)
+        model_input_text = self.get_prompt(prompt_id=prompt_id)
         model_input = self.tokenize(
-            text=model_input,
+            text=model_input_text,
             is_input=True,
             model_name=model_name,
             **tokenization_kwargs,
@@ -430,10 +427,14 @@ class Review:
         )
 
         for id, output_text in enumerate(output_texts):
+            if len(output_text) == 0:
+                output_text = "no usage options"
             yield format_dict(
                 model_input,
                 self.tokenize(
-                    text=output_text.lower(),  # we enforce lower case because model does not need to learn casing
+                    text=output_text.lower()
+                    if model_name != "gpt2"
+                    else f"{model_input_text} {output_text.lower()}",  # we enforce lower case because model does not need to learn casing
                     is_input=False,
                     model_name=model_name,
                     **tokenization_kwargs,
