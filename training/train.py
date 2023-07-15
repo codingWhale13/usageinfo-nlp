@@ -9,7 +9,6 @@ from lightning import pytorch as pl
 from pprint import pprint
 
 from model import ReviewModel
-from helpers.sustainability_logger import SustainabilityLogger
 from generator import DEFAULT_GENERATION_CONFIG, Generator
 from active_learning.helpers import load_active_data_module
 import utils
@@ -76,7 +75,6 @@ model, tokenizer, max_length, model_name = utils.initialize_model_tuple(
 )
 
 active_learning_params = config["active_learning"].get("parameters", {}) or {}
-
 cluster_config = config["cluster"]
 test_run = config["test_run"]
 active_learning_module = load_active_data_module(
@@ -105,6 +103,8 @@ if not test_run:
 if not torch.cuda.is_available():
     print("WARNING: CUDA is not available, using CPU instead.")
 
+log_every_n_steps = config["accumulate_grad_batches"] * 4
+
 trainer = pl.Trainer(
     strategy="ddp_find_unused_parameters_false",
     devices=cluster_config["devices"],
@@ -115,6 +115,10 @@ trainer = pl.Trainer(
     callbacks=[checkpoint_callback] if not test_run else None,
     logger=logger if not test_run else None,
     accumulate_grad_batches=config["accumulate_grad_batches"],
+    val_check_interval=log_every_n_steps,
+    log_every_n_steps=log_every_n_steps,
+    check_val_every_n_epoch=None,
+    max_steps=1_000,
 )
 
 model = ReviewModel(
@@ -138,10 +142,13 @@ model = ReviewModel(
 
 # %% Training and testing
 if not test_run:
-    with SustainabilityLogger(description="training"):
-        trainer.fit(model)
-    with SustainabilityLogger(description="testing"):
-        trainer.test()
+    model.sustainability_tracker.initalize()
+    model.sustainability_tracker.start("training")
+    trainer.fit(model)
+    model.sustainability_tracker.stop("training")
+    model.sustainability_tracker.start("testing")
+    trainer.test()
+    model.sustainability_tracker.stop("testing")
 
     try:
         label_id = f"model-{wandb.run.name}-auto"

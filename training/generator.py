@@ -68,13 +68,16 @@ class Generator:
         self.output_probabilities = output_probabilities
 
     def format_usage_options(self, text_completion: str) -> List[str]:
-        if text_completion.lower() == "no usage options":
+        if text_completion.lower().strip().startswith("no use cases"):
             return []
-        return [
-            usage_option.strip()
-            for usage_option in text_completion.split("; ")
+        usageOptions = [
+            usage_option.lower().strip()
+            for usage_option in text_completion.split(";")
             if usage_option.strip()
         ]
+        if len(usageOptions) > 0:
+            usageOptions[-1] = usageOptions[-1].removesuffix(".")
+        return usageOptions
 
     def get_elements_until_zero(self, numbers):
         result = []
@@ -287,7 +290,7 @@ class Generator:
         if self.output_probabilities == "all":
             batch_size = 1
         else:
-            batch_size = 512
+            batch_size = 32
 
         dataloader, _ = reviews.get_dataloader(
             batch_size=batch_size,

@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 import random
 import warnings
+from torch.utils.data import DataLoader
 
 import training.utils as utils
 from helpers.review_set import ReviewSet
@@ -13,6 +14,7 @@ from helpers.label_selection import (
 )
 from active_learning.module import ActiveDataModule
 from transformers.modeling_outputs import Seq2SeqLMOutput
+from helpers.sustainability_tracker import SustainabilityTracker
 
 
 NUM_WORKERS = 4
@@ -59,10 +61,11 @@ class ReviewModel(pl.LightningModule):
             "model_max_length": max_length,
             "for_training": True,
         }
+        self.sustainability_tracker = SustainabilityTracker()
 
         self._initialize_datasets()
 
-        self.active_data_module.setup(self)
+        self.active_data_module.setup(self, self.train_reviews)
 
         # Skip freezing if a fake test model is loaded
         if self.model is not None:
@@ -109,18 +112,35 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
+        self.logger.experiment.log(
+            {
+                "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
+                "active_learning_iteration": self.active_data_module.iteration,
+                "trainer/global_step": self.trainer.global_step,
+                "training_loss_step": outputs.loss,
+            }
+        )
         return outputs.loss
 
-    def on_train_epoch_end(self):
-        print("Self: on_train_epoch_end")
-        self.active_data_module.on_train_epoch_end()
+    def on_train_epoch_start(self):
+        self.sustainability_tracker.start("training_epoch", self.current_epoch)
+
+    def on_validation_epoch_start(self):
+        if self.current_epoch != 0:
+            self.sustainability_tracker.start("validation_epoch", self.current_epoch)
 
     def training_epoch_end(self, outputs):
         print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
-        avg_loss = torch.stack(
-            [x["loss"] * self.trainer.accumulate_grad_batches for x in outputs]
-        ).mean()
+        avg_loss = (
+            torch.stack(
+                [x["loss"] * self.trainer.accumulate_grad_batches for x in outputs]
+            )
+            .cpu()
+            .mean()
+        )
+        outputs = None
+        torch.cuda.empty_cache()
         self.log(
             "epoch_train_loss",
             avg_loss,
@@ -142,6 +162,17 @@ class ReviewModel(pl.LightningModule):
             batch_size=self.hyperparameters["batch_size"],
         )
 
+        self.logger.experiment.log(
+            {
+                "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
+                "active_learning_iteration": self.active_data_module.iteration,
+                "trainer/global_step": self.trainer.global_step,
+                "training_loss": avg_loss,
+            }
+        )
+
+        self.sustainability_tracker.stop("training_epoch", iteration=self.current_epoch)
+        self.active_data_module.on_train_epoch_end()
         utils.gradual_unfreeze(
             self.model,
             self.current_epoch,
@@ -168,7 +199,7 @@ class ReviewModel(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         """Logs the average validation loss over the epoch"""
-        avg_loss = torch.stack(outputs).mean()
+        avg_loss = torch.stack(outputs).cpu().mean()
         self.log(
             "epoch_val_loss",
             avg_loss,
@@ -178,6 +209,18 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
+        if self.current_epoch != 0:
+            self.sustainability_tracker.stop("validation_epoch", self.current_epoch)
+            self.logger.experiment.log(
+                {
+                    "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
+                    "active_learning_iteration": self.active_data_module.iteration,
+                    "trainer/global_step": self.trainer.global_step,
+                    "validation_loss": avg_loss,
+                }
+            )
+        else:
+            print("Skipping epoch 0 logging for validation")
         self.validation_loss.append(avg_loss.item())
 
     def test_step(self, batch, __):
@@ -231,23 +274,39 @@ class ReviewModel(pl.LightningModule):
             "prompt_id": self.prompt_id,
         }
 
-    def train_dataloader(self):
-        training_set_config = self.dataset_config["training_set"]
-        dataloader, metadata = self.train_reviews.get_dataloader(
-            selection_strategy=self.train_reviews_strategy,
-            augmentation_set=training_set_config["augmentation_set"],
-            drop_out=training_set_config["drop_out"],
-            stratified_drop_out=training_set_config["stratified_drop_out"],
-            rng=random.Random(training_set_config["dataloader_setup_seed"]),
-            **self.tokenization_args,
-            drop_last=True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
-            shuffle=True,  # Shuffles the training data every epoch.
-            pin_memory=True,
-            **self.general_dataloader_args(),
+    def train_dataloader(self) -> DataLoader:
+        print("Constructing train dataloader")
+        
+        current_train_reviews = self.active_data_module.acquire_training_reviews()
+        stats = {
+            "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
+            "active_learning_iteration": self.active_data_module.iteration,
+            "trainer/global_step": self.trainer.global_step,
+        }
+        print(stats)
+        self.logger.experiment.log(stats)
+        dataloader, metadata = current_train_reviews.get_dataloader(
+            **self.train_dataloader_args()
         )
-        print("\n\nTrain dataloader stats:")
-        self._print_dataloader_stats(metadata | {"num_batches": len(dataloader)})
+        print(self._print_dataloader_stats(metadata))
+        self._print_dataloader_stats(metadata)
         return dataloader
+
+    def train_dataloader_args(self) -> dict:
+        training_set_config = self.dataset_config["training_set"]
+        args = {
+            "selection_strategy": self.train_reviews_strategy,
+            "augmentation_set": training_set_config["augmentation_set"],
+            "drop_out": training_set_config["drop_out"],
+            "stratified_drop_out": training_set_config["stratified_drop_out"],
+            "rng": random.Random(training_set_config["dataloader_setup_seed"]),
+            **self.tokenization_args,
+            "drop_last": True,  # Drops the last incomplete batch, if the dataset size is not divisible by the batch size.
+            "shuffle": True,  # Shuffles the training data every epoch.
+            "pin_memory": True,
+            **self.general_dataloader_args(),
+        }
+        return args
 
     def val_dataloader(self):
         dataloader, metadata = self.val_reviews.get_dataloader(

@@ -10,6 +10,8 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils import PreTrainedTokenizer
 from math import exp, log
 from training.generator import DEFAULT_GENERATION_CONFIG, Generator
+from tqdm import tqdm
+import numpy as np
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
@@ -43,12 +45,16 @@ class BatchProbabilisticGenerator(Generator):
         model: Optional[PreTrainedModel] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
     ) -> None:
+        print("Initialising BatchProbabilisticGenerator")
+        self.prompt_id = prompt_id
         if artifact_name:
             super().__init__(
                 artifact_name, generation_config, checkpoint, prompt_id=prompt_id
             )
         elif model and tokenizer:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.model = model
+            self.model.eval()
             self.tokenizer = tokenizer
         else:
             raise ValueError(
@@ -86,9 +92,9 @@ class BatchProbabilisticGenerator(Generator):
             sequence_token_length = generation_canidate.data["sequence_token_length"]
             current_probability = generation_canidate.probability
             for token_id in x[sequence_token_length]:
-                new_decoder_input_ids = generation_canidate.data[
-                    "forced_decoder_ids"
-                ].clone()
+                new_decoder_input_ids = (
+                    generation_canidate.data["forced_decoder_ids"].cpu().clone()
+                )
                 new_decoder_input_ids[sequence_token_length + 1] = int(token_id)
                 yield GenerationCanidate(
                     current_probability
@@ -104,29 +110,31 @@ class BatchProbabilisticGenerator(Generator):
                 )
 
     def generate_usage_options_prob_based_batch(
-        self, review_set: ReviewSet
+        self, review_set: ReviewSet, decode_results=True
     ) -> dict[str, list[dict]]:
         input_queue = Queue()
         for review in review_set:
             tokenized_input = self.tokenizer(
-                review.get_prompt(),
+                review.get_prompt(prompt_id=self.prompt_id),
                 padding="max_length",
                 max_length=512,
-                truncation=True,
+                truncation=False,
                 return_tensors="pt",
             )
-            input_queue.put(
-                {
-                    "review_id": review.review_id,
-                    "input_ids": tokenized_input["input_ids"][0],
-                    "attention_mask": tokenized_input["attention_mask"][0],
-                }
-            )
+            if len(tokenized_input["input_ids"][0]) <= 512:
+                input_queue.put(
+                    {
+                        "review_id": review.review_id,
+                        "input_ids": tokenized_input["input_ids"][0],
+                        "attention_mask": tokenized_input["attention_mask"][0],
+                    }
+                )
 
         encoder_queue = Queue(maxsize=self.BATCH_SIZE * 2)
         decoder_queue = {}
         results = []
 
+        progres_bar = tqdm(total=input_queue.qsize())
         while not input_queue.empty() or len(decoder_queue) > 0:
             if len(decoder_queue) < self.BATCH_SIZE and not input_queue.empty():
                 encoder_input = []
@@ -161,6 +169,8 @@ class BatchProbabilisticGenerator(Generator):
                                     "input_ids": x["input_ids"],
                                 }
                             )
+                    input_ids = None
+                    attention_mask = None
 
             while not encoder_queue.empty() and len(decoder_queue) < self.BATCH_SIZE:
                 generation_queue = PriorityQueue()
@@ -181,7 +191,7 @@ class BatchProbabilisticGenerator(Generator):
             next_generations = self.__get_output_with_probs(generation_canidates)
 
             MAX_ITERATIONS = 100
-            MINIMUM_PROBAILITY = -log(0.001)
+            MINIMUM_PROBAILITY = -log(0.000001)
             MINIMUM_TOTAL_PROBABILITY = 0.95
 
             for generation in next_generations:
@@ -210,26 +220,51 @@ class BatchProbabilisticGenerator(Generator):
                     or review["generation_queue"].empty()
                 ):
                     items_to_delete.append(review_id)
+                    # Free up cuda memory
+                    for generation_result in review["results"]:
+                        del generation_result.data["encoder_outputs"]
+
                     results.append(review)
 
             for key in items_to_delete:
                 del decoder_queue[key]
 
-        formatted_results = {}
-        for review in results:
-            review_results = []
-            for result in review["results"]:
-                prob = exp(-result.probability)
-                text = self.tokenizer.decode(
-                    result.data["forced_decoder_ids"], skip_special_tokens=True
-                )
+            progres_bar.update(len(items_to_delete))
 
+        progres_bar.close()
+        print("Finished generating. Decoding results")
+        formatted_results = {}
+        for review in tqdm(results):
+            review_results = []
+
+            review_probs = []
+            review_decoder_ids = []
+            for result in review["results"]:
+                review_probs.append(result.probability)
+                review_decoder_ids.append(result.data["forced_decoder_ids"])
+
+            review_texts = (
+                self.tokenizer.batch_decode(
+                    review_decoder_ids, skip_special_tokens=True
+                )
+                if decode_results
+                else [None] * len(review_decoder_ids)
+            )
+
+            review_probabilities = np.exp(-np.array(review_probs))
+            for text, decoder_token_ids, probability in zip(
+                review_texts, review_decoder_ids, review_probabilities
+            ):
                 review_results.append(
-                    {
-                        "probability": prob,
-                        "sequence_token_length": result.data["sequence_token_length"],
-                        "usageOptions": self.format_usage_options(text),
-                    }
+                    {"probability": probability}
+                    | (
+                        {
+                            "usageOptions": self.format_usage_options(text),
+                            "output_text": text,
+                        }
+                        if decode_results
+                        else {"decoder_token_ids": decoder_token_ids}
+                    )
                 )
             formatted_results[review["review_id"]] = review_results
 

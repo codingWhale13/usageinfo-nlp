@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from typing import Callable
+from typing import Callable, Union
 
 import dotenv
 
@@ -128,7 +128,7 @@ def format_usage_options(text_completion: str):
 
 def generate_label(
     review: json,
-    prompt: str | list,
+    prompt: Union[str, list],
     model: str = "text-davinci-003",
     temperature: float = 1,
     logprobs: int = None,
