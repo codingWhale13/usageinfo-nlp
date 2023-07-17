@@ -45,7 +45,9 @@ for key, value in args_config.copy().items():
             del args_config[key]
             keys = key.split(":")
             current_key = keys.pop(0)
-            args_config[current_key] = copy(config[current_key])
+            args_config[current_key] = args_config.get(
+                current_key, copy(config[current_key])
+            )
             current_config = args_config[current_key]
             while len(keys) > 1:
                 current_key = keys.pop(0)
