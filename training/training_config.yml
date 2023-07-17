@@ -37,10 +37,17 @@ multiple_usage_options_strategy: "default"
 optimizer: #Set all parameters you do not want to null
   lr: 0.0001
   name: "AdamW"
+  # AdamW/SGD
+  weight_decay: 0.01
+  # AdamW
+  amsgrad: False
+  # SGD
+  momentum: 0.0
+  nesterov: False
+  # Adafactor
+  warmup_init: null
   relative_step: False
   scale_parameter: False
-  warmup_init: null
-  weight_decay: 0.01
 prompt_id: "avetis_v1"
 seed: 42 # can be left empty
 test_run: False
