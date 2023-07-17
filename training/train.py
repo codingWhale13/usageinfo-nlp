@@ -96,6 +96,10 @@ hyperparameters = {
 }
 dataset_parameters = copy(config["dataset"])
 optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
+for key in copy(config["optimizer"]):
+    if key not in optimizer_args and key != "name":
+        del config["optimizer"][key]
+
 pl.seed_everything(seed=config["seed"], workers=True)
 
 if not test_run:
