@@ -1,0 +1,41 @@
+accumulate_grad_batches: 30
+active_layers:
+  decoder: '-8:'
+  encoder: '-1:'
+  lm_head: 'True'
+active_learning:
+  module: ActiveDataModule
+  parameters: null
+artifact:
+  checkpoint: null
+  name: null
+batch_size: 8
+dataset:
+  test_set:
+    name: ba-30k-test
+  training_set:
+    augmentation_set: null
+    dataloader_setup_seed: 42
+    drop_out: 0
+    name: ba-30k-train
+    stratified_drop_out: true
+    usage_split: null
+    validation_split: 0.1
+  validation_set:
+    name: ba-30k-val
+epochs: 15
+gradual_unfreezing_mode: ''
+lr_scheduler_type: OneCycleLR
+model_name: flan-t5-base
+module: null
+multiple_usage_options_strategy: default
+optimizer:
+  lr: 0.0007690549819384001
+  name: AdamW
+  relative_step: false
+  scale_parameter: false
+  warmup_init: null
+  weight_decay: 0.017292757742570605
+parameters: null
+prompt_id: avetis_v1
+seed: 42

@@ -40,39 +40,31 @@ def main():
         0.7439,
         0.745,
         0.7393,
-        0.7438,
-        0.7437,
-        0.7458,
-        0.7468,
-        0.7419,
+        #0.7438,
+        #0.7437,
+        #0.7458,
+        #0.7468,
+        #0.7419,
     ]
     validation_classification = []
 
-    assert len(validation_weighted_mean_f1) == 35
+    assert len(validation_weighted_mean_f1) == 30
 
     data_weighted_mean_f1 = expected_max_performance.samplemax(
         validation_weighted_mean_f1
     )
-    data_weighted_mean_f1 = expected_max_performance.samplemax(
-        validation_classification
-    )
+    #data_weighted_mean_f1 = expected_max_performance.samplemax(
+    #    validation_classification
+    #)
 
     # shading +/- the standard error (similar to standard deviation).
     one_plot(
-        data,
+        data_weighted_mean_f1,
         "FLAN-T5-Base",
         logx=False,
         plot_errorbar=True,
         avg_time=0,
-        performance_metric="weighted_mean_f1",
-    )
-    one_plot(
-        data,
-        "FLAN-T5-Base",
-        logx=False,
-        plot_errorbar=True,
-        avg_time=0,
-        performance_metric="correct_classification_fraction",
+        performance_metric="F1 score",
     )
 
 
