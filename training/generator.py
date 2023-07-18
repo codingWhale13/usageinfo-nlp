@@ -54,6 +54,10 @@ class Generator:
             f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
         )
 
+        self.gpt = False
+        if "gpt2" in self.model_name:
+            self.gpt = True
+
         self.batch_size = batch_size
 
     def format_usage_options(self, text_completion: str) -> List[str]:
@@ -80,6 +84,11 @@ class Generator:
             )
 
         predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        if self.gpt:
+            predictions = [
+                prediction.replace(model_inputs[i], "").strip()
+                for i, prediction in enumerate(predictions)
+            ]
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions
         ]

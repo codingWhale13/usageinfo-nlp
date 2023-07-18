@@ -105,6 +105,13 @@ model_tuples = {
         GPT2Tokenizer.from_pretrained("gpt2", model_max_length=512),
         512,
     ),
+    "t5-small-nl24": lambda: (
+        T5ForConditionalGeneration.from_pretrained("google/t5-efficient-small-nl24"),
+        T5Tokenizer.from_pretrained(
+            "google/t5-efficient-small-nl24", model_max_length=512
+        ),
+        512,
+    ),
 }
 
 optimizers = {
