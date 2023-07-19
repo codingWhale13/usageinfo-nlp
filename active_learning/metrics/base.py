@@ -11,8 +11,23 @@ if TYPE_CHECKING:
 
 
 class AbstractActiveLearningMetric(abc.ABC):
-    def __init__(self, decode_and_aggregate_results=True) -> None:
+    def __init__(
+        self,
+        decode_and_aggregate_results=True,
+        prob_generator_max_sequence_length: int = 20,
+        prob_generator_batch_size: int = 512,
+        prob_generator_max_iterations: int = 100,
+        prob_generator_minimum_probability: float = 0.001,
+        prob_generator_minimum_total_probability: float = 0.95,
+    ) -> None:
         self.decode_and_aggregate_results = decode_and_aggregate_results
+        self.prob_generator_max_sequence_length = prob_generator_max_sequence_length
+        self.prob_generator_batch_size = prob_generator_batch_size
+        self.prob_generator_max_iterations = prob_generator_max_iterations
+        self.prob_generator_minimum_probability = prob_generator_minimum_probability
+        self.prob_generator_minimum_total_probability = (
+            prob_generator_minimum_total_probability
+        )
         super().__init__()
 
     def _compute_generations(
@@ -22,7 +37,13 @@ class AbstractActiveLearningMetric(abc.ABC):
         review_set: ReviewSet,
     ):
         generator = BatchProbabilisticGenerator(
-            model=review_model.model, tokenizer=review_model.tokenizer
+            model=review_model.model,
+            tokenizer=review_model.tokenizer,
+            max_sequence_length=self.prob_generator_max_sequence_length,
+            batch_size=self.prob_generator_batch_size,
+            max_iterations=self.prob_generator_max_iterations,
+            minimum_probability=self.prob_generator_minimum_probability,
+            minimum_total_probability=self.prob_generator_minimum_total_probability,
         )
 
         results = generator.generate_usage_options_prob_based_batch(

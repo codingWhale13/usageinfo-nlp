@@ -1,0 +1,78 @@
+accumulate_grad_batches: 8
+active_layers:
+  decoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  encoder: "-3:"
+  lm_head: True
+active_learning:
+ module: "ActiveLearningDataModule"
+ parameters:
+  sampler:
+    name: "GreedySampler"
+    parameters: 
+      n: 64
+  metric:
+    name: RandomAquisitionFunction #RandomEntropySampleActiveLearningMetric # RandomAquisitionFunction # EntropyActiveLearningMetric
+    # parameters:
+    #   decode_and_aggregate_results: False
+    #   entropy_approximation: "normalized"
+    #   prob_generator_max_sequence_length: 20
+    #   prob_generator_batch_size: 64
+    #   prob_generator_max_iterations: 100
+    #   prob_generator_minimum_probability: 0.001
+    #   prob_generator_minimum_total_probability: 0.95
+    #  n: 8000
+  training_epochs_per_iteration: -1
+max_active_learning_iterations: 10
+artifact:
+  checkpoint: #9
+  name: #"scintillating-mandu-99"
+batch_size: 16
+cluster:
+  devices: 1 #Number of gpus per node
+  num_nodes: 1 #Number of nodes
+dataset:
+  test_set:
+    name: "ba-30k-test"
+  training_set:
+    augmentation_set: # "legacy"
+    dataloader_setup_seed: 42
+    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
+    name: "ba-30k-val" #"ba-30k-train"
+    outlier_removal:
+      percentage: 0.0 # fraction of data to remove from training set (validation set stays untouched), use only when drop_out is 0.0
+      distance_threshold: 0.53 # distance threshold for outlier removal, default is 0.53
+    stratified_drop_out: True # stratification based on if the review has usage options or not
+    usage_split: #0.5
+    validation_split: 0.5
+  validation_set:
+    name: #"ba-30k-val" # if you choose a specific validation set, the validation split will be ignored
+epochs: 60
+gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
+lr_scheduler_type: null #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
+model_name: "flan-t5-base"
+multiple_usage_options_strategy: "default"
+optimizer: #Set all parameters you do not want to null
+  lr: 0.0001
+  name: "AdamW"
+  relative_step: False
+  scale_parameter: False
+  warmup_init: null
+  weight_decay: 0.01
+prompt_id: "active_learning_v1"
+seed: # 69  can be left empty
+test_run: False
+files_to_generate_on: ../silver-v1.json
+  -
+
+# Options for 'multiple_usage_options_strategy':
+#   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält
+#   - "flat" -> ein Datapoint für jede usage option
+#   - "shuffle" -> wie bei "default" ein Datapoint, aber mit zufälliger Reihenfolge
+#   - "shuffle-n" -> n zufällige Datapoints mit jeweils unterschiedlichen zufälligen Permutationen
+#   - "shuffle-all" -> alle Permutationen als separate Datapoints
+
+# Further examples for 'active_layers' syntax:
+#   - ':0' -> activate none
+#   - ':' -> activate all ('0:') also works
+#   - '-5:' -> activate last five
+#   - ':3' -> activate first three

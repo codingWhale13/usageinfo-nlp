@@ -295,7 +295,7 @@ class Review:
         )
 
         if not is_input and for_training and len(text) == 0:
-            text = "no usage options"
+            text = "No use cases"
 
         tokens = tokenizer(
             text,
@@ -478,6 +478,7 @@ class Review:
         if isinstance(label_id, ls.LabelSelectionStrategyInterface):
             label_id = self.get_label_id_from_strategy(label_id)
 
+        reference_label_candidates = list(reference_label_candidates)
         for reference_label_candidate in copy(reference_label_candidates):
             if isinstance(
                 reference_label_candidate, ls.LabelSelectionStrategyInterface
@@ -492,6 +493,7 @@ class Review:
         reference_label_candidates = set(reference_label_candidates).intersection(
             self.get_label_ids()
         )
+
         if label_id not in self.get_label_ids() or not reference_label_candidates:
             return None
 

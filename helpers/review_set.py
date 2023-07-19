@@ -329,6 +329,55 @@ class ReviewSet:
         *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
         metric_ids: Union[set, list] = DEFAULT_METRICS,
     ) -> dict[dict[str, float]]:
+        from evaluation.plotting.score_report import get_scored_reviews_dataframe
+
+        reviews_df = get_scored_reviews_dataframe(
+            label_id, self, *reference_label_candidates
+        )
+
+        tp_score = (
+            reviews_df[reviews_df["usage_class"] == "TP"]
+            .agg({list(metric_ids)[0]: ["count", "mean", "std"]})
+            .to_dict()[list(metric_ids)[0]]
+        )
+
+        positive_score = (
+            reviews_df[
+                (reviews_df["usage_class"] == "TP")
+                | (reviews_df["usage_class"] == "FN")
+            ]
+            .agg({list(metric_ids)[0]: ["count", "mean", "std"]})
+            .to_dict()[list(metric_ids)[0]]
+        )
+
+        negatives_score = (
+            reviews_df[
+                (reviews_df["usage_class"] == "TN")
+                | (reviews_df["usage_class"] == "FP")
+            ]
+            .agg({list(metric_ids)[0]: ["count", "mean", "std"]})
+            .to_dict()[list(metric_ids)[0]]
+        )
+
+        TP = len(reviews_df[reviews_df["usage_class"] == "TP"])
+        FP = len(reviews_df[reviews_df["usage_class"] == "FP"])
+        TN = len(reviews_df[reviews_df["usage_class"] == "TN"])
+        FN = len(reviews_df[reviews_df["usage_class"] == "FN"])
+
+        classification_score = {
+            "accuracy": (TP + TN) / (TP + TN + FN + FP),
+            "recall": TP / (TP + FN),
+            "precision": TP / (TP + FP),
+            "sensitivity": TN / (TN + FP),
+            "specificity": TN / (TN + FP),
+            "f1": (2 * TP) / (2 * TP + FP + FN),
+        }
+
+        classification_score["balanced_accuracy"] = (
+            (classification_score["sensitivity"] + classification_score["specificity"])
+            / 2,
+        )
+
         aggregations = {
             "mean": mean,
             "variance": variance,
@@ -351,7 +400,20 @@ class ReviewSet:
                 agg_name: agg_func([score[metric_id] for score in scores])
                 for agg_name, agg_func in aggregations.items()
             }
-        return agg_scores
+        return (
+            agg_scores
+            | {"classification": classification_score}
+            | {"true_positives": {list(metric_ids)[0]: tp_score}}
+            | {"positives": {list(metric_ids)[0]: positive_score}}
+            | {"negatives": {list(metric_ids)[0]: negatives_score}}
+            | {"balanced": (positive_score["mean"] + negatives_score["mean"]) / 2}
+            | {
+                "harmonic_balanced": (
+                    2 * positive_score["mean"] * negatives_score["mean"]
+                )
+                / (positive_score["mean"] + negatives_score["mean"])
+            }
+        )
 
     def test(
         self,
@@ -646,6 +708,7 @@ class ReviewSet:
             else copy(self)
         )
         for review in copy(all_reviews):
+            print(review)
             review.tokenized_datapoints = list(
                 review.get_tokenized_datapoints(
                     selection_strategy=selection_strategy,

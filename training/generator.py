@@ -9,6 +9,7 @@ from training.utils import get_config
 import os
 from queue import PriorityQueue
 from math import exp, log
+from tqdm import tqdm
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
@@ -34,15 +35,14 @@ class Generator:
 
     def __init__(
         self,
-        artifact_name,
+        artifact_name: str,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
         output_probabilities: str = "best",  # can be "all", "best" or None
         prompt_id="original",
     ) -> None:
-        self.config = utils.load_config_from_artifact_name(artifact_name)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+        print(f"Using device: {self.device}")
         if artifact_name in utils.model_tuples.keys():
             self.prompt_id = prompt_id
             self.model_artifact = artifact_name
@@ -51,7 +51,11 @@ class Generator:
             self.prompt_id = utils.load_config_from_artifact_name(artifact_name)[
                 "prompt_id"
             ]
-            self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
+        self.model_artifact = (
+            {"name": artifact_name, "checkpoint": checkpoint}
+            if checkpoint is not None
+            else artifact_name
+        )
 
         (
             self.model,
@@ -66,6 +70,8 @@ class Generator:
             f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
         )
         self.output_probabilities = output_probabilities
+
+        print(f"Using prompt: {self.prompt_id}")
 
     def format_usage_options(self, text_completion: str) -> List[str]:
         if text_completion.lower().strip().startswith("no use cases"):
@@ -292,7 +298,16 @@ class Generator:
         else:
             batch_size = 32
 
-        dataloader, _ = reviews.get_dataloader(
+        if label_id is not None:
+            reviews = reviews.filter(
+                lambda review: label_id not in review.get_label_ids(), inplace=False
+            )
+            if len(reviews) == 0:
+                print(
+                    f"All reviews already labelled with label_id: {label_id}. Skipping generating"
+                )
+                return None
+        dataloader, dataloader_stats = reviews.get_dataloader(
             batch_size=batch_size,
             num_workers=0,
             tokenizer=self.tokenizer,
@@ -300,6 +315,8 @@ class Generator:
             for_training=False,
             prompt_id=self.prompt_id,
         )
+
+        print(dataloader_stats)
 
         label_metadata = {
             "generator": {
@@ -322,7 +339,7 @@ class Generator:
             print(f"Generating label {label_id}...")
             print(f"Label Metadata (base): {label_metadata}", end="\n\n")
 
-        for batch in dataloader:
+        for batch in tqdm(dataloader):
             if self.output_probabilities == "all":
                 usage_options_batch = list(
                     self.generate_usage_options_prob_based(batch)

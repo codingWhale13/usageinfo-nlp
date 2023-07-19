@@ -117,15 +117,34 @@ def get_model_dir_file_path(artifact_name: str, file_name: str):
     return os.path.join(get_model_dir(artifact_name), file_name)
 
 
+import random
+
+
+def generate_run_name() -> str:
+    nouns = ["puppy", "car", "rabbit", "shark", "monkey"]
+    verbs = ["runs", "hits", "jumps", "drives", "barfs", "plays"]
+    adj = ["adorable", "clueless", "dirty", "odd", "stupid", "fast", "wholesome"]
+
+    random_entry = lambda x: x[random.randrange(len(x))]
+    return "-".join(
+        [
+            random_entry(nouns),
+            random_entry(verbs),
+            random_entry(adj),
+            str(random.randrange(1000)),
+        ]
+    )
+
+
 def get_model_dir(artifact_name: str) -> str:
     model_dirs = glob.glob(
         os.path.join(
-            os.getenv("MODELS", default=ARTIFACT_PATH + "models"), f"*{artifact_name}"
+            os.getenv("MODELS", default=ARTIFACT_PATH + "models"), f"{artifact_name}*"
         )
     )
 
     if len(model_dirs) == 0:
-        raise ValueError("No model found with the given name")
+        raise ValueError(f"No model found with the given name: {artifact_name}")
     if len(model_dirs) > 1:
         raise ValueError("Multiple models found with the given name")
     # We know there is only one model dir, so we take the first one
@@ -184,7 +203,7 @@ def get_optimizer(optimizer_args: dict) -> torch.optim.Optimizer:
 def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
     time = datetime.datetime.now().strftime("%m_%d_%H_%M")
 
-    run_name = f"{time}_{logger.experiment.name}"
+    run_name = f"{logger.experiment.name}_{time}"
     dirpath = os.path.join(
         os.getenv("MODELS", default=ARTIFACT_PATH + "models"), run_name
     )
@@ -198,7 +217,7 @@ def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
         save_last=True,
         filename="best",
         save_weights_only=True,
-        monitor="epoch_val_loss",
+        monitor="validation_loss",
     )
 
 

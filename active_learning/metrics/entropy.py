@@ -73,10 +73,22 @@ class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
         self,
         decode_and_aggregate_results: bool = True,
         entropy_approximation: str = "normalized",
+        prob_generator_max_sequence_length: int = 20,
+        prob_generator_batch_size: int = 512,
+        prob_generator_max_iterations: int = 100,
+        prob_generator_minimum_probability: float = 0.001,
+        prob_generator_minimum_total_probability: float = 0.95,
     ) -> None:
         super().__init__(decode_and_aggregate_results)
         self.entropy_approximation_function = load_entropy_approximation(
             entropy_approximation
+        )
+        self.prob_generator_max_sequence_length = prob_generator_max_sequence_length
+        self.prob_generator_batch_size = prob_generator_batch_size
+        self.prob_generator_max_iterations = prob_generator_max_iterations
+        self.prob_generator_minimum_probability = prob_generator_minimum_probability
+        self.prob_generator_minimum_total_probability = (
+            prob_generator_minimum_total_probability
         )
 
     def compute(

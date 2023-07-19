@@ -29,21 +29,22 @@ class SustainabilityTracker:
     """This class tracks emissions and power consumption using CodeCarbon"""
 
     def __init__(self):
-        self.codecarbon_tracker = codecarbon.EmissionsTracker()
+        self.codecarbon_tracker = codecarbon.EmissionsTracker(log_level="critical")
         self.current_tracking_data = {}
         self.results = {}
 
     def initalize(self):
         self.codecarbon_tracker.start()
 
-    def _tracking_key(tracking_name: str, iteration: Union[None, int] = None):
+    def _tracking_key(self, tracking_name: str, iteration: Union[None, int] = None):
         return (tracking_name, iteration)
 
     def start(self, tracking_name: str, iteration: Union[None, int] = None) -> None:
-        if tracking_name in self.current_tracking_data:
-            raise ValueError(f"{tracking_name} already being tracked")
+        tracking_key = self._tracking_key(tracking_name, iteration)
+        if tracking_key in self.current_tracking_data:
+            raise ValueError(f"{tracking_key} already being tracked")
         self.current_tracking_data[
-            self._tracking_key(tracking_name, iteration)
+            tracking_key
         ] = self.codecarbon_tracker._prepare_emissions_data()
 
     def stop(
@@ -52,17 +53,21 @@ class SustainabilityTracker:
         tracking_key = self._tracking_key(tracking_name, iteration)
         if tracking_key not in self.current_tracking_data:
             raise ValueError(
-                f"{tracking_name} is not currently being tracked. Please call start first"
+                f"{tracking_key} is not currently being tracked. Please call start first"
             )
         if tracking_key in self.results:
             raise ValueError(
-                f"{tracking_name} already in results. Please don't reuse any names"
+                f"{tracking_key} already in results. Please don't reuse any names"
             )
-        delta_emissions = (
-            self.codecarbon_tracker._prepare_emissions_data().compute_delta_emission(
-                self.current_tracking_data[tracking_key]
-            )
+
+        current_total_emission = self.codecarbon_tracker._prepare_emissions_data()
+
+        # Computes the difference in place
+        current_total_emission.compute_delta_emission(
+            self.current_tracking_data[tracking_key]
         )
+        delta_emissions = current_total_emission
+
         del self.current_tracking_data[tracking_key]
         tracking_results = vars(delta_emissions) | {
             "tracking_name": tracking_name,
@@ -81,7 +86,7 @@ class SustainabilityTracker:
                 aggregated_results[tracking_name] = [emission_data]
 
         for key, values in aggregated_results.items():
-            if len(values) > 0:
+            if len(values) > 1:
                 results.append(compute_mean_emission(values) | {"tracking_name": key})
 
         return results

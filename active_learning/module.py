@@ -8,6 +8,10 @@ import wandb
 from active_learning.dataset_analysis import analyze_review
 from statistics import mean, variance, median
 from scipy.stats import skew
+from pprint import pprint
+import wandb
+from datetime import datetime
+import warnings
 
 if TYPE_CHECKING:
     from helpers.review_set import ReviewSet
@@ -25,6 +29,7 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
     iteration = 0
     acquired_training_reviews = ReviewSet.from_reviews()
     unlabelled_training_reviews = ReviewSet.from_reviews()
+    base_run_name = None
 
     def _acquire_training_reviews(self) -> ReviewSet:
         raise NotImplementedError
@@ -32,15 +37,31 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
     def acquired_training_reviews_size(self) -> int:
         return len(self.acquired_training_reviews)
 
+    def log(self, data: dict) -> None:
+        current_timestamp = datetime.utcnow()
+        data = data | {"active_learning_iteration": self.iteration}
+        # Format the timestamp into a human-readable string
+        formatted_timestamp = f"{current_timestamp.strftime('%Y-%m-%d %H:%M:%S')}:"
+        print(formatted_timestamp, end=None)
+        pprint(data)
+        if wandb.run is not None:
+            wandb.log(data)
+        else:
+            warnings.warn("Wandb not initalized. Logs are not being saved")
+
     def log_dataframe(self, name: str, df: pd.DataFrame):
-        save_path = get_model_dir_file_path(self.model.run_name(), f"{name}.csv")
+        save_path = get_model_dir_file_path(self.base_run_name, f"{name}.csv")
         df.to_csv(save_path)
-        self.model.logger.experiment.log(
-            {
-                "active_learning_iteration": self.iteration,
-                name: wandb.Table(dataframe=df),
-            }
-        )
+
+        if wandb.run is not None:
+            wandb.log(
+                {
+                    "active_learning_iteration": self.iteration,
+                    name: wandb.Table(dataframe=df),
+                }
+            )
+        else:
+            warnings.warn("Wandb not initalized")
 
     def analyze_acquired_training_review(self):
         stats = []
@@ -66,12 +87,16 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
         self.unlabelled_training_reviews = (
             self.unlabelled_training_reviews - new_training_reviews
         )
-        self.iteration += 1
-
         self.model.sustainability_tracker.stop(
             "active_learning_acquisition_function", iteration=self.iteration
         )
+
         self.analyze_acquired_training_review()
+        self.log_dataframe(
+            "emissions", self.model.sustainability_tracker.results_to_dataframe()
+        )
+
+    def training_reviews(self) -> ReviewSet:
         return self.acquired_training_reviews
 
     def should_reset_train_dataloader(self) -> bool:
@@ -81,26 +106,47 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
         raise NotImplementedError
 
     def setup(self, model: ReviewModel, reviews: ReviewSet) -> None:
-        self.model = model
-        self.reviews = reviews
-        """
-        (
-            self.unlabelled_validation_reviews,
-            self.unlabelled_training_reviews,
-        ) = reviews.split(1000 / len(reviews))
-        """
-        self.unlabelled_training_reviews = reviews
-        self.unlabelled_validation_reviews = ReviewSet.from_reviews()
-        print(
-            f"Using {len(self.unlabelled_validation_reviews)} unlabeleld validation reviews and {len(self.unlabelled_training_reviews)} unlabeled training reviews"
-        )
+        if not hasattr(self, "model") or self.model is None:
+            self.model = model
+            self.reviews = reviews
+            """
+            (
+                self.unlabelled_validation_reviews,
+                self.unlabelled_training_reviews,
+            ) = reviews.split(1000 / len(reviews))
+            """
+
+            valid_length_reviews = []
+            for review in reviews:
+                tokenized_input = self.model.tokenizer(
+                    review.get_prompt(prompt_id=self.model.prompt_id),
+                    padding="max_length",
+                    max_length=512,
+                    truncation=False,
+                    return_tensors="pt",
+                )
+                if len(tokenized_input["input_ids"][0]) <= 512:
+                    valid_length_reviews.append(review)
+
+            self.unlabelled_training_reviews = ReviewSet.from_reviews(
+                *valid_length_reviews
+            )
+            self.unlabelled_validation_reviews = ReviewSet.from_reviews()
+
+            print(
+                f"Got a total of {len(reviews)}. Using {len(self.unlabelled_validation_reviews)} unlabeleld validation reviews and {len(self.unlabelled_training_reviews)} unlabeled training reviews"
+            )
+        else:
+            print("Skipping active learning module setup. It is already initalized")
 
     def on_train_epoch_end(self) -> None:
         if len(self.unlabelled_validation_reviews) > 0:
             print("Calculating entropy on unlabelled validation set")
-            scores = self.metric.compute(self.model, self.unlabelled_validation_reviews)
+            scores = self.metric.compute(
+                self, self.model, self.unlabelled_validation_reviews
+            )
             entropy_scores = [entropy for entropy in scores.values()]
-            self.model.logger.experiment.log(
+            self.log(
                 {
                     "trainer/global_step": self.model.trainer.global_step,
                     "validation_mean_entropy": mean(entropy_scores),
@@ -183,18 +229,17 @@ class ActiveDataModule(AbstractActiveDataModule):
 
 class ActiveLearningDataModule(AbstractActiveDataModule):
     current_metric_scores = {}
+    is_in_evaluation_mode = False
 
     def __init__(
         self,
         model: Optional[ReviewModel] = None,
         reviews: Optional[ReviewSet] = None,
-        initial_samples: int = 1000,
         metric: AbstractActiveLearningMetric = None,
         sampler: AbstractSampler = None,
         training_epochs_per_iteration: int = 15,
     ) -> None:
         super().__init__()
-        self.initial_samples = initial_samples
         self.metric = metric
         self.sampler = sampler
         self.training_dynamics = {"loss": []}
@@ -204,11 +249,14 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
         self.training_epochs_per_iteration = training_epochs_per_iteration
 
     def process_step(self, batch_idx, batch, outputs, mode="training") -> None:
+        if self.is_in_evaluation_mode:
+            return
         self.__process_individual_losses(batch_idx, batch, outputs, mode=mode)
 
     def should_reset_train_dataloader(self) -> bool:
         print("Current epoch:", self.model.current_epoch)
-
+        if self.training_epochs_per_iteration == -1:
+            return False
         return (
             self.model.current_epoch != 0
             and (self.model.current_epoch % self.training_epochs_per_iteration) == 0
@@ -216,21 +264,26 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
 
     def _acquire_training_reviews(self) -> ReviewSet:
         metric_scores = self.metric.compute(
-            self.model, self.unlabelled_training_reviews
+            self, self.model, self.unlabelled_training_reviews
         )
         metric_name = self.metric.metric_name()
         log_data = [
             {metric_name: score, "review_id": review_id}
             for review_id, score in metric_scores.items()
         ]
-        raw_scores = metric_scores.values()
-        self.log_dataframe(f"metric_scores_iteration_{self.iteration}", pd.DataFrame.from_records(log_data))
-        self.model.logger.experiment.log({
-            "active_learning_iteration": self.iteration,
-            f"mean_{metric_name}": mean(raw_scores),
-            f"median_{metric_name}": median(raw_scores)
-            f"variance_{metric_name}": variance(raw_scores),
-        })
+        raw_scores = list(metric_scores.values())
+        self.log_dataframe(
+            f"metric_scores_iteration_{self.iteration}",
+            pd.DataFrame.from_records(log_data),
+        )
+        self.log(
+            {
+                f"mean_{metric_name}": mean(raw_scores),
+                f"median_{metric_name}": median(raw_scores),
+                f"variance_{metric_name}": variance(raw_scores),
+                f"fisher_pearson_skewness_coefficient_{metric_name}": skew(raw_scores),
+            }
+        )
         for review_id, score in metric_scores.items():
             try:
                 self.current_metric_scores[review_id].append(score)

@@ -2,11 +2,16 @@ from helpers.review_set import ReviewSet
 from helpers.review import Review
 from helpers.label_selection import AbstractLabelSelectionStrategy
 from statistics import mean
-
+import pandas as pd
 
 def word_count(string: str) -> int:
     return len(string.split(" "))
 
+def analyze_review_set(review_set: ReviewSet, label_selection_strategy: AbstractLabelSelectionStrategy) -> pd.DataFrame:
+    data = []
+    for review in review_set:
+        data.append(analyze_review(review, label_selection_strategy))
+    return pd.DataFrame.from_records(data)
 
 def analyze_review(
     review: Review, label_selection_strategy: AbstractLabelSelectionStrategy

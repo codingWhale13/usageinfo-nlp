@@ -38,6 +38,7 @@ class ReviewModel(pl.LightningModule):
         optimizer_args: dict,
         gradual_unfreezing_mode: Optional[str],
         prompt_id: str,
+        sustainability_tracker: SustainabilityTracker = None,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -61,7 +62,7 @@ class ReviewModel(pl.LightningModule):
             "model_max_length": max_length,
             "for_training": True,
         }
-        self.sustainability_tracker = SustainabilityTracker()
+        self.sustainability_tracker = sustainability_tracker
 
         self._initialize_datasets()
 
@@ -76,7 +77,7 @@ class ReviewModel(pl.LightningModule):
     def run_name(self) -> str:
         if self.trainer is not None and self.trainer.logger is not None:
             return self.trainer.logger.experiment.name
-        return "test-run"
+        return None
 
     def forward(
         self,
@@ -123,14 +124,14 @@ class ReviewModel(pl.LightningModule):
         return outputs.loss
 
     def on_train_epoch_start(self):
-        self.sustainability_tracker.start("training_epoch", self.current_epoch)
+        pass
+        # self.sustainability_tracker.start("training_epoch", self.current_epoch)
 
     def on_validation_epoch_start(self):
-        if self.current_epoch != 0:
-            self.sustainability_tracker.start("validation_epoch", self.current_epoch)
+        pass
+        # self.sustainability_tracker.start("validation_epoch", self.global_step)
 
     def training_epoch_end(self, outputs):
-        print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
         avg_loss = (
             torch.stack(
@@ -171,7 +172,7 @@ class ReviewModel(pl.LightningModule):
             }
         )
 
-        self.sustainability_tracker.stop("training_epoch", iteration=self.current_epoch)
+        # self.sustainability_tracker.stop("training_epoch", iteration=self.current_epoch)
         self.active_data_module.on_train_epoch_end()
         utils.gradual_unfreeze(
             self.model,
@@ -200,8 +201,9 @@ class ReviewModel(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         """Logs the average validation loss over the epoch"""
         avg_loss = torch.stack(outputs).cpu().mean()
+
         self.log(
-            "epoch_val_loss",
+            "validation_loss",
             avg_loss,
             on_epoch=True,
             prog_bar=True,
@@ -209,18 +211,18 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
-        if self.current_epoch != 0:
-            self.sustainability_tracker.stop("validation_epoch", self.current_epoch)
-            self.logger.experiment.log(
-                {
-                    "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
-                    "active_learning_iteration": self.active_data_module.iteration,
-                    "trainer/global_step": self.trainer.global_step,
-                    "validation_loss": avg_loss,
-                }
-            )
-        else:
-            print("Skipping epoch 0 logging for validation")
+        # self.sustainability_tracker.stop("validation_epoch", self.global_step)
+        """
+        self.logger.experiment.log(
+            {
+                "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
+                "active_learning_iteration": self.active_data_module.iteration,
+                "trainer/global_step": self.trainer.global_step,
+                "validation_loss": avg_loss,
+            }
+        )"""
+
+        # print("Performing evalution on our own metric")
         self.validation_loss.append(avg_loss.item())
 
     def test_step(self, batch, __):
@@ -276,8 +278,8 @@ class ReviewModel(pl.LightningModule):
 
     def train_dataloader(self) -> DataLoader:
         print("Constructing train dataloader")
-        
-        current_train_reviews = self.active_data_module.acquire_training_reviews()
+
+        current_train_reviews = self.active_data_module.training_reviews()
         stats = {
             "acquired_training_reviews": self.active_data_module.acquired_training_reviews_size(),
             "active_learning_iteration": self.active_data_module.iteration,

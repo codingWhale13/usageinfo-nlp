@@ -29,3 +29,6 @@ class RandomAquisitionFunction(AbstractActiveLearningMetric):
             scores[review_id] = 1.0
 
         return scores
+
+    def metric_name(self) -> str:
+        return "random"

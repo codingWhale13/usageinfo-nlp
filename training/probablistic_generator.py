@@ -33,9 +33,6 @@ class GenerationCanidate:
 
 
 class BatchProbabilisticGenerator(Generator):
-    MAX_SEQUENCE_LENGTH = 20
-    BATCH_SIZE = 512
-
     def __init__(
         self,
         artifact_name: Optional[str] = None,
@@ -44,8 +41,19 @@ class BatchProbabilisticGenerator(Generator):
         prompt_id="original",
         model: Optional[PreTrainedModel] = None,
         tokenizer: Optional[PreTrainedTokenizer] = None,
+        max_sequence_length: int = 20,
+        batch_size: int = 64,
+        max_iterations: int = 100,
+        minimum_probability: float = 0.001,
+        minimum_total_probability: float = 0.95,
     ) -> None:
-        print("Initialising BatchProbabilisticGenerator")
+        print("Initialising BatchProbabilisticGenerator with batch_size:", batch_size)
+        self.MAX_SEQUENCE_LENGTH = max_sequence_length
+        self.BATCH_SIZE = batch_size
+        self.MAX_ITERATIONS = max_iterations
+        self.MINIMUM_PROBABILITY = -log(minimum_probability)
+        self.MINIMUM_TOTAL_PROBABILITY = minimum_total_probability
+
         self.prompt_id = prompt_id
         if artifact_name:
             super().__init__(
@@ -53,7 +61,7 @@ class BatchProbabilisticGenerator(Generator):
             )
         elif model and tokenizer:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = model
+            self.model = model.to(self.device)
             self.model.eval()
             self.tokenizer = tokenizer
         else:
@@ -92,9 +100,9 @@ class BatchProbabilisticGenerator(Generator):
             sequence_token_length = generation_canidate.data["sequence_token_length"]
             current_probability = generation_canidate.probability
             for token_id in x[sequence_token_length]:
-                new_decoder_input_ids = (
-                    generation_canidate.data["forced_decoder_ids"].cpu().clone()
-                )
+                new_decoder_input_ids = generation_canidate.data[
+                    "forced_decoder_ids"
+                ].cpu().clone()
                 new_decoder_input_ids[sequence_token_length + 1] = int(token_id)
                 yield GenerationCanidate(
                     current_probability
@@ -103,8 +111,6 @@ class BatchProbabilisticGenerator(Generator):
                         "forced_decoder_ids": new_decoder_input_ids,
                         "sequence_token_length": sequence_token_length + 1,
                         "encoder_outputs": generation_canidate.data["encoder_outputs"],
-                        "input_ids": generation_canidate.data["input_ids"],
-                        "attention_mask": generation_canidate.data["input_ids"],
                         "review_id": generation_canidate.data["review_id"],
                     },
                 )
@@ -190,10 +196,6 @@ class BatchProbabilisticGenerator(Generator):
 
             next_generations = self.__get_output_with_probs(generation_canidates)
 
-            MAX_ITERATIONS = 100
-            MINIMUM_PROBAILITY = -log(0.000001)
-            MINIMUM_TOTAL_PROBABILITY = 0.95
-
             for generation in next_generations:
                 review_id = generation.data["review_id"]
                 current_review = decoder_queue[review_id]
@@ -209,14 +211,14 @@ class BatchProbabilisticGenerator(Generator):
                 ):
                     current_review["total_probability"] += exp(-generation.probability)
                     current_review["results"].append(generation)
-                elif generation.probability < MINIMUM_PROBAILITY:
+                elif generation.probability < self.MINIMUM_PROBABILITY:
                     generation_queue.put(generation)
 
             items_to_delete = []
             for review_id, review in decoder_queue.items():
                 if (
-                    review["iteration"] > MAX_ITERATIONS
-                    or review["total_probability"] >= MINIMUM_TOTAL_PROBABILITY
+                    review["iteration"] > self.MAX_ITERATIONS
+                    or review["total_probability"] >= self.MINIMUM_TOTAL_PROBABILITY
                     or review["generation_queue"].empty()
                 ):
                     items_to_delete.append(review_id)

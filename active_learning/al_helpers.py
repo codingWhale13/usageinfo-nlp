@@ -28,7 +28,6 @@ def load_sampler(sampler_config):
 def load_metric(metric_config):
     metric_name = metric_config["name"]
     metric_parameters = metric_config.get("parameters", {})
-    print("s", metric_parameters)
     metric_class = globals()[metric_name]
     return metric_class(**metric_parameters)
 
