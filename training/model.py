@@ -15,7 +15,7 @@ from active_learning.module import ActiveDataModule
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 
-NUM_WORKERS = 4
+NUM_WORKERS = 1
 
 
 class ReviewModel(pl.LightningModule):
