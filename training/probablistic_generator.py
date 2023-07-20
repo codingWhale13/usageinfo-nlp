@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as f
 from typing import Optional
 from typing import Union
-from transformers.models.t5.modeling_t5 import BaseModelOutput
 from helpers.review_set import ReviewSet
 import os
 from queue import PriorityQueue, Queue
@@ -12,7 +11,6 @@ from math import exp, log
 from training.generator import DEFAULT_GENERATION_CONFIG, Generator
 from tqdm import tqdm
 import numpy as np
-
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
 GENERATION_CONFIGS = [
@@ -46,6 +44,7 @@ class BatchProbabilisticGenerator(Generator):
         max_iterations: int = 100,
         minimum_probability: float = 0.001,
         minimum_total_probability: float = 0.95,
+        token_top_k: int = 5
     ) -> None:
         print("Initialising BatchProbabilisticGenerator with batch_size:", batch_size)
         self.MAX_SEQUENCE_LENGTH = max_sequence_length
@@ -53,7 +52,7 @@ class BatchProbabilisticGenerator(Generator):
         self.MAX_ITERATIONS = max_iterations
         self.MINIMUM_PROBABILITY = -log(minimum_probability)
         self.MINIMUM_TOTAL_PROBABILITY = minimum_total_probability
-
+        self.TOKEN_TOP_K = token_top_k
         self.prompt_id = prompt_id
         if artifact_name:
             super().__init__(
@@ -72,28 +71,33 @@ class BatchProbabilisticGenerator(Generator):
     def __get_output_with_probs(
         self, generation_canidates: list[GenerationCanidate]
     ) -> list[tuple[float, dict]]:
-        decoder_input_ids = torch.stack(
-            [x.data["forced_decoder_ids"] for x in generation_canidates]
-        ).to(self.device)
+        decoder_input_ids = []
+        encoder_hidden_states = []
+        encoder_attention_mask = []
 
-        encoder_outputs = BaseModelOutput(
-            last_hidden_state=torch.stack(
-                [x.data["encoder_outputs"] for x in generation_canidates]
-            ).to(self.device)
-        )
-        num_token_options = 5
+        for x in generation_canidates:
+            decoder_input_ids.append(x.data["forced_decoder_ids"])
+            encoder_hidden_states.append(x.data["encoder_outputs"])
+            encoder_attention_mask.append(x.data["encoder_attention_mask"])
+        
+        decoder_input_ids = torch.stack(decoder_input_ids).to(self.device)
+        encoder_hidden_states = torch.stack(encoder_hidden_states).to(self.device)
+        encoder_attention_mask = torch.stack(encoder_attention_mask).to(self.device)
 
         with torch.inference_mode():
-            output = self.model(
-                encoder_outputs=encoder_outputs,
-                return_dict=True,
-                decoder_input_ids=decoder_input_ids,
+            decoder_outputs = self.model.get_decoder()(
+                encoder_hidden_states=encoder_hidden_states,
+                encoder_attention_mask=encoder_attention_mask,
+                input_ids=decoder_input_ids,
+                return_dict=True
             )
 
+            logits = self.model.lm_head(decoder_outputs[0])
+
         # Go from percentage to log probablity
-        token_probs = -f.log_softmax(output.logits, dim=-1)
+        token_probs = -f.log_softmax(logits, dim=-1)
         # Using negative token_probs to get the highest probabilties because the probs are in log and in log the highest prob is the lowest number
-        _, top_k_token_ids = torch.topk(-token_probs, k=num_token_options, dim=-1)
+        _, top_k_token_ids = torch.topk(-token_probs, k=self.TOKEN_TOP_K, dim=-1)
         for x, generation_canidate, i in zip(
             top_k_token_ids, generation_canidates, range(len(generation_canidates))
         ):
@@ -112,6 +116,7 @@ class BatchProbabilisticGenerator(Generator):
                         "sequence_token_length": sequence_token_length + 1,
                         "encoder_outputs": generation_canidate.data["encoder_outputs"],
                         "review_id": generation_canidate.data["review_id"],
+                        "encoder_attention_mask": generation_canidate.data["encoder_attention_mask"]
                     },
                 )
 
@@ -158,7 +163,7 @@ class BatchProbabilisticGenerator(Generator):
                     ).to(self.device)
                     with torch.inference_mode():
                         encoder_output_batch = self.model.get_encoder()(
-                            input_ids=input_ids, attention_mask=attention_mask
+                            input_ids=input_ids, attention_mask=attention_mask, return_dict=True
                         )
                         for encoder_output, x in zip(
                             encoder_output_batch.last_hidden_state, encoder_input
@@ -167,6 +172,7 @@ class BatchProbabilisticGenerator(Generator):
                                 {
                                     "review_id": x["review_id"],
                                     "encoder_outputs": encoder_output,
+                                    "encoder_attention_mask": x["attention_mask"],
                                     "forced_decoder_ids": torch.zeros(
                                         [self.MAX_SEQUENCE_LENGTH + 1],
                                         dtype=torch.int32,

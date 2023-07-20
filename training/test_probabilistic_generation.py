@@ -7,29 +7,36 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from helpers.label_selection import LabelIDSelectionStrategy
 from active_learning.metrics.entropy import calculate_normalized_entropy
 
-"""
-generator = Generator("decent-elevator-481", "beam_search", 9, "all")
-prob_generator = BatchProbabilisticGenerator(
-    "decent-elevator-481", "beam_search", 9, "best"
-)
-"""
-model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to("cuda")
 
+model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to("cuda")
 tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
 
+
+generator = Generator("car-barfs-stupid-155-7", "greedy", "best", prompt_id="active_learning_v1")
+
 prob_generator = BatchProbabilisticGenerator(
-    prompt_id="active_learning_v1", model=model, tokenizer=tokenizer
+    prompt_id="active_learning_v1", artifact_name="car-barfs-stupid-155-7", checkpoint="best", batch_size=512
 )
 review_set_name = "silver-v1.json"
 reviews = ReviewSet.from_files(review_set_name)
-results = prob_generator.generate_usage_options_prob_based_batch(reviews)
+results = prob_generator.generate_usage_options_prob_based_batch(reviews, decode_results=False)
 
 selection_strategy = LabelIDSelectionStrategy("*")
 df_data = []
+
+#generator.generate_label(reviews, verbose=True)
 for review_id, review in results.items():
     no_usage_options_prob = 0
     aggregated_results = {}
 
+    print("prob",review_id)
+    for x in review:
+        if "usageOptions" in x:
+            print(x["usageOptions"])
+        else:
+            print(x["probability"], x["decoder_token_ids"])
+    
+    continue
     for x in review:
         if tuple(set(x["usageOptions"])) not in aggregated_results:
             aggregated_results[tuple(set(x["usageOptions"]))] = x["probability"]
@@ -45,6 +52,7 @@ for review_id, review in results.items():
     sorted_usage_options = sorted(
         aggregated_results, key=lambda x: x["probability"], reverse=True
     )
+
 
     lc = 1 - sorted_usage_options[0]["probability"]
     review_entropy = calculate_normalized_entropy(probs)
@@ -65,7 +73,7 @@ for review_id, review in results.items():
         }
     )
 
-
+exit()
 import pandas as pd
 import seaborn as sns
 
