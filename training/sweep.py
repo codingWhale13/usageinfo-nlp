@@ -2,7 +2,7 @@
 import sys
 import wandb
 
-from training.train_copy import train
+from training.train import train
 from training.sweep_configurations import sweep_configurations
 
 if len(sys.argv) < 2:
