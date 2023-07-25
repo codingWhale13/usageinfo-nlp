@@ -32,8 +32,8 @@ class ReviewModel(pl.LightningModule):
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
         active_data_module: ActiveDataModule,
-        lr_scheduler_type: Optional[str],
         optimizer_args: dict,
+        lr_scheduler_args: dict,
         gradual_unfreezing_mode: Optional[str],
         prompt_id: str,
     ):
@@ -48,8 +48,8 @@ class ReviewModel(pl.LightningModule):
         self.active_layers = active_layers
         self.trainer = trainer
         self.multiple_usage_options_strategy = multiple_usage_options_strategy
-        self.lr_scheduler_type = lr_scheduler_type
         self.optimizer_args = optimizer_args
+        self.lr_scheduler_args = lr_scheduler_args
         self.prompt_id = prompt_id
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
         self.active_data_module = active_data_module
@@ -109,6 +109,10 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
+        if hasattr(self, "lr_scheduler"):
+            self.log(
+                "lr", self.lr_scheduler.get_last_lr()[0], on_step=True, logger=True
+            )
         return outputs.loss
 
     def on_train_epoch_end(self):
@@ -133,8 +137,8 @@ class ReviewModel(pl.LightningModule):
 
         self.log(
             "epoch_end_lr",
-            self.hyperparameters["max_lr"]
-            if self.lr_scheduler_type is None
+            self.hyperparameters["lr"]
+            if not hasattr(self, "lr_scheduler")
             else self.lr_scheduler.get_last_lr()[0],
             on_epoch=True,
             logger=True,
@@ -194,20 +198,54 @@ class ReviewModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = self.optimizer(self.parameters(), **self.optimizer_args)
+        scheduler_name = self.lr_scheduler_args["name"]
 
-        if self.lr_scheduler_type == "OneCycleLR":
+        if scheduler_name == "OneCycleLR":
             self.lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer,
-                max_lr=self.hyperparameters["max_lr"],
+                max_lr=self.hyperparameters["lr"],
                 total_steps=self.trainer.estimated_stepping_batches,
             )
             return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
 
-        if self.lr_scheduler_type == "AdaFactor":
+        if scheduler_name == "AdaFactor":
             from transformers.optimization import AdafactorSchedule
 
             self.lr_scheduler = AdafactorSchedule(optimizer)
             return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
+
+        if scheduler_name == "CyclicLR":
+            self.lr_scheduler = torch.optim.lr_scheduler.CyclicLR(
+                optimizer,
+                mode=self.lr_scheduler_args["mode"],
+                base_lr=self.hyperparameters["lr"],
+                max_lr=self.hyperparameters["lr"] * 5,
+                step_size_up=max(0, self.lr_scheduler_args["step_size_up"]),
+                cycle_momentum="momentum" in self.optimizer_args,
+            )
+            return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
+
+        if scheduler_name == "InverseSquareRootLR":
+            warm_up_factor = max(1e-10, self.lr_scheduler_args["warm_up_factor"])
+            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+                optimizer,
+                lambda step: 1e1
+                * min(
+                    warm_up_factor * (step + 1),
+                    1 / ((step + 1) ** 0.5),
+                ),
+            )
+            return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "step"}]
+
+        if scheduler_name == "ConstantLr":
+            return [optimizer]
+
+        if scheduler_name == "LRRangeTest":
+            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+                optimizer,
+                lambda epoch: 1e-1 * ((100**0.25) ** (epoch - 1)),
+            )
+            return [optimizer], [{"scheduler": self.lr_scheduler, "interval": "epoch"}]
 
         # This is the right way to return an optimizer, without scheduler, in lightning (https://github.com/Lightning-AI/lightning/issues/3795)
         return [optimizer]

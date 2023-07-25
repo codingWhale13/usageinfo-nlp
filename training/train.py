@@ -7,6 +7,7 @@ import torch
 import wandb
 from lightning import pytorch as pl
 from pprint import pprint
+from datetime import datetime
 
 from model import ReviewModel
 from helpers.sustainability_logger import SustainabilityLogger
@@ -31,6 +32,16 @@ def get_cli_args():
         args_config[key] = value
 
     return args_config
+
+
+def convert_active_layer_parameters(config):
+    for key, value in copy(config).items():
+        if (
+            key.startswith("active_layers.")
+            and key != "active_layers.lm_head"
+            and type(value) == int
+        ):
+            config[key] = ":0" if value <= 0 else f"-{value}:"
 
 
 def convert_to_correct_type(value, prev_type):
@@ -71,7 +82,7 @@ def update_config_values(base_config, update_values, delimiter="."):
     return base_config | update_values
 
 
-def train(is_sweep=False):
+def train(is_sweep=False, run_name=None):
     torch.set_float32_matmul_precision("medium")
     warnings.filterwarnings(
         "ignore", ".*Consider increasing the value of the `num_workers` argument*"
@@ -85,8 +96,16 @@ def train(is_sweep=False):
     config = update_config_values(config, cli_args_config)
 
     if is_sweep or not config["test_run"]:
-        logger = pl.loggers.WandbLogger(project="rlp-t2t", entity="bsc2022-usageinfo")
-        config = update_config_values(config, dict(wandb.config), delimiter=".")
+        logger = pl.loggers.WandbLogger(
+            project="rlp-t2t",
+            entity="bsc2022-usageinfo",
+            name=f"{run_name}-{datetime.now().strftime('%m%d%H%M%S')}"
+            if run_name
+            else None,
+        )
+        wandb_config = dict(wandb.config)
+        convert_active_layer_parameters(wandb_config)
+        config = update_config_values(config, wandb_config, delimiter=".")
 
         checkpoint_callback = utils.get_checkpoint_callback(logger, config)
 
@@ -120,7 +139,7 @@ def train(is_sweep=False):
     hyperparameters = {
         "weight_decay": config["optimizer"]["weight_decay"],
         "batch_size": config["batch_size"],
-        "max_lr": config["optimizer"]["lr"],
+        "lr": config["optimizer"]["lr"],
     }
     dataset_parameters = copy(config["dataset"])
     optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
@@ -156,11 +175,11 @@ def train(is_sweep=False):
         active_layers=config["active_layers"],
         optimizer=optimizer,
         optimizer_args=optimizer_args,
+        lr_scheduler_args=config["lr_scheduler"],
         hyperparameters=hyperparameters,
         dataset_config=dataset_parameters,
         trainer=trainer,
         multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
-        lr_scheduler_type=config["lr_scheduler_type"],
         gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
         active_data_module=active_learning_module,
         prompt_id=config["prompt_id"],

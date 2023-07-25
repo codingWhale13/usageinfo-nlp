@@ -23,4 +23,8 @@ for arg in sys.argv[1:]:
         sys.argv.remove(arg)
         break
 
-wandb.agent(sweep_id, function=lambda: train(is_sweep=True), count=count)
+wandb.agent(
+    sweep_id,
+    function=lambda: train(is_sweep=True, run_name=sweep_configuration["name"]),
+    count=count,
+)
