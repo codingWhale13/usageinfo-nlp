@@ -36,13 +36,16 @@ def main():
     rs = ReviewSet.from_files(dataset)
     _, tokenizer, max_length, _ = utils.initialize_model_tuple(args.tokenizer)
     lengths = []
-    for review in rs.reviews.values():
+    to_long_reviews = []
+    for review_id, review in rs.reviews.items():
         review = (
             review.get_prompt(args.prompt_id)
             if args.prompt_id
             else review["review_body"]
         )
         tokenized_review = tokenizer(review)["input_ids"]
+        if len(tokenized_review) > max_length:
+            to_long_reviews.append(review_id)
         lengths.append(len(tokenized_review))
 
     print(f"Number of reviews: {len(rs.reviews)}")
@@ -53,6 +56,7 @@ def main():
     print(
         f"Number of reviews with length > {max_length}: {len([l for l in lengths if l > max_length])}"
     )
+    print(f"Review ids from to long reviews: {to_long_reviews}")
     if args.output:
         sns.displot(lengths)
         plt.savefig(args.output)

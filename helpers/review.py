@@ -318,6 +318,12 @@ class Review:
             ids = tokens["input_ids"]
             # You need to set the pad tokens for the input to -100 for some Transformers (https://github.com/huggingface/transformers/issues/9770)>
             tokens["input_ids"][ids[:] == tokenizer.pad_token_id] = -100
+            if model_name == "gpt2":
+                for index, token in enumerate(tokens["input_ids"]):
+                    if token == -100:
+                        tokens["input_ids"][index] = tokenizer.eos_token_id
+                        tokens["attention_mask"][index] = 1
+                        break
 
         return tokens if len(tokens["input_ids"]) <= max_length else None
 

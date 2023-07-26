@@ -86,7 +86,7 @@ class Generator:
         predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         if self.gpt:
             predictions = [
-                prediction.replace(model_inputs[i], "").strip()
+                prediction.replace(model_inputs[i], "").strip().split("\n")[0]
                 for i, prediction in enumerate(predictions)
             ]
         predictions = [
