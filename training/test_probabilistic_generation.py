@@ -1,41 +1,94 @@
 # %%
-from training.probablistic_generator import BatchProbabilisticGenerator
+from training.probablistic_generator_dynamic_length import (
+    DynamicLengthBatchProbabilisticGenerator,
+)
+from training.probablistic_generator import (
+    BatchProbabilisticGenerator,
+)
 from training.generator import Generator
 from helpers.review_set import ReviewSet
 from scipy.stats import entropy
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, PreTrainedTokenizerFast
 from helpers.label_selection import LabelIDSelectionStrategy
-from active_learning.metrics.entropy import calculate_normalized_entropy
+from active_learning.metrics.entropy import (
+    calculate_normalized_entropy,
+    calculate_lowest_probability_approximation_entropy,
+)
 
 
 model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to("cuda")
-tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
+tokenizer = PreTrainedTokenizerFast.from_pretrained("google/flan-t5-base")
 
 
-generator = Generator("car-barfs-stupid-155-7", "greedy", "best", prompt_id="active_learning_v1")
+generator = Generator(
+    "car-barfs-stupid-155-7", "greedy", "best", prompt_id="active_learning_v1"
+)
+
 
 prob_generator = BatchProbabilisticGenerator(
-    prompt_id="active_learning_v1", artifact_name="car-barfs-stupid-155-7", checkpoint="best", batch_size=512
+    prompt_id="active_learning_v1",
+    artifact_name="car-barfs-stupid-155-7",
+    checkpoint="best",
+    batch_size=512,
+    token_top_k=5,
+    minimum_probability=0.01,
 )
-review_set_name = "silver-v1.json"
-reviews = ReviewSet.from_files(review_set_name)
-results = prob_generator.generate_usage_options_prob_based_batch(reviews, decode_results=False)
+"""
+prob_generator = BatchProbabilisticGenerator(
+    prompt_id="active_learning_v1",
+    model=model,
+    tokenizer=tokenizer,
+    batch_size=512,
+    token_top_k=5,
+)
+"""
 
+review_set_name = "hard_reviews.json"  # hard_reviews.json"  # "silver-v1.json"
+reviews = ReviewSet.from_files(review_set_name)
+
+
+results = prob_generator.generate_usage_options_prob_based_batch(
+    reviews,
+    decode_results=True,
+)
+for review_id, review in results.items():
+    sorted_review = sorted(
+        review, key=lambda r: (r["cluster"], r["probability"]), reverse=True
+    )
+
+    probs = {}
+    for x in review:
+        try:
+            probs[x["cluster"]] += x["probability"]
+        except KeyError:
+            probs[x["cluster"]] = x["probability"]
+
+    print(
+        review_id,
+        calculate_lowest_probability_approximation_entropy(list(probs.values())),
+    )
+
+    for usage_option in sorted_review:
+        print(
+            usage_option["probability"],
+            usage_option["cluster"],
+            usage_option["usageOptions"],
+        )
 selection_strategy = LabelIDSelectionStrategy("*")
 df_data = []
-
-#generator.generate_label(reviews, verbose=True)
+exit()
+# generator.generate_label(reviews, verbose=True)
 for review_id, review in results.items():
     no_usage_options_prob = 0
     aggregated_results = {}
 
-    print("prob",review_id)
+    print("prob", review_id)
     for x in review:
         if "usageOptions" in x:
             print(x["usageOptions"])
         else:
             print(x["probability"], x["decoder_token_ids"])
-    
+
     continue
     for x in review:
         if tuple(set(x["usageOptions"])) not in aggregated_results:
@@ -52,7 +105,6 @@ for review_id, review in results.items():
     sorted_usage_options = sorted(
         aggregated_results, key=lambda x: x["probability"], reverse=True
     )
-
 
     lc = 1 - sorted_usage_options[0]["probability"]
     review_entropy = calculate_normalized_entropy(probs)
@@ -72,6 +124,7 @@ for review_id, review in results.items():
             > 0,
         }
     )
+
 
 exit()
 import pandas as pd

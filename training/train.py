@@ -116,6 +116,13 @@ def initalize_training_run(
     print("Initalizing new model")
     pl.seed_everything(seed=config["seed"], workers=True)
 
+    accumalate_grad_batches = config["accumulate_grad_batches"]
+    if training_data_size is not None:
+        accumalate_grad_batches = min(
+            accumalate_grad_batches, int(training_data_size / config["batch_size"])
+        )
+    log_every_n_steps = accumalate_grad_batches * 4
+
     if use_wandb_logger:
         print("Initializing new wandb logger")
         logger = pl.loggers.WandbLogger(
@@ -123,7 +130,7 @@ def initalize_training_run(
         )
         checkpoint_callback = utils.get_checkpoint_callback(logger, config)
 
-    early_stopping_callback = EarlyStopping(monitor="validation_loss", patience=2)
+    early_stopping_callback = EarlyStopping(monitor="validation_loss", patience=4)
 
     if artifact_model_name is not None:
         artifact = {"checkpoint": "best", "name": artifact_model_name}
@@ -135,12 +142,6 @@ def initalize_training_run(
     print("Loading model artifact:", artifact)
     model, tokenizer, max_length, model_name = utils.initialize_model_tuple(artifact)
 
-    accumalate_grad_batches = config["accumulate_grad_batches"]
-    if training_data_size is not None:
-        accumalate_grad_batches = min(
-            accumalate_grad_batches, int(training_data_size / config["batch_size"])
-        )
-    log_every_n_steps = accumalate_grad_batches * 4
     print(
         f"Accumalting {accumalate_grad_batches} batches and logging every {log_every_n_steps} steps"
     )
@@ -235,33 +236,44 @@ def score_and_validate_model_on_validation(
     artifact_model_name: str,
     checkpoint: str = None,
 ):
-    def unpack_string_dict(dict: dict) -> dict:
+    def unpack_string_dict(str_dict: dict) -> dict:
         result = {}
-        for key, value in dict.items():
+        for key, value in str_dict.items():
             if type(value) == dict:
                 for inner_key, inner_value in value.items():
-                    result[key+"_"+ inner_key] = inner_value
+                    result[key + "_" + inner_key] = inner_value
             else:
                 result[key] = value
         return result
+
     print("Scoring:", artifact_model_name)
+
+    active_learning_module.is_in_evaluation_mode = True
+    validation_loss = trainer.validate(model, ckpt_path=None)[0]
+    active_learning_module.is_in_evaluation_mode = False
+    print("validation_loss:", validation_loss)
+
     scores = score_on(
         artifact_model_name,
         checkpoint,
         VALIDATION_REVIEW_SET,
         VALIDATION_SELECTION_STRATEGY,
     )
-    active_learning_module.is_in_evaluation_mode = True
-    validation_loss = trainer.validate(model, ckpt_path=None)[0]
-    active_learning_module.is_in_evaluation_mode = False
-    print("validation_loss:", validation_loss)
+
     print(scores)
     if active_learning_module.iteration in active_learning_scores:
         raise ValueError(
             f"Scores for iteration {active_learning_module.iteration} already present in the scores:",
             active_learning_scores,
         )
-    active_learning_scores.append(validation_loss | unpack_string_dict(scores) | {"active_learning_iteration": active_learning_module.iteration, "acquired_training_reviews": active_learning_module.acquired_training_reviews_size()})
+    active_learning_scores.append(
+        validation_loss
+        | unpack_string_dict(scores)
+        | {
+            "active_learning_iteration": active_learning_module.iteration,
+            "acquired_training_reviews": active_learning_module.acquired_training_reviews_size(),
+        }
+    )
     active_learning_module.log_dataframe(
         "scores", pd.DataFrame.from_records(active_learning_scores)
     )
@@ -269,77 +281,80 @@ def score_and_validate_model_on_validation(
 
 
 # %% Training and testing
-sustainability_tracker = SustainabilityTracker()
-sustainability_tracker.initalize()
-sustainability_tracker.start("training")
+with SustainabilityTracker() as sustainability_tracker:
+    sustainability_tracker.start("training")
 
-model, trainer = initalize_training_run(
-    sustainability_tracker=sustainability_tracker, use_wandb_logger=False
-)
-original_run_name = utils.generate_run_name()
-base_run_name = f"{original_run_name}-active_learning_dir"
-active_learning_module.base_run_name = base_run_name
-os.makedirs(
-    os.path.join(
-        os.getenv("MODELS", default=utils.ARTIFACT_PATH + "models"), base_run_name
+    model, trainer = initalize_training_run(
+        sustainability_tracker=sustainability_tracker, use_wandb_logger=False
     )
-)
-last_run_name = None
+    original_run_name = utils.generate_run_name()
+    base_run_name = f"{original_run_name}-active_learning_dir"
+    active_learning_module.base_run_name = base_run_name
+    os.makedirs(
+        os.path.join(
+            os.getenv("MODELS", default=utils.ARTIFACT_PATH + "models"), base_run_name
+        )
+    )
+    last_run_name = None
 
-score_and_validate_model_on_validation(
-    model, trainer, artifact_model_name=config["model_name"]
-)
-for _ in range(config["max_active_learning_iterations"]):
-    sustainability_tracker.start(
-        "active_learning_iteration", active_learning_module.iteration
-    )
-    if active_learning_module.iteration > 0:
-        current_iteration_best_model, _ = initalize_training_run(
+    # score_and_validate_model_on_validation(
+    #    model, trainer, artifact_model_name=config["model_name"]
+    # )
+    for _ in range(config["max_active_learning_iterations"]):
+        sustainability_tracker.start(
+            "active_learning_iteration", active_learning_module.iteration
+        )
+        if active_learning_module.iteration > 0:
+            current_iteration_best_model, _ = initalize_training_run(
+                sustainability_tracker=sustainability_tracker,
+                use_wandb_logger=False,
+                artifact_model_name=last_run_name,
+            )
+            active_learning_module.model = current_iteration_best_model
+
+        active_learning_module.acquire_training_reviews()
+
+        runname = (
+            f"{original_run_name}-{active_learning_module.iteration}"
+            if original_run_name
+            else None
+        )
+        model, trainer = initalize_training_run(
+            sustainability_tracker,
+            wandb_id=runname,
+            training_data_size=active_learning_module.acquired_training_reviews_size(),
+        )
+        active_learning_module.model = model
+
+        trainer.fit(model)
+        sustainability_tracker.stop(
+            "active_learning_iteration", active_learning_module.iteration
+        )
+        active_learning_module.iteration += 1
+
+        if original_run_name is None:
+            original_run_name = model.run_name()
+        last_run_name = model.run_name()
+        wandb.finish()
+
+        current_iteration_best_model, trainer = initalize_training_run(
             sustainability_tracker=sustainability_tracker,
             use_wandb_logger=False,
             artifact_model_name=last_run_name,
         )
-        active_learning_module.model = current_iteration_best_model
+        score_and_validate_model_on_validation(
+            current_iteration_best_model,
+            trainer,
+            artifact_model_name=last_run_name,
+            checkpoint="best",
+        )
 
-    active_learning_module.acquire_training_reviews()
+    sustainability_tracker.stop("training")
+    sustainability_tracker.start("testing")
+    trainer.test()
+    sustainability_tracker.stop("testing")
 
-    runname = (
-        f"{original_run_name}-{active_learning_module.iteration}"
-        if original_run_name
-        else None
-    )
-    model, trainer = initalize_training_run(
-        sustainability_tracker,
-        wandb_id=runname,
-        training_data_size=active_learning_module.acquired_training_reviews_size(),
-    )
-    active_learning_module.model = model
-
-    trainer.fit(model)
-    sustainability_tracker.stop(
-        "active_learning_iteration", active_learning_module.iteration
-    )
-    active_learning_module.iteration += 1
-
-    if original_run_name is None:
-        original_run_name = model.run_name()
-    last_run_name = model.run_name()
-    wandb.finish()
-
-    current_iteration_best_model, trainer = initalize_training_run(
-        sustainability_tracker=sustainability_tracker,
-        use_wandb_logger=False,
-        artifact_model_name=last_run_name,
-    )
-    score_and_validate_model_on_validation(
-        model, trainer, artifact_model_name=last_run_name, checkpoint="best"
-    )
-
-sustainability_tracker.stop("training")
-sustainability_tracker.start("testing")
-trainer.test()
-sustainability_tracker.stop("testing")
-sustainability_tracker.terminate()
+exit()
 
 try:
     label_id = f"model-{wandb.run.name}-auto"

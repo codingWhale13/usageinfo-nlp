@@ -47,6 +47,13 @@ class SustainabilityTracker:
             tracking_key
         ] = self.codecarbon_tracker._prepare_emissions_data()
 
+    def __enter__(self):
+        self.initalize()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.terminate()
+    
     def stop(
         self, tracking_name: str, iteration: Union[None, int] = None
     ) -> EmissionsData:

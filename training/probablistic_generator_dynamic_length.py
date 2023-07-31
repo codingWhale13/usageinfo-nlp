@@ -12,7 +12,6 @@ from training.generator import DEFAULT_GENERATION_CONFIG, Generator
 from tqdm import tqdm
 import numpy as np
 from torch.nn.utils.rnn import pad_sequence
-from sentence_transformers import SentenceTransformer
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
@@ -33,7 +32,7 @@ class GenerationCanidate:
     data: Any = field(compare=False)
 
 
-class BatchProbabilisticGenerator(Generator):
+class DynamicLengthBatchProbabilisticGenerator(Generator):
     def __init__(
         self,
         artifact_name: Optional[str] = None,
@@ -97,7 +96,7 @@ class BatchProbabilisticGenerator(Generator):
                 input_ids=decoder_input_ids,
                 return_dict=True,
             )
-            self.decoder_computation_steps += 1
+
             logits = self.model.lm_head(decoder_outputs[0])
 
         # Go from percentage to log probablity
@@ -138,7 +137,6 @@ class BatchProbabilisticGenerator(Generator):
         self, review_set: ReviewSet, decode_results=True
     ) -> dict[str, list[dict]]:
         input_queue = Queue()
-        self.decoder_computation_steps = 0
         for review in review_set:
             tokenized_input = self.tokenizer(
                 review.get_prompt(prompt_id=self.prompt_id),
@@ -209,7 +207,6 @@ class BatchProbabilisticGenerator(Generator):
                     "generation_queue": generation_queue,
                     "total_probability": 0,
                     "results": [],
-                    "non_finished_results": [],
                     "iteration": 0,
                     "review_id": generation_canidate_data["review_id"],
                 }
@@ -237,9 +234,6 @@ class BatchProbabilisticGenerator(Generator):
                     current_review["results"].append(generation)
                 elif generation.probability < self.MINIMUM_PROBABILITY:
                     generation_queue.put(generation)
-                else:
-                    pass
-                    # current_review["results"].append(generation)
 
             items_to_delete = []
             for review_id, review in decoder_queue.items():
@@ -253,9 +247,7 @@ class BatchProbabilisticGenerator(Generator):
                     for generation_result in review["results"]:
                         del generation_result.data["encoder_outputs"]
                         del generation_result.data["encoder_attention_mask"]
-                    for generation_result in review["non_finished_results"]:
-                        del generation_result.data["encoder_outputs"]
-                        del generation_result.data["encoder_attention_mask"]
+
                     results.append(review)
 
             for key in items_to_delete:
@@ -266,98 +258,6 @@ class BatchProbabilisticGenerator(Generator):
         progres_bar.close()
         print("Finished generating. Decoding results")
         formatted_results = {}
-        simple_format_results = {}
-        for review in tqdm(results, desc="Accumalting raw results"):
-            total_usage_options = len(review["results"])
-            decoder_results = torch.zeros(
-                total_usage_options, self.MAX_SEQUENCE_LENGTH + 1, dtype=torch.int32
-            )
-            probabilities = torch.empty(total_usage_options, dtype=torch.float32)
-            for i, result in enumerate(review["results"]):
-                decoder_results[i][
-                    : len(result.data["forced_decoder_ids"])
-                ] = result.data["forced_decoder_ids"]
-                probabilities[i] = result.probability
-
-            probabilities = torch.exp(-probabilities)
-            simple_format_results[review["review_id"]] = [
-                probabilities,
-                decoder_results,
-                None,
-                None,
-            ]
-
-        embeddings = None
-        if decode_results:
-            import time
-
-            start_time = time.perf_counter()
-            all_decoder_token_ids = torch.concat(
-                [review[1] for review in simple_format_results.values()]
-            )
-            decoded_texts = self.tokenizer.batch_decode(
-                all_decoder_token_ids, skip_special_tokens=True
-            )
-            print("Decoded results in:", time.perf_counter() - start_time)
-
-            model = SentenceTransformer(
-                "sentence-transformers/all-MiniLM-L6-v2",
-                device="cuda",
-            )
-            embeddings = model.encode(
-                decoded_texts,
-                show_progress_bar=True,
-                batch_size=256,
-                convert_to_numpy=True,
-            )
-
-            results_keys = list(simple_format_results.keys())
-
-            from sklearn.cluster import AgglomerativeClustering
-
-            i = 0
-            for j_key in tqdm(
-                range(len(results_keys)), desc="Clustering decoded results"
-            ):
-                review_texts = []
-                num_texts_for_review = len(
-                    simple_format_results[results_keys[j_key]][1]
-                )
-                simple_format_results[results_keys[j_key]][2] = decoded_texts[
-                    i : i + num_texts_for_review
-                ]
-
-                clustering_labels = [0]
-                if num_texts_for_review > 1:
-                    clustering = AgglomerativeClustering(
-                        n_clusters=None,
-                        metric="cosine",
-                        linkage="complete",
-                        distance_threshold=0.2,
-                    ).fit(embeddings[i : i + num_texts_for_review])
-                    clustering_labels = clustering.labels_
-                simple_format_results[results_keys[j_key]][3] = clustering_labels
-                i += num_texts_for_review
-
-        # for review in tqdm(simple_format_results.values(), desc="Clustering"):
-
-        final_format_results = {}
-        for review_id, review in tqdm(
-            simple_format_results.items(), desc="Formatting results"
-        ):
-            final_format_results[review_id] = []
-            for probability, decoder_token_ids, text, cluster in zip(
-                review[0], review[1], review[2], review[3]
-            ):
-                final_format_results[review_id].append(
-                    {
-                        "probability": float(probability),
-                        "usageOptions": self.format_usage_options(text),
-                        "cluster": cluster,
-                    }
-                )
-        return final_format_results
-
         for review in tqdm(results):
             review_results = []
 
@@ -390,10 +290,7 @@ class BatchProbabilisticGenerator(Generator):
                         else {"decoder_token_ids": decoder_token_ids}
                     )
                 )
-            formatted_results[review["review_id"]] = {
-                "results": review_results,
-                "iterations": review["iteration"],
-            }
+            formatted_results[review["review_id"]] = review_results
 
         return formatted_results
 

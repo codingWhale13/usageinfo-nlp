@@ -63,7 +63,7 @@ class Generator:
             self.max_length,
             self.model_name,
         ) = utils.initialize_model_tuple(self.model_artifact)
-
+        print("Using", self.model_artifact)
         self.model.to(self.device)
         self.model.eval()
         self.generation_config = get_config(
@@ -207,7 +207,7 @@ class Generator:
         input_ids = batch["input"]["input_ids"].to(self.device)
         attention_mask = batch["input"]["attention_mask"].to(self.device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -268,7 +268,7 @@ class Generator:
                 {
                     "probability": x[0],
                     "sequence_token_length": x[1],
-                    "usageOptions": x[2],
+                    "usageOptions": x[2]
                 }
             ]
             for x in res
@@ -350,7 +350,7 @@ class Generator:
             for review_id, usage_options in zip(
                 batch["review_id"], usage_options_batch
             ):
-                label_metadata["probabilities"] = usage_options
+                #label_metadata["probabilities"] = usage_options
                 if label_id is not None:
                     reviews[review_id].add_label(
                         label_id=label_id,

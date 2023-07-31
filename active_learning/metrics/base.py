@@ -19,6 +19,7 @@ class AbstractActiveLearningMetric(abc.ABC):
         prob_generator_max_iterations: int = 100,
         prob_generator_minimum_probability: float = 0.001,
         prob_generator_minimum_total_probability: float = 0.95,
+        prob_generator_token_top_k: int = 5,
     ) -> None:
         self.decode_and_aggregate_results = decode_and_aggregate_results
         self.prob_generator_max_sequence_length = prob_generator_max_sequence_length
@@ -28,6 +29,7 @@ class AbstractActiveLearningMetric(abc.ABC):
         self.prob_generator_minimum_total_probability = (
             prob_generator_minimum_total_probability
         )
+        self.prob_generator_token_top_k = prob_generator_token_top_k
         super().__init__()
 
     def _compute_generations(
@@ -44,14 +46,15 @@ class AbstractActiveLearningMetric(abc.ABC):
             max_iterations=self.prob_generator_max_iterations,
             minimum_probability=self.prob_generator_minimum_probability,
             minimum_total_probability=self.prob_generator_minimum_total_probability,
+            token_top_k=self.prob_generator_token_top_k,
         )
 
         results = generator.generate_usage_options_prob_based_batch(
-            review_set, decode_results=self.decode_and_aggregate_results
+            review_set, decode_results=True
         )
         df_data = []
-        for review_id, data_points in results.items():
-            for data in data_points:
+        for review_id, review_data in results.items():
+            for data in review_data:
                 df_data.append({"review_id": review_id, **data})
 
         active_learning_module.log_dataframe(

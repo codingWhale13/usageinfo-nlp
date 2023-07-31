@@ -366,11 +366,11 @@ class ReviewSet:
 
         classification_score = {
             "accuracy": (TP + TN) / (TP + TN + FN + FP),
-            "recall": TP / (TP + FN),
-            "precision": TP / (TP + FP),
-            "sensitivity": TN / (TN + FP),
-            "specificity": TN / (TN + FP),
-            "f1": (2 * TP) / (2 * TP + FP + FN),
+            "recall": TP / (TP + FN) if (TP + FN) > 0 else 0.0,
+            "precision": TP / (TP + FP) if (TP + FP) > 0 else 0.0,
+            "sensitivity": TN / (TN + FP) if (TN + FP) > 0 else 0.0,
+            "specificity": TN / (TN + FP) if (TN + FP) > 0 else 0.0,
+            "f1": (2 * TP) / (2 * TP + FP + FN) if (2 * TP + FP + FN) > 0 else 0.0,
         }
 
         classification_score["balanced_accuracy"] = (
@@ -708,7 +708,6 @@ class ReviewSet:
             else copy(self)
         )
         for review in copy(all_reviews):
-            print(review)
             review.tokenized_datapoints = list(
                 review.get_tokenized_datapoints(
                     selection_strategy=selection_strategy,

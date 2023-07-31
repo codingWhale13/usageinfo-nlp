@@ -42,7 +42,6 @@ def get_scored_reviews_dataframe(
     *reference_label_ids: Union[str, ls.LabelSelectionStrategyInterface],
 ) -> pd.DataFrame:
     reviews_list = []
-    print("get_df", len(review_set))
     for review in review_set:
         review_scores = review.get_scores(
             label_id, *reference_label_ids, metric_ids=[METRIC_ID]

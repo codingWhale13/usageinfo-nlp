@@ -12,7 +12,7 @@ from active_learning.metrics.entropy import (
 from active_learning.metrics.least_confidence import LeastConfidenceActiveLearningMetric
 from active_learning.metrics.random_baseline import RandomAquisitionFunction
 
-from active_learning.sampler import GreedySampler
+from active_learning.sampler import GreedySampler, GreedyOptimalSubsetSampler, GreedyOptimalClusterSubsetSampler
 
 from typing import Union
 

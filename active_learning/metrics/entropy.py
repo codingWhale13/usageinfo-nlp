@@ -73,11 +73,13 @@ class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
         self,
         decode_and_aggregate_results: bool = True,
         entropy_approximation: str = "normalized",
+        aggregate_clusters=False,
         prob_generator_max_sequence_length: int = 20,
         prob_generator_batch_size: int = 512,
         prob_generator_max_iterations: int = 100,
         prob_generator_minimum_probability: float = 0.001,
         prob_generator_minimum_total_probability: float = 0.95,
+        prob_generator_token_top_k: int = 5,
     ) -> None:
         super().__init__(decode_and_aggregate_results)
         self.entropy_approximation_function = load_entropy_approximation(
@@ -90,6 +92,8 @@ class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
         self.prob_generator_minimum_total_probability = (
             prob_generator_minimum_total_probability
         )
+        self.prob_generator_token_top_k = prob_generator_token_top_k
+        self.aggregate_clusters = aggregate_clusters
 
     def compute(
         self,
@@ -101,17 +105,24 @@ class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
             active_learning_module, review_model, review_set
         )
         scores = {}
-        print("Calculating entropy")
-
-        for review_id, review in tqdm(results.items()):
-            probs = [
-                x["probability"]
-                for x in (
-                    aggregate_probabilities(review)
-                    if self.decode_and_aggregate_results
-                    else review
-                )
-            ]
+        for review_id, review in tqdm(results.items(), desc="Calculating entropy"):
+            if self.aggregate_clusters:
+                probs = {}
+                for x in review:
+                    try:
+                        probs[x["cluster"]] += x["probability"]
+                    except KeyError:
+                        probs[x["cluster"]] = x["probability"]
+                probs = list(probs.values())
+            else:
+                probs = [
+                    x["probability"]
+                    for x in (
+                        aggregate_probabilities(review)
+                        if self.decode_and_aggregate_results
+                        else review
+                    )
+                ]
             scores[review_id] = self.entropy_approximation_function(probs)
 
         return scores

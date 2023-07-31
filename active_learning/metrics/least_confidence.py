@@ -23,7 +23,8 @@ class LeastConfidenceActiveLearningMetric(AbstractActiveLearningMetric):
         print("Calculating least_confidence")
 
         for review_id, review in tqdm(results.items()):
-            probs = [x["probability"] for x in aggregate_probabilities(review)]
+            review_results = review["results"]
+            probs = [x["probability"] for x in aggregate_probabilities(review_results)]
             scores[review_id] = 1 - max(probs)
 
         return scores

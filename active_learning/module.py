@@ -30,6 +30,7 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
     acquired_training_reviews = ReviewSet.from_reviews()
     unlabelled_training_reviews = ReviewSet.from_reviews()
     base_run_name = None
+    logs = []
 
     def _acquire_training_reviews(self) -> ReviewSet:
         raise NotImplementedError
@@ -44,23 +45,24 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
         formatted_timestamp = f"{current_timestamp.strftime('%Y-%m-%d %H:%M:%S')}:"
         print(formatted_timestamp, end=None)
         pprint(data)
+        self.logs.append(data | {"timestamp": current_timestamp})
+        self.log_dataframe("logs_dump", pd.DataFrame.from_records(self.logs), save_to_wandb=False)
         if wandb.run is not None:
             wandb.log(data)
-        else:
-            warnings.warn("Wandb not initalized. Logs are not being saved")
+       
 
-    def log_dataframe(self, name: str, df: pd.DataFrame):
+    def log_dataframe(self, name: str, df: pd.DataFrame, save_to_wandb=True):
         save_path = get_model_dir_file_path(self.base_run_name, f"{name}.csv")
         df.to_csv(save_path)
 
-        if wandb.run is not None:
+        if wandb.run is not None and save_to_wandb:
             wandb.log(
                 {
                     "active_learning_iteration": self.iteration,
                     name: wandb.Table(dataframe=df),
                 }
             )
-        else:
+        elif save_to_wandb:
             warnings.warn("Wandb not initalized")
 
     def analyze_acquired_training_review(self):
@@ -68,10 +70,10 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
         metric_name = self.metric.metric_name()
         for review in self.acquired_training_reviews:
             review_stats = analyze_review(review, self.model.train_reviews_strategy)
-
+            review_id = review_stats["review_id"]
             stats.append(
                 review_stats
-                | {metric_name: self.current_metric_scores[review_stats["review_id"]]}
+                | ({metric_name: self.current_metric_scores[review_id]} if review_id in self.current_metric_scores else {}) 
             )
         df = pd.DataFrame.from_records(data=stats, index="review_id")
         self.log_dataframe(f"training_dataset_iteration_{self.iteration}", df)
@@ -238,6 +240,7 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
         metric: AbstractActiveLearningMetric = None,
         sampler: AbstractSampler = None,
         training_epochs_per_iteration: int = 15,
+        initial_samples: int = 0,
     ) -> None:
         super().__init__()
         self.metric = metric
@@ -246,6 +249,7 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
         self.individual_loss_function = CrossEntropyLoss(
             ignore_index=-100, reduction="mean"
         )
+        self.initial_samples = initial_samples
         self.training_epochs_per_iteration = training_epochs_per_iteration
 
     def process_step(self, batch_idx, batch, outputs, mode="training") -> None:
@@ -263,6 +267,11 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
         )
 
     def _acquire_training_reviews(self) -> ReviewSet:
+        if self.acquired_training_reviews_size() == 0 and self.initial_samples > 0:
+            new_training_reviews, _ = self.unlabelled_training_reviews.split(
+                self.initial_samples / len(self.unlabelled_training_reviews)
+            )
+            return new_training_reviews
         metric_scores = self.metric.compute(
             self, self.model, self.unlabelled_training_reviews
         )
@@ -276,20 +285,26 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
             f"metric_scores_iteration_{self.iteration}",
             pd.DataFrame.from_records(log_data),
         )
+        
+        for review_id, score in metric_scores.items():
+            try:
+                self.current_metric_scores[review_id].append(score)
+            except KeyError:
+                self.current_metric_scores[review_id] = [score]
+        new_training_data, expected_information_gain = self.sampler.sample(self.unlabelled_training_reviews, metric_scores)
+
         self.log(
             {
+                f"expected_information_gain_{metric_name}": float(expected_information_gain), 
+                f"sum_{metric_name}": sum(raw_scores),
                 f"mean_{metric_name}": mean(raw_scores),
                 f"median_{metric_name}": median(raw_scores),
                 f"variance_{metric_name}": variance(raw_scores),
                 f"fisher_pearson_skewness_coefficient_{metric_name}": skew(raw_scores),
             }
         )
-        for review_id, score in metric_scores.items():
-            try:
-                self.current_metric_scores[review_id].append(score)
-            except KeyError:
-                self.current_metric_scores[review_id] = [score]
-        return self.sampler.sample(self.unlabelled_training_reviews, metric_scores)
+
+        return new_training_data
 
     def __process_individual_losses(self, batch_idx, batch, outputs, mode) -> None:
         labels = batch["output"]["input_ids"]
