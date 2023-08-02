@@ -19,7 +19,7 @@ import { useDisclosure } from '@chakra-ui/react';
 import React from 'react';
 
 export function InstructionsAlertDialog() {
-  const { isOpen, onOpen, onClose } = useDisclosure({ defaultIsOpen: true });
+  const { isOpen, onOpen, onClose } = useDisclosure({ defaultIsOpen: false });
   const cancelRef = React.useRef();
 
   return (
@@ -45,10 +45,9 @@ export function InstructionsAlertDialog() {
                 <Text>
                   The goal of this project is to extract usage information from
                   Amazon product reviews. For every review, your job is to
-                  extract usage options that the review author describes. If
-                  possible, mark a usage option directly in the review. If
-                  necessary, you can also write custom text to describe a usage
-                  option.
+                  extract usage options that the review author describes. You can
+                  either write a custom text or mark each usage option in the
+                  review body directly.
                 </Text>
                 <Heading as="h4" size="md">
                   What counts as a usage option?
@@ -57,34 +56,31 @@ export function InstructionsAlertDialog() {
                   A usage option is anything that answers the question "
                   <Text as="b">What can this product be used for/as?</Text>". We
                   are only interested in <Text as="b">positive</Text> usage
-                  options. You must label the{' '}
-                  <Text as="b">shortest phrase possible</Text> that includes the
-                  full usage option. Reviews may contain more than one usage
-                  option. In this case, each usage option must be labeled, each
-                  containing all information needed to make sense independently.
+                  options. You should only include the necessary information to
+                  understand the usage options and be as precise as possible.
+                  Reviews may contain more than one usage option. In this case,
+                  each usage option must be labeled, each containing all information
+                  needed to make sense independently.
                 </Text>
                 <Text>
                   Examples of what should be labeled as a usage option:
                 </Text>
                 <UnorderedList stylePosition={'inside'}>
                   <ListItem>
-                    {' '}
-                    "A wonderful tool for{' '}
-                    <Text as="b">cleaning the bathroom</Text>!" (marked directly
-                    in review){' '}
+                    "Great bag to travel in Europe over the day" -{'>'} "
+                    <Text as="b">bag for European day travel</Text>"
                   </ListItem>
                   <ListItem>
                     "Not only can you <Text as="b">chop wood</Text>, you can{' '}
                     <Text as="b">break concrete</Text>,{' '}
                     <Text as="b">dig a fire pit</Text>, use it as a{' '}
                     <Text as="b">climbing aid in the woods</Text>, and{' '}
-                    <Text as="b">fight</Text> with it as a last resort." (marked
-                    directly in review)
+                    <Text as="b">fight</Text> with it as a last resort."
                   </ListItem>
                   <ListItem>
                     "great for blending fruits and vegetables" -{'>'} "
                     <Text as="b">blending fruits</Text>", "
-                    <Text as="b">blending vegetables</Text>" (free text)
+                    <Text as="b">blending vegetables</Text>"
                   </ListItem>
                 </UnorderedList>
                 <Heading as="h4" size="md">
@@ -114,14 +110,6 @@ export function InstructionsAlertDialog() {
                     <Text as="s">
                       I hoped this would be good for playing tennis but it
                       wasn't!
-                    </Text>
-                    )
-                  </ListItem>
-                  <ListItem>
-                    Slang (
-                    <Text as="s">
-                      When I slammed a power chord on this electric guitar, my
-                      hair blew back!
                     </Text>
                     )
                   </ListItem>
