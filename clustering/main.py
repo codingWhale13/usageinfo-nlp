@@ -6,6 +6,7 @@ from scorer import Scorer
 
 import helpers.label_selection as ls
 import utils
+import pandas as pd
 from helpers.review_set import ReviewSet
 
 
@@ -52,15 +53,20 @@ def main():
         print(f"Clustering with {arg_dict}...")
         clustered_df = Clusterer(df_to_cluster, arg_dict).cluster()
 
-        if clustering_config["data"]["n_components"] == 2:
-            utils.plot_clusters2d(
-                clustered_df, arg_dict, color="label", interactive=True
-            )
+        # if clustering_config["data"]["n_components"] == 2:
+        #     utils.plot_clusters2d(
+        #         clustered_df, arg_dict, color="label", interactive=True
+        #     )
 
         print(f"Scoring clustering with {arg_dict}...")
         scores[[v for v in arg_dict.values() if v is not None][0]] = Scorer(
-            clustered_df, clustering_config["evaluation"]["golden_labels"]
+            clustered_df,
+            clustering_config["evaluation"]["golden_labels"],
+            clustering_config["clustering"]["algorithm"],
         ).score()
+        # save scores as csv
+        scores_df = pd.DataFrame.from_dict(scores, orient="index")
+        scores_df.to_csv(f'scores-{clustering_config["evaluation"]["save_name"]}.csv')
 
         if clustering_config["evaluation"]["merge_duplicates"]:
             clustered_df = utils.merge_duplicated_usage_options(
@@ -68,9 +74,11 @@ def main():
             )
 
         if clustering_config["evaluation"]["save_to_disk"]:
-            utils.save_clustered_df(clustered_df, arg_dict)
+            utils.save_clustered_df(
+                clustered_df, arg_dict, clustering_config["evaluation"]["save_name"]
+            )
 
-    utils.generate_report(scores, "scores.html")
+    utils.generate_report(scores, clustering_config["evaluation"]["save_name"])
 
 
 if __name__ == "__main__":

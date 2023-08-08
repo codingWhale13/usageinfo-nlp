@@ -64,7 +64,7 @@ class DataLoader:
         df_to_cluster = review_set_df.drop_duplicates(
             subset=["usage_option"], keep="first"
         ).copy()
-
+        print(f"Loaded {len(df_to_cluster)} usage options to cluster.")
         EvaluationCache.get().save_to_disk()
 
         if self.dim_reduction is not None:

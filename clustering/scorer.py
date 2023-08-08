@@ -7,22 +7,27 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 class Scorer:
-    def __init__(self, review_set_df: pd.DataFrame, path_to_golden_labels: str):
+    def __init__(
+        self, review_set_df: pd.DataFrame, path_to_golden_labels: str, algorithm: str
+    ):
+        if algorithm == "hdbscan":
+            review_set_df = review_set_df[review_set_df["label"] != -1]
         self.clustered_df = review_set_df
         self.data = np.stack(review_set_df["embedding"].to_numpy())
         self.labels = review_set_df["label"].to_numpy()
         self.centroids = review_set_df[
             review_set_df["centroid"] == True
         ].index.to_numpy()
-        self.cluster_distances = self.get_cluster_distances()
-        self.golden_labels = self.get_golden_labels(path_to_golden_labels)
+        # self.cluster_distances = self.get_cluster_distances()
+        # self.golden_labels = self.get_golden_labels(path_to_golden_labels)
 
     def get_golden_labels(self, path):
-        print(self.clustered_df)
         golden_labels_df = pd.read_csv(path, sep=";")
-        golden_labels_df = golden_labels_df[["usage_option1", "usage_option2", "votes"]]
+        golden_labels_df = golden_labels_df[
+            ["usage_option1", "usage_option2", "votes", "cosine_sim"]
+        ]
         # drop all rows where votes is "s"
-        golden_labels_df = golden_labels_df[golden_labels_df["votes"] != "5"]
+        golden_labels_df = golden_labels_df[golden_labels_df["votes"] != 5]
         # we have 5 votes, "1" indicates no similarity, "2" indicates same topic, "3" indicates similar usage option, "4" indicates synonym
         for i in range(2, 5):
             golden_labels_df[f"golden_{i}"] = golden_labels_df["votes"].apply(
@@ -43,7 +48,6 @@ class Scorer:
         label2 = self.clustered_df[self.clustered_df["usage_option"] == usage_option2][
             "label"
         ].values[0]
-        print(label1, label2)
         if label1 == label2:
             return 1
         else:
@@ -64,13 +68,16 @@ class Scorer:
         This method calculates the scores for the clustering.
         """
         return {
+            # "custom_silhouette": self.custom_silhouette(),
             "silhouette": self.silhouette(),
-            "avg_sim_to_centroid": self.average_sim_to_centroid(),
-            "worst_cluster": self.worst_cluster_index(),
-            "best_cluster": self.best_cluster_index(),
-            "adjusted_rand_topic": self.adjusted_rand(2),
-            "adjusted_rand_similar": self.adjusted_rand(3),
-            "adjusted_rand_synonym": self.adjusted_rand(4),
+            "davies_bouldin": self.davies_bouldin(),
+            "calinski_harabasz": self.calinski_harabasz(),
+            # "avg_sim_to_centroid": self.average_sim_to_centroid(),
+            # "worst_cluster": self.worst_cluster_index(),
+            # "best_cluster": self.best_cluster_index(),
+            # "adjusted_rand_topic": self.adjusted_rand(2),
+            # "adjusted_rand_similar": self.adjusted_rand(3),
+            # "adjusted_rand_synonym": self.adjusted_rand(4),
         }
 
     def adjusted_rand(self, similarity):

@@ -25,8 +25,12 @@ def generate_report(scores: dict, output_path: str):
         "silhouette": "numeric",
         "avg_sim_in_cluster": "numeric",
         "avg_sim_to_centroid": "numeric",
-        "adjusted_rand": "numeric",
+        "adjusted_rand_synonym": "numeric",
+        "adjusted_rand_topic": "numeric",
+        "adjusted_rand_similar": "numeric",
     }
+    # save df
+    df.to_csv("scores_hdbscan.csv", index=False)
     profile = ProfileReport(
         df, title="Pandas Profiling Report", type_schema=type_schema
     )
@@ -139,7 +143,12 @@ def merge_duplicated_usage_options(clustered_df, review_set_df):
     )
 
 
-def save_clustered_df(clustered_df, arg_dict):
+def save_clustered_df(clustered_df, arg_dict, save_dir):
+    import os
+
+    save_path = f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/clustered_usage_options/{save_dir}"
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
     if arg_dict["n_clusters"] is not None:
         key = f'nclusters-{arg_dict["n_clusters"]}'
     elif arg_dict["distance_threshold"] is not None:
@@ -155,5 +164,5 @@ def save_clustered_df(clustered_df, arg_dict):
             "label",
         ]
     ].to_csv(
-        f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/clustered_usage_options/clustered_df_{key}.csv"
+        f"/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/data_clustering/clustered_usage_options/{save_dir}/clustered_df_{key}.csv"
     )

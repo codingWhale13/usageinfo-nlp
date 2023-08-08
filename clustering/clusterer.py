@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 import torch
 from sentence_transformers import util
-from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.cluster import AgglomerativeClustering, KMeans, HDBSCAN
 from sklearn.metrics import pairwise_distances_argmin_min
 from sklearn.neighbors import NearestCentroid
+import time
 
 
 class Clusterer:
@@ -34,8 +35,8 @@ class Clusterer:
             return self.kmeans(cluster_data)
         elif self.config["algorithm"] == "agglomerative":
             return self.agglomerative(cluster_data)
-        elif self.config["algorithm"] == "community_detection":
-            return self.community_detection(cluster_data)
+        elif self.config["algorithm"] == "hdbscan":
+            return self.hdbscan(cluster_data)
         else:
             raise ValueError(
                 f"Unknown clustering algorithm '{self.config['algorithm']}'"
@@ -84,30 +85,22 @@ class Clusterer:
         self.review_set_df["label"] = agglomerative.labels_.tolist()
         return self.review_set_df
 
-    def community_detection(self, cluster_data: np.ndarray):
+    def hdbscan(self, cluster_data: np.ndarray) -> pd.DataFrame:
         """
-        This method performs clustering using fast clustering.
+        This method performs clustering using HDBSCAN from sklearn.
 
         Returns:
             review_set_df (pd.DataFrame): The review set dataframe with the cluster labels and centroids added.
         """
-        cluster_data = torch.tensor(cluster_data)
-        clusters = util.community_detection(
-            cluster_data,
-            min_community_size=1,
-            threshold=self.config["distance_threshold"],
-        )
-        # add emtpy column "label" to dataframe
-        self.review_set_df["label"] = np.nan
-        # enumerate clusters and add labels to dataframe
-        for i, cluster in enumerate(clusters):
-            for index in cluster:
-                self.review_set_df.at[index, "label"] = i
-        labels = self.review_set_df["label"].tolist()
-        # fit nearest centroid classifier and add centroids to dataframe
-        clf = NearestCentroid(metric=self.config["metric"])
-        clf.fit(cluster_data, labels)
-        centroids, _ = pairwise_distances_argmin_min(clf.centroids_, cluster_data)
-        self.review_set_df["centroid"] = self.review_set_df.index.isin(centroids)
+        hdbscan = HDBSCAN(
+            min_samples=self.config["n_clusters"],
+            metric=self.config["metric"],
+            store_centers="medoid",
+        ).fit(cluster_data)
 
+        # medoids is a list of embeddings
+        self.review_set_df["centroid"] = self.review_set_df["embedding"].isin(
+            hdbscan.medoids_.tolist()
+        )
+        self.review_set_df["label"] = hdbscan.labels_.tolist()
         return self.review_set_df
