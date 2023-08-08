@@ -668,12 +668,12 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     scores = {}
     for label_id in label_ids:
         if args.metrics is None:
-            scores[label_id] = base_reviewset.get_agg_scores(
+            scores[label_id] = base_reviewset.get_harmonic_scores(
                 label_id,
                 *reference_label_ids,
             )
         else:
-            scores[label_id] = base_reviewset.get_agg_scores(
+            scores[label_id] = base_reviewset.get_harmonic_scores(
                 label_id, *reference_label_ids, list(args.metrics.split(","))
             )
 

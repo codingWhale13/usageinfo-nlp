@@ -1,5 +1,6 @@
 import math
 from statistics import mean
+from typing import Union
 
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.core import get_most_similar, get_similarity
@@ -93,9 +94,8 @@ class SingleReviewMetrics:
         )
 
     def calculate(
-        self,
-        metric_ids=DEFAULT_METRICS,
-    ) -> dict[str, float]:
+        self, metric_ids=DEFAULT_METRICS, include_pos_neg_info=False
+    ) -> Union[dict[str, float], dict[str, tuple[float, str]]]:
         scores = {}
 
         for metric_id in metric_ids:
@@ -115,7 +115,13 @@ class SingleReviewMetrics:
                 except ZeroDivisionError:
                     metric_result = math.nan
 
-            scores[metric_id] = metric_result
+            if include_pos_neg_info:
+                scores[metric_id] = (
+                    metric_result,
+                    "positive" if len(self.references) > 0 else "negative",
+                )
+            else:
+                scores[metric_id] = metric_result
 
         return scores
 

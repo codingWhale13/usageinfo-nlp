@@ -323,6 +323,59 @@ class ReviewSet:
 
         EvaluationCache.get().save_to_disk()  # save newly calculated scores to disk
 
+    def get_harmonic_scores(
+        self,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ):
+        scores = [
+            review.get_scores2(
+                label_id, *reference_label_candidates, metric_ids=metric_ids
+            )
+            for review in self
+        ]
+
+        scores = list(filter(lambda x: x is not None, scores))
+
+        score_dict = {
+            metric_id: {"positives": [], "negatives": []} for metric_id in metric_ids
+        }
+        for score in scores:
+            for metric in metric_ids:
+                if score[metric][1] == "positive":
+                    score_dict[metric]["positives"].append(score[metric][0])
+                else:
+                    score_dict[metric]["negatives"].append(score[metric][0])
+
+        harmonic_scores = {}
+
+        for metric in metric_ids:
+            mean_positive = (
+                mean(score_dict[metric]["positives"])
+                if len(score_dict[metric]["positives"]) > 0
+                else 1
+            )
+            mean_negative = (
+                mean(score_dict[metric]["negatives"])
+                if len(score_dict[metric]["negatives"]) > 0
+                else 1
+            )
+
+            len_positive = len(score_dict[metric]["positives"])
+            len_negative = len(score_dict[metric]["negatives"])
+            harmonic_scores[metric] = {
+                "harmonic": 2
+                * (mean_positive * mean_negative)
+                / (mean_positive + mean_negative),
+                "mean_positive": mean_positive,
+                "mean_negative": mean_negative,
+                "len_positive": len_positive,
+                "len_negative": len_negative,
+            }
+
+        return harmonic_scores
+
     def get_agg_scores(
         self,
         label_id: Union[str, ls.LabelSelectionStrategyInterface],
