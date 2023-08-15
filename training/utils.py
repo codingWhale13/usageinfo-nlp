@@ -165,7 +165,10 @@ def _(artifact: dict):
         artifact (dict): dictionary containing the name (wandb run name)
             and checkpoint (i.e. "best")
     """
-    checkpoint = torch.load(get_model_artifact_path(artifact))
+    checkpoint = torch.load(
+        get_model_artifact_path(artifact),
+        map_location="cuda" if torch.cuda.is_available() else "cpu",
+    )
     model_name = checkpoint.get("model_name", checkpoint.get("model"))
     model_tuple = model_tuples[model_name]()
     model_tuple[0].load_state_dict(
