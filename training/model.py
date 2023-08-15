@@ -336,7 +336,8 @@ class ReviewModel(pl.LightningModule):
                 utils.get_dataset_path(test_set_name)
             )
         else:
-            self.test_reviews_strategy, self.test_reviews = None, None
+            self.test_reviews_strategy = None
+            self.test_reviews = ReviewSet.from_reviews()
 
         training_set_config = self.dataset_config["training_set"]
         train_reviews, self.train_reviews_strategy = self._prepare_training_set(
