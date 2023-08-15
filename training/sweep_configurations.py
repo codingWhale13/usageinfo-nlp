@@ -1,6 +1,28 @@
 import math
 
 sweep_configurations = {
+    "llm-bayes-invsqrtlr": {
+        "method": "bayes",
+        "metric": {"goal": "minimize", "name": "best_val_loss"},
+        "parameters": {
+            "lr_scheduler.name": {"value": "InverseSquareRootLR"},
+            "optimizer.lr": {
+                "distribution": "log_normal",
+                "mu": math.log(1e-4),
+                "sigma": (abs(math.log(1e-4) - math.log(3e-4))) ** 0.5,
+            },
+            "lr_scheduler.warm_up_factor": {
+                "distribution": "normal",
+                "mu": 2e-3,
+                "sigma": 7e-4**0.5,
+            },
+            "accumulate_grad_batches": {
+                "distribution": "q_normal",
+                "mu": 16,
+                "sigma": 4,
+            },
+        },
+    },
     "adam-vs-amsgrad": {
         "method": "grid",
         "metric": {"goal": "minimize", "name": "best_val_loss"},

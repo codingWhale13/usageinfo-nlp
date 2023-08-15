@@ -6,6 +6,7 @@ from copy import copy
 import torch
 import wandb
 from lightning import pytorch as pl
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from pprint import pprint
 from datetime import datetime
 
@@ -108,6 +109,7 @@ def train(is_sweep=False, run_name=None):
         config = update_config_values(config, wandb_config, delimiter=".")
 
         checkpoint_callback = utils.get_checkpoint_callback(logger, config)
+    early_stopping_callback = EarlyStopping(monitor="epoch_val_loss", patience=5)
 
     print("----------------------------------\nTraining config:")
     pprint(config)
@@ -160,9 +162,11 @@ def train(is_sweep=False, run_name=None):
         devices=cluster_config["devices"],
         num_nodes=cluster_config["num_nodes"],
         deterministic=True,
-        max_epochs=config["epochs"],
+        max_epochs=config["epochs"] or None,
         accelerator="auto",
-        callbacks=[checkpoint_callback] if not test_run else None,
+        callbacks=[checkpoint_callback, early_stopping_callback]
+        if not test_run
+        else [early_stopping_callback],
         logger=logger if not test_run else None,
         accumulate_grad_batches=config["accumulate_grad_batches"],
     )

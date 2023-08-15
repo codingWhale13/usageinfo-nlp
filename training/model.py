@@ -298,6 +298,9 @@ class ReviewModel(pl.LightningModule):
         return dataloader
 
     def test_dataloader(self):
+        if not self.test_reviews:
+            return torch.utils.data.Dataloader([])
+
         dataloader, metadata = self.test_reviews.get_dataloader(
             selection_strategy=self.test_reviews_strategy,
             **self.tokenization_args,
@@ -327,8 +330,13 @@ class ReviewModel(pl.LightningModule):
 
     def _initialize_datasets(self):
         test_set_name = self.dataset_config["test_set"]["name"]
-        self.test_reviews_strategy = DatasetSelectionStrategy(test_set_name)
-        self.test_reviews = ReviewSet.from_files(utils.get_dataset_path(test_set_name))
+        if test_set_name:
+            self.test_reviews_strategy = DatasetSelectionStrategy(test_set_name)
+            self.test_reviews = ReviewSet.from_files(
+                utils.get_dataset_path(test_set_name)
+            )
+        else:
+            self.test_reviews_strategy, self.test_reviews = None, None
 
         training_set_config = self.dataset_config["training_set"]
         train_reviews, self.train_reviews_strategy = self._prepare_training_set(
