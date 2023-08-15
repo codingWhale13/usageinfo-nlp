@@ -13,7 +13,6 @@ from transformers import (
 )
 import torch
 import dotenv
-import datetime
 from lightning import pytorch as pl
 from typing import Tuple
 
@@ -186,9 +185,7 @@ def get_optimizer(optimizer_args: dict) -> torch.optim.Optimizer:
 
 
 def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
-    time = datetime.datetime.now().strftime("%m_%d_%H_%M")
-
-    run_name = f"{time}_{logger.experiment.name}"
+    run_name = logger.experiment.name
     dirpath = os.path.join(
         os.getenv("MODELS", default=ARTIFACT_PATH + "models"), run_name
     )
