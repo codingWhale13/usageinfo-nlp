@@ -21,10 +21,14 @@ for arg in sys.argv[1:]:
     if arg.startswith("--count="):
         count = int(arg.split("=")[1])
         sys.argv.remove(arg)
-        break
+    elif arg.startswith("--tag="):
+        tag = arg.split("=")[1]
+        sys.argv.remove(arg)
 
 wandb.agent(
     sweep_id,
-    function=lambda: train(is_sweep=True, run_name=sweep_configuration["name"]),
+    function=lambda: train(
+        is_sweep=True, run_name=f"{sweep_configuration['name']}-{tag}"
+    ),
     count=count,
 )
