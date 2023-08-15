@@ -299,7 +299,7 @@ class ReviewModel(pl.LightningModule):
 
     def test_dataloader(self):
         if not self.test_reviews:
-            return torch.utils.data.Dataloader([])
+            return torch.utils.data.DataLoader([])
 
         dataloader, metadata = self.test_reviews.get_dataloader(
             selection_strategy=self.test_reviews_strategy,
