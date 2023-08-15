@@ -42,7 +42,7 @@ model_name: "flan-t5-base"
 multiple_usage_options_strategy: "default"
 optimizer: #Set all parameters you do not want to null
   lr: 0.0001
-  name: "Adafactor"
+  name: "AdaFactor"
   # AdamW/SGD
   weight_decay: 0.01
   # AdamW
