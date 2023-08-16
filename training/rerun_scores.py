@@ -1,12 +1,7 @@
 # %%
-from training.probablistic_generator import (
-    BatchProbabilisticGenerator,
-)
-from training.generator import Generator
+from generator import DEFAULT_GENERATION_CONFIG, Generator
 from helpers.review_set import ReviewSet
-from scipy.stats import entropy
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, PreTrainedTokenizerFast
-from helpers.label_selection import LabelIDSelectionStrategy, DatasetSelectionStrategy
+from helpers.label_selection import LabelIDSelectionStrategy
 from active_learning.metrics.entropy import (
     calculate_normalized_entropy,
     calculate_lowest_probability_approximation_entropy,
@@ -14,6 +9,8 @@ from active_learning.metrics.entropy import (
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+from training.utils import get_model_dir_file_path
 
 """
 model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to("cuda")
@@ -25,96 +22,75 @@ generator = Generator(
 )
 """
 score_data = []
-data = []
-data2 = []
-review_set_name = "ba-30k-train-reviews.json"  # "golden_small.json"  # hard_reviews.json"  # "silver-v1.json"
-reviews, _ = ReviewSet.from_files(review_set_name).split(0.05)
-selection_strategy = DatasetSelectionStrategy("ba-30k-train")
-for i in range(0, 32):
-    print("Loading model:", f"greedy_entropy_run_1-{i}-")
-    prob_generator = BatchProbabilisticGenerator(
-        prompt_id="active_learning_v1",
-        artifact_name=f"greedy_entropy_b16_run_2-{i}_",
-        checkpoint="best",
-        batch_size=64,
-        token_top_k=10,
-        minimum_probability=0.01,
-        max_iterations=100,
-        max_sequence_length=32,
-    )
-    """
-    prob_generator = BatchProbabilisticGenerator(
-        prompt_id="active_learning_v1",
-        model=model,
-        tokenizer=tokenizer,
-        batch_size=512,
-        token_top_k=5,
-    )
-    """
 
-    results = prob_generator.generate_usage_options_prob_based_batch(reviews)
-    for review_id, review in results.items():
-        probs = [x["probability"] for x in review]
-        data.append(
-            {
-                "review_id": review_id,
-                "entropy_lowest_probability": calculate_lowest_probability_approximation_entropy(
-                    probs
-                ),
-                "entropy_normalized": calculate_normalized_entropy(probs),
-                "has_usage_options": reviews[review_id].label_has_usage_options(
-                    selection_strategy
-                ),
-                "iteration": i,
-            }
-        )
-        data2.append(
-            {
-                "review_id": review_id,
-                "entropy": calculate_lowest_probability_approximation_entropy(probs),
-                "entropy_calculation_method": "maximum_predicted",
-                "has_usage_options": reviews[review_id].label_has_usage_options(
-                    selection_strategy
-                ),
-                "iteration": i,
-            }
-        )
-        data2.append(
-            {
-                "review_id": review_id,
-                "entropy": calculate_normalized_entropy(probs),
-                "entropy_calculation_method": "normalized",
-                "has_usage_options": reviews[review_id].label_has_usage_options(
-                    selection_strategy
-                ),
-                "iteration": i,
-            }
+review_set = ReviewSet.from_files("silver_v1_newly_labeled.json")
+selection_strategy = LabelIDSelectionStrategy("bp-silver*")
+
+
+def unpack_string_dict(str_dict: dict) -> dict:
+    result = {}
+    for key, value in str_dict.items():
+        if type(value) == dict:
+            for inner_key, inner_value in value.items():
+                result[key + "_" + inner_key] = inner_value
+        else:
+            result[key] = value
+    return result
+
+
+# print("random_baseline_b32_run_1-0" in review_set.get_all_label_ids())  #
+# greedy_entropy_b32__random_baseline_b32_run_1_random_baseline_b32_run_2_random_baseline_b32_run_3_greedy_clustered_normalized_entropy_b32_run_1_subset_clustered_entropy_b32_run_4
+for artifact_name in [
+    "greedy_entropy_b32_run_1",
+    "greedy_clustered_entropy_b32_run_1",
+    "random_baseline_b32_run_1",
+    "random_baseline_b32_run_2",
+    "random_baseline_b32_run_3",
+]:  # "greedy_clustered_normalized_entropy_b32_run_1", "subset_clustered_entropy_b32_run_4"]:
+    run_scores = []
+    base_dir = f"{artifact_name}-active_learning_dir"
+
+    existing_scores = pd.read_csv(get_model_dir_file_path(base_dir, "scores.csv"))
+    max_iterations = existing_scores["active_learning_iteration"].max()
+    # print(max_iterations)
+    #existing_scores.to_csv(get_model_dir_file_path(base_dir, "scores_backup.csv"))
+    for iteration in range(1, max_iterations + 1):
+        artifact_iteration_name = f"{artifact_name}-{iteration - 1}"
+        print(artifact_iteration_name)
+        if artifact_iteration_name not in review_set.get_all_label_ids():
+            raise Exception(f"Label not found: {artifact_iteration_name}")
+            #review_set.save("silver_v1_newly_labeled.json")
+        scores = review_set.get_agg_scores(
+            LabelIDSelectionStrategy(artifact_iteration_name), selection_strategy
         )
 
-    df = pd.DataFrame.from_records(data2)
-    plt.clf()
-    g = sns.FacetGrid(df, row="iteration", col="entropy_calculation_method")
-    g.map_dataframe(sns.histplot, x="entropy", hue="has_usage_options")
-    plt.savefig(f"entropy_report_2.png")
-
-    # for x in ["entropy_lowest_probability", "entropy_normalized"]:
-    #    plt.clf()
-    #    sns.histplot(df, x=x, hue="has_usage_options")
-    #    plt.savefig(f"entropy_{x}_{i}.png")
-    # reviews.save()
-    # reviews.save()
-
-    """"
-    scores = reviews.get_agg_scores(label_id, DatasetSelectionStrategy("ba-30k-test"))
-    print(i, scores)
-    score_data.append(
-        {
-            "mean": scores["custom_weighted_mean_f1"]["mean"],
-            "variance": scores["custom_weighted_mean_f1"]["variance"],
-            "iteration": i,
+        new_scores = unpack_string_dict(scores) | {
+            "active_learning_iteration": iteration
         }
-    )
-    """
+        run_scores.append(new_scores)
+
+    existing_scores.update(pd.DataFrame.from_records(run_scores), overwrite=True)
+    existing_scores.to_csv(get_model_dir_file_path(base_dir, "scores_new_3.csv"))
+
+exit()
+# for x in ["entropy_lowest_probability", "entropy_normalized"]:
+#    plt.clf()
+#    sns.histplot(df, x=x, hue="has_usage_options")
+#    plt.savefig(f"entropy_{x}_{i}.png")
+# reviews.save()
+# reviews.save()
+
+""""
+scores = reviews.get_agg_scores(label_id, DatasetSelectionStrategy("ba-30k-test"))
+print(i, scores)
+score_data.append(
+    {
+        "mean": scores["custom_weighted_mean_f1"]["mean"],
+        "variance": scores["custom_weighted_mean_f1"]["variance"],
+        "iteration": i,
+    }
+)
+"""
 
 df = pd.DataFrame.from_records(score_data)
 print(df)

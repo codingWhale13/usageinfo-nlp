@@ -46,10 +46,11 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
         print(formatted_timestamp, end=None)
         pprint(data)
         self.logs.append(data | {"timestamp": current_timestamp})
-        self.log_dataframe("logs_dump", pd.DataFrame.from_records(self.logs), save_to_wandb=False)
+        self.log_dataframe(
+            "logs_dump", pd.DataFrame.from_records(self.logs), save_to_wandb=False
+        )
         if wandb.run is not None:
             wandb.log(data)
-       
 
     def log_dataframe(self, name: str, df: pd.DataFrame, save_to_wandb=True):
         save_path = get_model_dir_file_path(self.base_run_name, f"{name}.csv")
@@ -73,7 +74,11 @@ class AbstractActiveDataModule(metaclass=ABCMeta):
             review_id = review_stats["review_id"]
             stats.append(
                 review_stats
-                | ({metric_name: self.current_metric_scores[review_id]} if review_id in self.current_metric_scores else {}) 
+                | (
+                    {metric_name: self.current_metric_scores[review_id]}
+                    if review_id in self.current_metric_scores
+                    else {}
+                )
             )
         df = pd.DataFrame.from_records(data=stats, index="review_id")
         self.log_dataframe(f"training_dataset_iteration_{self.iteration}", df)
@@ -285,17 +290,21 @@ class ActiveLearningDataModule(AbstractActiveDataModule):
             f"metric_scores_iteration_{self.iteration}",
             pd.DataFrame.from_records(log_data),
         )
-        
+
         for review_id, score in metric_scores.items():
             try:
                 self.current_metric_scores[review_id].append(score)
             except KeyError:
                 self.current_metric_scores[review_id] = [score]
-        new_training_data, expected_information_gain = self.sampler.sample(self.unlabelled_training_reviews, metric_scores)
+        new_training_data, expected_information_gain = self.sampler.sample(
+            self.unlabelled_training_reviews, metric_scores
+        )
 
         self.log(
             {
-                f"expected_information_gain_{metric_name}": float(expected_information_gain), 
+                f"expected_information_gain_{metric_name}": float(
+                    expected_information_gain
+                ),
                 f"sum_{metric_name}": sum(raw_scores),
                 f"mean_{metric_name}": mean(raw_scores),
                 f"median_{metric_name}": median(raw_scores),

@@ -114,6 +114,7 @@ def initalize_training_run(
     training_data_size: int = None,
 ) -> tuple[ReviewModel, pl.Trainer]:
     print("Initalizing new model")
+
     pl.seed_everything(seed=config["seed"], workers=True)
 
     accumalate_grad_batches = config["accumulate_grad_batches"]
@@ -130,7 +131,7 @@ def initalize_training_run(
         )
         checkpoint_callback = utils.get_checkpoint_callback(logger, config)
 
-    early_stopping_callback = EarlyStopping(monitor="validation_loss", patience=4)
+    early_stopping_callback = EarlyStopping(monitor="validation_loss", patience=5)
 
     if artifact_model_name is not None:
         artifact = {"checkpoint": "best", "name": artifact_model_name}
@@ -159,7 +160,7 @@ def initalize_training_run(
         val_check_interval=log_every_n_steps,
         log_every_n_steps=log_every_n_steps,
         check_val_every_n_epoch=None,
-        max_steps=1_000,
+        max_steps=10_000,
         num_sanity_val_steps=0,
     )
 
@@ -253,11 +254,20 @@ def score_and_validate_model_on_validation(
     active_learning_module.is_in_evaluation_mode = False
     print("validation_loss:", validation_loss)
 
+    active_learning_module.is_in_evaluation_mode = True
+    test_loss = trainer.test(model, ckpt_path=None)[0]
+    active_learning_module.is_in_evaluation_mode = False
+    print("Test loss:", test_loss)
+
+    # scores = score_on(
+    #    artifact_model_name,
+    #    checkpoint,
+    #    VALIDATION_REVIEW_SET,
+    #    VALIDATION_SELECTION_STRATEGY,
+    # )
+
     scores = score_on(
-        artifact_model_name,
-        checkpoint,
-        VALIDATION_REVIEW_SET,
-        VALIDATION_SELECTION_STRATEGY,
+        artifact_model_name, checkpoint, SILVER_REVIEW_SET, SILVER_SELECTION_STRATEGY
     )
 
     print(scores)
@@ -268,6 +278,7 @@ def score_and_validate_model_on_validation(
         )
     active_learning_scores.append(
         validation_loss
+        | test_loss
         | unpack_string_dict(scores)
         | {
             "active_learning_iteration": active_learning_module.iteration,
@@ -287,7 +298,10 @@ with SustainabilityTracker() as sustainability_tracker:
     model, trainer = initalize_training_run(
         sustainability_tracker=sustainability_tracker, use_wandb_logger=False
     )
-    original_run_name = utils.generate_run_name()
+    if "run_name" in config and config["run_name"] is not None:
+        original_run_name = config["run_name"]
+    else:
+        original_run_name = utils.generate_run_name()
     base_run_name = f"{original_run_name}-active_learning_dir"
     active_learning_module.base_run_name = base_run_name
     os.makedirs(
@@ -325,8 +339,13 @@ with SustainabilityTracker() as sustainability_tracker:
             training_data_size=active_learning_module.acquired_training_reviews_size(),
         )
         active_learning_module.model = model
-
+        sustainability_tracker.start(
+            "training_run_iteration", active_learning_module.iteration
+        )
         trainer.fit(model)
+        sustainability_tracker.stop(
+            "training_run_iteration", active_learning_module.iteration
+        )
         sustainability_tracker.stop(
             "active_learning_iteration", active_learning_module.iteration
         )

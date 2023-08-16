@@ -150,3 +150,8 @@ ec2_ssh_key_pair*
 # reports
 
 score_reports/
+score_plots/
+score_reports_ba/
+ba_results
+score_reports_ba_final
+score_final_final

@@ -11,7 +11,10 @@ from transformers import (
     optimization,
     PegasusForConditionalGeneration,
     PegasusTokenizer,
+    AutoModelForCausalLM,
+    AutoTokenizer,
 )
+
 import torch
 import dotenv
 import datetime
@@ -57,6 +60,16 @@ model_tuples = {
     "pegasus": lambda: (
         PegasusForConditionalGeneration.from_pretrained("google/pegasus-xsum"),
         PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
+        512,
+    ),
+    "tiiuae/falcon-7b-instruct": lambda: (
+        AutoModelForCausalLM.from_pretrained(
+            "tiiuae/falcon-7b-instruct",
+            torch_dtype=torch.bfloat16,
+            trust_remote_code=True,
+            device_map="auto",
+        ),
+        AutoTokenizer.from_pretrained("tiiuae/falcon-7b-instruct"),
         512,
     ),
 }

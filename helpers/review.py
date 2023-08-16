@@ -448,6 +448,7 @@ class Review:
         label_id: str,
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
+        use_probabilistic_generations=False,
     ) -> None:
         """score specified metrics if not done already"""
         scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
@@ -456,11 +457,47 @@ class Review:
             scores[reference_label_id] = {}
 
         available_metrics = scores.get(reference_label_id, {})
-        missing_metric_ids = set(metric_ids).difference(set(available_metrics.keys()))
+        missing_metric_ids = set(
+            metric_ids
+        )  # .difference(set(available_metrics.keys()))
 
         if len(missing_metric_ids) > 0:
             # calculate missing metrics
             from evaluation.scoring.metrics import SingleReviewMetrics
+
+            """
+            label = self.get_label_for_id(label_id)
+            reference_usage_options = self.get_label_for_id(reference_label_id)[
+                "usageOptions"
+            ]
+       
+            if (
+                "probabilistic_generations" in label["metadata"]
+                and use_probabilistic_generations
+            ):
+                all_new_metrics = {}
+                import torch
+
+                for prediction in label["metadata"]["probabilistic_generations"]:
+                    new_metrics = SingleReviewMetrics(
+                        prediction["usageOptions"], reference_usage_options
+                    ).calculate(missing_metric_ids)
+                    for metric_id, metric_value in new_metrics.items():
+                        try:
+                            all_new_metrics[metric_id][0].append(metric_value)
+                            all_new_metrics[metric_id][1].append(
+                                prediction["probability"]
+                            )
+                        except:
+                            all_new_metrics[metric_id] = ([], [])
+                for metric_id, metric_values in all_new_metrics.items():
+                    scores[reference_label_id][f"probabilistic_{metric_id}"] = float(
+                        torch.dot(
+                            torch.tensor(metric_values[0], dtype=torch.float32),
+                            torch.tensor(metric_values[1], dtype=torch.float32),
+                        )
+                    )
+            """
 
             new_metrics = SingleReviewMetrics.from_labels(
                 self.get_labels(), label_id, reference_label_id
@@ -468,6 +505,65 @@ class Review:
 
             for metric_id, metric_value in new_metrics.items():
                 scores[reference_label_id][metric_id] = metric_value
+
+    def get_probabilistic_generation_score(
+        self,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
+    ):
+        from evaluation.scoring.metrics import SingleReviewMetrics
+        import torch
+
+        if isinstance(label_id, ls.LabelSelectionStrategyInterface):
+            label_id = self.get_label_id_from_strategy(label_id)
+
+        reference_label_candidates = list(reference_label_candidates)
+        for reference_label_candidate in copy(reference_label_candidates):
+            if isinstance(
+                reference_label_candidate, ls.LabelSelectionStrategyInterface
+            ):
+                strategy_candidates = self.get_label_ids_from_strategy(
+                    reference_label_candidate
+                )
+                reference_label_candidates.remove(reference_label_candidate)
+                reference_label_candidates += strategy_candidates
+
+        """return scores for a specified reference label or the best scores if multiple reference labels are specified"""
+        reference_label_candidates = set(reference_label_candidates).intersection(
+            self.get_label_ids()
+        )
+
+        if label_id not in self.get_label_ids() or not reference_label_candidates:
+            return None
+
+        scores = []
+        probs = []
+        label = self.get_label_for_id(label_id)
+        for prediction in label["metadata"]["probabilistic_generations"]:
+            probs.append(prediction["probability"])
+            for reference_label_id in reference_label_candidates:
+                self.score(
+                    label_id,
+                    reference_label_id,
+                    ["custom_weighted_mean_f1"],
+                    use_probabilistic_generations=False,
+                )
+
+            scores.append(
+                max(
+                    label["scores"][reference_label_id]["custom_weighted_mean_f1"]
+                    for reference_label_id in reference_label_candidates
+                )
+            )
+
+        return {
+            "macro_probabilistic_custom_weighted_mean_f1": float(
+                torch.dot(
+                    torch.tensor(scores, dtype=torch.float32),
+                    torch.tensor(probs, dtype=torch.float32),
+                )
+            )
+        }
 
     def get_scores(
         self,

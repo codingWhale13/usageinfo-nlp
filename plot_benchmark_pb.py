@@ -3,16 +3,18 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-results = pd.read_csv("ba_results/pb_generator/results.csv")
-emissions = pd.read_csv("ba_results/pb_generator/emissions.csv")
+results = pd.read_csv("ba_results/pb_generator_2/results.csv")
+emissions = pd.read_csv("ba_results/pb_generator_2/emissions.csv")
 emissions["duration"] = emissions["duration"] / 60
 results
 # %%
-top_k_results = results[results["parameter_id"] <= 5]
+emissions
+# %%
+top_k_results = results[results["parameter_id"] <= 6]
 minimum_probability_results = results[
-    (5 < results["parameter_id"]) & (results["parameter_id"] <= 12)
+    (5 < results["parameter_id"]) & (results["parameter_id"] <= 13)
 ]
-length_results = results[12 < results["parameter_id"]]
+length_results = results[14 < results["parameter_id"]]
 len(top_k_results), len(minimum_probability_results), len(length_results)
 
 
@@ -43,6 +45,7 @@ def plot_parameter(
     axis_2_y_label: str = None,
     title: str = None,
     reverse_x_axis=False,
+    use_x_log_scale=False,
 ):
     plt.clf()
 
@@ -64,6 +67,8 @@ def plot_parameter(
     sns.lineplot(
         x=parameter_name, y="duration", data=df_emissions, ax=ax2, color="r", marker="x"
     )
+    if use_x_log_scale:
+        plt.xscale("log")
     if axis_2_y_label:
         ax2.set_ylabel(axis_2_y_label)
     if axis_1_y_label:
@@ -83,6 +88,7 @@ def plot_parameter(
 
 
 run_time_y_label = "Run time in minutes"
+# %%
 plot_parameter(
     top_k_results,
     top_k_emissions,
@@ -98,8 +104,9 @@ plot_parameter(
     "minimum_probability",
     axis_2_y_label=run_time_y_label,
     reverse_x_axis=True,
+    use_x_log_scale=True,
 )
-
+print(minimum_probability_emissions)
 # %%
 plot_parameter(
     length_results,

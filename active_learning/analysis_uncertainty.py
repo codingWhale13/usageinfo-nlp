@@ -10,31 +10,62 @@ from helpers.label_selection import LabelIDSelectionStrategy, DatasetSelectionSt
 from active_learning.metrics.entropy import (
     calculate_normalized_entropy,
     calculate_lowest_probability_approximation_entropy,
+    aggregate_cluster_probabilities,
+    calculate_lowest_probability_approximation_predictor_entropy
 )
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-
-"""
-model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to("cuda")
-tokenizer = PreTrainedTokenizerFast.from_pretrained("google/flan-t5-base")
+import json
 
 
-generator = Generator(
-    "car-barfs-stupid-155-7", "greedy", "best", prompt_id="active_learning_v1"
-)
-"""
-score_data = []
-data = []
-data2 = []
 review_set_name = "ba-30k-train-reviews.json"  # "golden_small.json"  # hard_reviews.json"  # "silver-v1.json"
-reviews, _ = ReviewSet.from_files(review_set_name).split(0.05)
+reviews = ReviewSet.from_files(review_set_name).filter(lambda x: x.review_id in ["R1HUV2P9DILZIF","R2R54RJFG1CAD7",
+"R27EMRRS7E5EIC",
+"R1HKFTB5KYKTXR",
+"R19BVNDQ62M4AO"], inplace=False)
 selection_strategy = DatasetSelectionStrategy("ba-30k-train")
-for i in range(0, 32):
+data = {}
+for review_id, _ in reviews.items():
+    data[review_id] = []
+
+import numpy as np
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
+    
+def format_sequence(review_sequences):
+    for x in review_sequences:
+        del x["decoder_token_ids"]
+    return review_sequences
+
+from scipy.stats import entropy
+def kl(review_sequences, review_seqeunces_2):
+    probs = {}
+    for i, review in enumerate([review_sequences, review_seqeunces_2]):
+        for x in review:
+            key = tuple(x["decoder_token_ids"])
+            if key in probs:
+                probs[key][i] = x["probability"]
+            else:
+                base_prob = 1*10**-10
+                probs[key] = [base_prob, base_prob]
+                probs[key][i] = x["probability"]
+    probs_1 = [x[0] for x in probs.values()] 
+    probs_2 = [x[1] for x in probs.values()]
+    return entropy(probs_1, probs_2)
+
+for i in [5, 6, 7, 8]:
     print("Loading model:", f"greedy_entropy_run_1-{i}-")
     prob_generator = BatchProbabilisticGenerator(
         prompt_id="active_learning_v1",
-        artifact_name=f"greedy_entropy_b16_run_2-{i}_",
+        artifact_name=f"greedy_entropy_b32_run_1-{i}_",
         checkpoint="best",
         batch_size=64,
         token_top_k=10,
@@ -42,80 +73,45 @@ for i in range(0, 32):
         max_iterations=100,
         max_sequence_length=32,
     )
-    """
-    prob_generator = BatchProbabilisticGenerator(
-        prompt_id="active_learning_v1",
-        model=model,
-        tokenizer=tokenizer,
-        batch_size=512,
-        token_top_k=5,
-    )
-    """
 
     results = prob_generator.generate_usage_options_prob_based_batch(reviews)
     for review_id, review in results.items():
         probs = [x["probability"] for x in review]
-        data.append(
+        clustered_probs = aggregate_cluster_probabilities(review)
+        main_part, predictor = calculate_lowest_probability_approximation_predictor_entropy(probs)
+        clustered_main_part, clustered_predictor = calculate_lowest_probability_approximation_predictor_entropy(clustered_probs)
+
+        data[review_id].append(
             {
-                "review_id": review_id,
-                "entropy_lowest_probability": calculate_lowest_probability_approximation_entropy(
+                "sequences": sorted(format_sequence(review), key = lambda x: x["probability"], reverse=True),
+                "maximum_predicted_entropy": {"value": calculate_lowest_probability_approximation_entropy(
                     probs
                 ),
+                "main_part": main_part,
+                "predictor": predictor},
                 "entropy_normalized": calculate_normalized_entropy(probs),
-                "has_usage_options": reviews[review_id].label_has_usage_options(
+                "least_confidence": 1 - max(probs),
+                "clustered_maximum_predicted_entropy": {"value": calculate_lowest_probability_approximation_entropy(clustered_probs),
+                    "main_part": clustered_main_part,
+                    "predictor": clustered_predictor
+                },
+                "cluster_normalized_entropy": calculate_normalized_entropy(clustered_probs),
+                "labels": reviews[review_id].get_label_from_strategy(
                     selection_strategy
-                ),
+                )["usageOptions"],
                 "iteration": i,
             }
         )
-        data2.append(
-            {
-                "review_id": review_id,
-                "entropy": calculate_lowest_probability_approximation_entropy(probs),
-                "entropy_calculation_method": "maximum_predicted",
-                "has_usage_options": reviews[review_id].label_has_usage_options(
-                    selection_strategy
-                ),
-                "iteration": i,
-            }
-        )
-        data2.append(
-            {
-                "review_id": review_id,
-                "entropy": calculate_normalized_entropy(probs),
-                "entropy_calculation_method": "normalized",
-                "has_usage_options": reviews[review_id].label_has_usage_options(
-                    selection_strategy
-                ),
-                "iteration": i,
-            }
-        )
-
-    df = pd.DataFrame.from_records(data2)
-    plt.clf()
-    g = sns.FacetGrid(df, row="iteration", col="entropy_calculation_method")
-    g.map_dataframe(sns.histplot, x="entropy", hue="has_usage_options")
-    plt.savefig(f"entropy_report_2.png")
-
-    # for x in ["entropy_lowest_probability", "entropy_normalized"]:
-    #    plt.clf()
-    #    sns.histplot(df, x=x, hue="has_usage_options")
-    #    plt.savefig(f"entropy_{x}_{i}.png")
-    # reviews.save()
-    # reviews.save()
-
-    """"
-    scores = reviews.get_agg_scores(label_id, DatasetSelectionStrategy("ba-30k-test"))
-    print(i, scores)
-    score_data.append(
-        {
-            "mean": scores["custom_weighted_mean_f1"]["mean"],
-            "variance": scores["custom_weighted_mean_f1"]["variance"],
-            "iteration": i,
-        }
-    )
-    """
-
+        """
+        length = len(data[review_id])
+        if length > 1:
+            data[review_id][length -1]["kl"] = kl(data[review_id][length -1]["sequences"], data[review_id][length -2]["sequences"])
+            del data[review_id][length -2]["sequences"]
+        """
+with open("predictions_sample_training_dataset_8_new.json", "w") as f:
+    json.dump(data, f, cls=NpEncoder)
+        
+exit()
 df = pd.DataFrame.from_records(score_data)
 print(df)
 df.to_csv("greedy_scores_new.csv")

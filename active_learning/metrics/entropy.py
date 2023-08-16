@@ -45,8 +45,28 @@ def calculate_lowest_probability_approximation_entropy(probs: list[float]) -> fl
     k = int(remaining_prob / min_prob)
     last_remaining_prob = remaining_prob - k * min_prob
     return (
-        -np.sum(probs * np.log(probs))
-        - k * min_prob * np.log(min_prob)
+        -np.sum(probs * np.log2(probs))
+        - k * min_prob * np.log2(min_prob)
+        - (
+            last_remaining_prob * np.log2(last_remaining_prob)
+            if last_remaining_prob != 0
+            else 0.0
+        )
+    )
+
+
+def calculate_lowest_probability_approximation_predictor_entropy(
+    probs: list[float],
+) -> tuple[float, float]:
+    if len(probs) == 0:
+        return 0.0
+    probs = np.array(probs)
+    min_prob = np.min(probs)
+    remaining_prob = 1 - sum(probs)
+    k = int(remaining_prob / min_prob)
+    last_remaining_prob = remaining_prob - k * min_prob
+    return (-np.sum(probs * np.log(probs))), (
+        -k * min_prob * np.log(min_prob)
         - (
             last_remaining_prob * np.log(last_remaining_prob)
             if last_remaining_prob != 0
@@ -68,32 +88,22 @@ def load_entropy_approximation(entropy_approximation_name: str):
         )
 
 
+def aggregate_cluster_probabilities(review_sequences: list[dict]) -> list[float]:
+    cluster_probabilities = {}
+    for x in review_sequences:
+        try:
+            cluster_probabilities[x["cluster"]] += x["probability"]
+        except KeyError:
+            cluster_probabilities[x["cluster"]] = x["probability"]
+    return list(cluster_probabilities.values())
+
+
 class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
-    def __init__(
-        self,
-        decode_and_aggregate_results: bool = True,
-        entropy_approximation: str = "normalized",
-        aggregate_clusters=False,
-        prob_generator_max_sequence_length: int = 20,
-        prob_generator_batch_size: int = 512,
-        prob_generator_max_iterations: int = 100,
-        prob_generator_minimum_probability: float = 0.001,
-        prob_generator_minimum_total_probability: float = 0.95,
-        prob_generator_token_top_k: int = 5,
-    ) -> None:
-        super().__init__(decode_and_aggregate_results)
+    def __init__(self, entropy_approximation: str = "normalized", **kwargs) -> None:
+        super().__init__(**kwargs)
         self.entropy_approximation_function = load_entropy_approximation(
             entropy_approximation
         )
-        self.prob_generator_max_sequence_length = prob_generator_max_sequence_length
-        self.prob_generator_batch_size = prob_generator_batch_size
-        self.prob_generator_max_iterations = prob_generator_max_iterations
-        self.prob_generator_minimum_probability = prob_generator_minimum_probability
-        self.prob_generator_minimum_total_probability = (
-            prob_generator_minimum_total_probability
-        )
-        self.prob_generator_token_top_k = prob_generator_token_top_k
-        self.aggregate_clusters = aggregate_clusters
 
     def compute(
         self,
@@ -106,23 +116,10 @@ class EntropyActiveLearningMetric(AbstractActiveLearningMetric):
         )
         scores = {}
         for review_id, review in tqdm(results.items(), desc="Calculating entropy"):
-            if self.aggregate_clusters:
-                probs = {}
-                for x in review:
-                    try:
-                        probs[x["cluster"]] += x["probability"]
-                    except KeyError:
-                        probs[x["cluster"]] = x["probability"]
-                probs = list(probs.values())
+            if self.cluster_results:
+                probs = aggregate_cluster_probabilities(review)
             else:
-                probs = [
-                    x["probability"]
-                    for x in (
-                        aggregate_probabilities(review)
-                        if self.decode_and_aggregate_results
-                        else review
-                    )
-                ]
+                probs = [x["probability"] for x in review]
             scores[review_id] = self.entropy_approximation_function(probs)
 
         return scores

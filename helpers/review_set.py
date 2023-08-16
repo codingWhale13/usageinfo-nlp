@@ -383,17 +383,37 @@ class ReviewSet:
             "variance": variance,
             "quantiles (n=4)": quantiles,
         }
-        scores = [
-            review.get_scores(
-                label_id, *reference_label_candidates, metric_ids=metric_ids
-            )
-            for review in self
-        ]
+        "probabilistic_weighted_mean_f1"
+        use_probabilistic_weighted_mean_f1 = False
+        if "macro_probabilistic_custom_weighted_mean_f1" in metric_ids:
+            metric_ids.remove("macro_probabilistic_custom_weighted_mean_f1")
+            use_probabilistic_weighted_mean_f1 = True
+
+        scores = []
+        for review in self:
+            review_scores = {}
+            if len(metric_ids) > 0:
+                new_score = review.get_scores(
+                    label_id, *reference_label_candidates, metric_ids=metric_ids
+                )
+                if new_score is not None:
+                    review_scores |= new_score
+            if use_probabilistic_weighted_mean_f1:
+                review_scores |= review.get_probabilistic_generation_score(
+                    label_id, *reference_label_candidates
+                )
+            if len(review_scores) > 0:
+                scores.append(review_scores)
+
         scores = list(filter(lambda x: x is not None, scores))
+
         if len(scores) < 2:
             raise ValueError(
                 "At least two reviews are required to calculate aggregated scores"
             )
+        if use_probabilistic_weighted_mean_f1:
+            metric_ids.append("macro_probabilistic_custom_weighted_mean_f1")
+
         agg_scores = {"num_reviews": len(scores)}
         for metric_id in metric_ids:
             agg_scores[metric_id] = {
