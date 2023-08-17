@@ -1,7 +1,7 @@
-accumulate_grad_batches: 8
+accumulate_grad_batches: 2
 active_layers:
-  decoder: "-3:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
-  encoder: "-3:"
+  decoder: ":" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  encoder: ":"
   lm_head: True
 active_learning:
  module: "ActiveDataModule"
@@ -32,20 +32,20 @@ dataset:
 epochs: 15
 gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
 lr_scheduler_type: OneCycleLR #Currently supports OneCycleLR and AdaFactor. If you do not want a LR scheduler write null
-model_name: "flan-t5-base"
+model_name: "t5-small"
 multiple_usage_options_strategy: "default"
 optimizer: #Set all parameters you do not want to null
-  lr: 0.0001
+  lr: 0.001
   name: "AdamW"
   relative_step: False
   scale_parameter: False
   warmup_init: null
   weight_decay: 0.01
-prompt_id: "avetis_v1"
+prompt_id: "original"
 seed: 42 # can be left empty
-test_run: False
+test_run: True
 files_to_generate_on:
-  -
+  - "silver.json"
 
 # Options for 'multiple_usage_options_strategy':
 #   - "default" -> wie gehabt kommt ein Datapoint raus, der alle usage options in gegebener Reihenfolge enthält

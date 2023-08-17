@@ -32,6 +32,11 @@ model_tuples = {
         T5Tokenizer.from_pretrained("t5-base", model_max_length=512),
         512,
     ),
+    "t5-small": lambda: (
+        T5ForConditionalGeneration.from_pretrained("t5-small"),
+        T5Tokenizer.from_pretrained("t5-small", model_max_length=512),
+        512,
+    ),
     "t5-v1_1": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/t5-v1_1-base"),
         T5Tokenizer.from_pretrained("google/t5-v1_1-base", model_max_length=512),

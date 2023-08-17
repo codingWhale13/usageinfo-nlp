@@ -615,6 +615,7 @@ class ReviewSet:
         seed: int = None,
         rng: random.Random = random,
         model_name: Optional[str] = None,
+        do_shuffle: bool = True,
         **dataloader_args: dict,
     ) -> tuple[any, dict]:
         def are_all_valid_data_points(data_points: list[dict]) -> bool:
@@ -678,7 +679,8 @@ class ReviewSet:
             for review in remaining_reviews
             for data_point in review.tokenized_datapoints
         ]
-        rng.shuffle(tokenized_datapoints)
+        if do_shuffle:
+            rng.shuffle(tokenized_datapoints)
         return (
             DataLoader(tokenized_datapoints, **dataloader_args),
             {

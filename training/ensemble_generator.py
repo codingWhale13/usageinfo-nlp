@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import utils
 import torch
 import argparse
@@ -5,7 +6,8 @@ import argparse
 from helpers.review_set import ReviewSet
 
 
-BATCH_SIZE = 32
+BATCH_SIZE = 16
+MAX_LENGTH = 128
 
 
 def parse_args():
@@ -21,11 +23,6 @@ def parse_args():
         help="List of artifacts names to ensemble, seperated by commas",
     )
     parser.add_argument(
-        "checkpoints",
-        type=str,
-        help="List of checkpoints to ensemble, seperated by commas",
-    )
-    parser.add_argument(
         "last_part_of_label_id",
         type=str,
         nargs="?",
@@ -34,11 +31,25 @@ def parse_args():
         help="Last part (aka the unique identifier) of the label_id that the annotation should be (optionally) saved under",
     )
     parser.add_argument(
+        "--checkpoints",
+        "-c",
+        type=str,
+        default="best",
+        help="List of checkpoints to ensemble, seperated by commas",
+    )
+    parser.add_argument(
         "--prompt_id",
         "-p",
         type=str,
         default="original",
         help="Prompt id to use for all annotation. Default is original",
+    )
+    parser.add_argument(
+        "--batch_size",
+        "-b",
+        type=int,
+        default=BATCH_SIZE,
+        help="Batch size for the dataloader",
     )
     return parser.parse_args()
 
@@ -46,22 +57,26 @@ def parse_args():
 def main():
     # Parse arguments
     args = parse_args()
-    models, tokenizer, max_length = initialize_models(
-        args.checkpoints, args.artifact_names
-    )
+    artifact_names = args.artifact_names.split(",")
+    models, tokenizer, max_length = initialize_models(args.checkpoints, artifact_names)
     dataloader, reviews = initialize_dataloader(
-        args.base_file, tokenizer, max_length, args.prompt_id
+        args.base_file, tokenizer, max_length, args.prompt_id, args.batch_size
     )
     label_metadata = initialize_metadata(
-        args.artifact_names, args.checkpoints, args.prompt_id
+        artifact_names, args.checkpoints, args.prompt_id
     )
-    label_id = f"model_ensemble_{args.artifact_names}_{args.last_part_of_label_id}"
+    label_id = f"model_ensemble-{'-'.join(artifact_names)}-{args.last_part_of_label_id}"
 
-    for batch in dataloader:
+    print(f"Generating usage options for {len(reviews)} reviews...")
+
+    counter = 0
+    for batch in dataloader[0]:
+        print(batch["review_id"])
         inputs, predictions = generate_usage_options(batch, models, tokenizer)
         predictions = [
             format_usage_options(usage_options) for usage_options in predictions
         ]
+
         save_label(
             reviews,
             batch["review_id"],
@@ -70,29 +85,50 @@ def main():
             label_id,
             label_metadata,
         )
+        if counter % 100 == 0:
+            reviews.save()
+
+    reviews.save()
 
 
 def initialize_models(checkpoints, artifact_names):
     models = []
-    checkpoints = checkpoints.split(",")
-    artifact_names = artifact_names.split(",")
+
+    if checkpoints != "best":
+        checkpoints = checkpoints.split(",")
+    else:
+        checkpoints = ["best"] * len(artifact_names)
     for i in range(len(checkpoints)):
-        model_artifact = {"name": artifact_names[i], "checkpoint": checkpoints[i]}
+        model_artifact = (
+            artifact_names[i]
+            if artifact_names[i] in utils.model_tuples.keys()
+            else {"name": artifact_names[i], "checkpoint": checkpoints[i]}
+        )
         model, tokenizer, max_length, _ = utils.initialize_model_tuple(model_artifact)
         models.append(model)
     return models, tokenizer, max_length
 
 
-def initialize_dataloader(base_file, tokenizer, max_length, prompt_id):
+def initialize_dataloader(base_file, tokenizer, max_length, prompt_id, batch_size):
     reviews = ReviewSet.from_files(base_file)
 
+    reviews.reviews = dict(
+        sorted(
+            reviews.reviews.items(),
+            key=lambda item: sum(
+                [len(u) for u in list(item[1]["labels"].values())[0]["usageOptions"]]
+            ),
+        )
+    )
+
     dataloader = reviews.get_dataloader(
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         num_workers=0,
         tokenizer=tokenizer,
         model_max_length=max_length,
         for_training=False,
         prompt_id=prompt_id,
+        do_shuffle=False,
     )
     return dataloader, reviews
 
@@ -100,7 +136,7 @@ def initialize_dataloader(base_file, tokenizer, max_length, prompt_id):
 def initialize_metadata(artifact_names, checkpoints, prompt_id):
     label_metadata = {
         "generator": {
-            "artifact_names": artifact_names,
+            "artifact_names": "-".join(artifact_names),
             "checkpoints": checkpoints,
             "prompt_id": prompt_id,
             "model_name": "ensemble",
@@ -110,19 +146,19 @@ def initialize_metadata(artifact_names, checkpoints, prompt_id):
 
 
 def generate_usage_options(batch, models, tokenizer):
-    MAX_LENGTH = 128
-    decoder_input_ids = torch.zeros(
-        [BATCH_SIZE, MAX_LENGTH + 1], dtype=torch.torch.int32
-    )
     input_ids = batch["input"]["input_ids"]
     attention_mask = batch["input"]["attention_mask"]
-    running = torch.ones([BATCH_SIZE], dtype=torch.bool)
 
     encoder_outputs = []
     for model in models:
         encoder_outputs.append(
             model.get_encoder()(input_ids=input_ids, attention_mask=attention_mask)
         )
+
+    running = torch.ones(input_ids.shape[0], dtype=torch.bool)
+    decoder_input_ids = torch.zeros(
+        [input_ids.shape[0], MAX_LENGTH + 1], dtype=torch.torch.int32
+    )
 
     for i in range(MAX_LENGTH):
         current_logits = []
@@ -153,9 +189,11 @@ def generate_usage_options(batch, models, tokenizer):
 
 
 def format_usage_options(text_completion: str):
+    if text_completion.lower() == "no usage options":
+        return []
     return [
         usage_option.strip()
-        for usage_option in text_completion.split(", ")
+        for usage_option in text_completion.split("; ")
         if usage_option.strip()
     ]
 

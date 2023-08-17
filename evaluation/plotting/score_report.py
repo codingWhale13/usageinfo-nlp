@@ -120,6 +120,7 @@ def get_score_report(
     usage_options_count_df = (
         reviews_df.groupby("usage_class").size().reset_index(name="count")
     )
+    print(usage_options_count_df)
 
     tp_score = (
         reviews_df[reviews_df["usage_class"] == "TP"]

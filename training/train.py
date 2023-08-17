@@ -99,8 +99,9 @@ optimizer, optimizer_args = utils.get_optimizer(config["optimizer"])
 pl.seed_everything(seed=config["seed"], workers=True)
 
 if not test_run:
+    run_name = f"{model_name}_{seed}_train_seed"
     logger = pl.loggers.WandbLogger(
-        project="rlp-t2t", entity="bsc2022-usageinfo", config=config
+        project="rlp-t2t", entity="bsc2022-usageinfo", config=config, name=run_name
     )
     checkpoint_callback = utils.get_checkpoint_callback(logger, config)
 
@@ -108,9 +109,9 @@ if not torch.cuda.is_available():
     print("WARNING: CUDA is not available, using CPU instead.")
 
 trainer = pl.Trainer(
-    strategy="ddp_find_unused_parameters_false",
-    devices=cluster_config["devices"],
-    num_nodes=cluster_config["num_nodes"],
+    # strategy="ddp_find_unused_parameters_false",
+    # devices=cluster_config["devices"],
+    # num_nodes=cluster_config["num_nodes"],
     deterministic=True,
     max_epochs=config["epochs"],
     accelerator="auto",
@@ -142,8 +143,8 @@ model = ReviewModel(
 if not test_run:
     with SustainabilityLogger(description="training"):
         trainer.fit(model)
-    with SustainabilityLogger(description="testing"):
-        trainer.test()
+    # with SustainabilityLogger(description="testing"):
+    #     trainer.test()
 
     try:
         label_id = f"model-{wandb.run.name}-auto"

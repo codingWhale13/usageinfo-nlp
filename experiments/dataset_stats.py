@@ -35,6 +35,7 @@ def main():
     print(f"Dataset: {dataset}")
     rs = ReviewSet.from_files(dataset)
     _, tokenizer, max_length, _ = utils.initialize_model_tuple(args.tokenizer)
+    max_length = 128
     lengths = []
     to_long_reviews = []
     for review_id, review in rs.reviews.items():
