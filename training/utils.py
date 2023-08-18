@@ -13,7 +13,6 @@ from transformers import (
 )
 import torch
 import dotenv
-import datetime
 from lightning import pytorch as pl
 from typing import Tuple
 
@@ -61,11 +60,12 @@ model_tuples = {
 }
 
 optimizers = {
-    "AdamW": (torch.optim.AdamW, ["weight_decay", "lr"]),
+    "AdamW": (torch.optim.AdamW, ["weight_decay", "lr", "amsgrad"]),
     "AdaFactor": (
         optimization.Adafactor,
         ["scale_parameter", "relative_step", "warmup_init", "lr"],
     ),
+    "SGD": (torch.optim.SGD, ["weight_decay", "lr", "momentum", "nesterov"]),
 }
 
 
@@ -164,7 +164,10 @@ def _(artifact: dict):
         artifact (dict): dictionary containing the name (wandb run name)
             and checkpoint (i.e. "best")
     """
-    checkpoint = torch.load(get_model_artifact_path(artifact))
+    checkpoint = torch.load(
+        get_model_artifact_path(artifact),
+        map_location="cuda" if torch.cuda.is_available() else "cpu",
+    )
     model_name = checkpoint.get("model_name", checkpoint.get("model"))
     model_tuple = model_tuples[model_name]()
     model_tuple[0].load_state_dict(
@@ -182,9 +185,7 @@ def get_optimizer(optimizer_args: dict) -> torch.optim.Optimizer:
 
 
 def get_checkpoint_callback(logger: pl.loggers.WandbLogger, config):
-    time = datetime.datetime.now().strftime("%m_%d_%H_%M")
-
-    run_name = f"{time}_{logger.experiment.name}"
+    run_name = logger.experiment.name
     dirpath = os.path.join(
         os.getenv("MODELS", default=ARTIFACT_PATH + "models"), run_name
     )
