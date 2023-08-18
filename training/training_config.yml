@@ -20,7 +20,7 @@ dataset:
     augmentation_set: # "legacy"
     dataloader_setup_seed: 42
     drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
-    name: "leoba-2k-chatgpt"
+    name: "ba-30k-train"
     outlier_removal:
       percentage: 0.0 # fraction of data to remove from training set (validation set stays untouched), use only when drop_out is 0.0
       distance_threshold: 0.53 # distance threshold for outlier removal, default is 0.53
