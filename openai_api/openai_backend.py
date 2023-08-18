@@ -113,17 +113,15 @@ def aggregate_logprobs(output: json):
 
 def format_usage_options(text_completion: str):
     labels = []
-
-    if "Results:" in text_completion:
-        text_completion = text_completion.split("Results:")[1]
+    metadata = {"text_completion": text_completion}
     if "Result:" in text_completion:
-        text_completion = text_completion.split("Result:")[1]
+        text_completion = text_completion.split("Result:", maxsplit=1)[1]
 
     for label in text_completion.split(";"):
         if label.strip().startswith(NO_USAGE_OPTION_STR):
             break
         labels.append(label.strip().strip("."))
-    return labels
+    return labels, metadata
 
 
 def generate_label(
@@ -139,16 +137,20 @@ def generate_label(
     }
     if model in CHAT_MODELS:
         output = get_chat_labels_from_openai(review, prompt, model, temperature)
-        usage_options = format_usage_options(output.message["content"].strip())
+        usage_options, answer_metadata = format_usage_options(
+            output.message["content"].strip()
+        )
+        metadata |= answer_metadata
     else:
         output = get_labels_from_openai(review, prompt, model, temperature, logprobs)
-        usage_options = format_usage_options(output.text.strip())
+        usage_options, answer_metadata = format_usage_options(output.text.strip())
         usage_options_logprobs = aggregate_logprobs(output)
         metadata["openai"].update(
             {
                 "logprobs": output.logprobs,
                 "usageOptions_logporbs": usage_options_logprobs,
             }
+            | answer_metadata
         )
 
     return usage_options, metadata
