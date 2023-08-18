@@ -377,7 +377,10 @@ class Review:
         else:
             raise ValueError(f"strategy '{strategy}' not supported")
 
-    def get_prompt(self, prompt_id="avetis_v1") -> str:
+    def evaluate_format_string(self, f_string :str):
+        return f_string.format(**self.data)
+
+    def get_prompt(self, prompt_id="avetis_v1", is_llama2_chat_format=False) -> str:
         from langchain import PromptTemplate
 
         path = Path(__file__).parent.parent / "openai_api/prompts.json"
@@ -385,25 +388,56 @@ class Review:
         with open(path) as f:
             prompts = json.load(f)
 
-        prompt_text = prompts["model-training"][prompt_id]["prompt"]
-        prompt_input_variables = prompts["model-training"][prompt_id]["input_variables"]
+        prompt_type = None
+        if prompt_id in prompts["model-training"]:
+            prompt_type = "model-training"
+        elif prompt_id in prompts["chat"]:
+            prompt_type = "chat"
+        else:
+            raise ValueError(f"Prompt: {prompt_id} not found.")
+        
+        prompt_data = prompts[prompt_type][prompt_id] 
 
-        prompt = PromptTemplate(
-            template=prompt_text,
-            input_variables=prompt_input_variables,
-            validate_template=False,
-        )
+        if is_llama2_chat_format and prompt_type=="chat":
+            #https://www.philschmid.de/sagemaker-llama-llm
+            def build_llama2_prompt(messages):
+                startPrompt = "<s>[INST] "
+                endPrompt = " [/INST]"
+                conversation = []
+                for index, message in enumerate(messages):
+                    if message["role"] == "system" and index == 0:
+                        conversation.append(f"<<SYS>>\n{message['content']}\n<</SYS>>\n\n")
+                    elif message["role"] == "user":
+                        conversation.append(message["content"].strip())
+                    else:
+                        conversation.append(f" [/INST] {message['content'].strip()}</s><s>[INST] ")
 
-        prompt = prompt.format(
-            **{
-                key: value
-                for key, value in self.data.items()
-                if key in prompt_input_variables
-            }
-        )
+                return startPrompt + "".join(conversation) + endPrompt
 
-        return prompt
+            for message in prompt_data["prompt"]:
+                message["content"] = self.evaluate_format_string(message["content"])
+            
+            return build_llama2_prompt(prompt_data["prompt"])
+            
+        if prompt_type == "model-training":
+            prompt_text = prompt_data["prompt"]
+            prompt_input_variables = prompt_data["input_variables"]
 
+            prompt = PromptTemplate(
+                template=prompt_text,
+                input_variables=prompt_input_variables,
+                validate_template=False,
+            )
+
+            prompt = prompt.format(
+                **{
+                    key: value
+                    for key, value in self.data.items()
+                    if key in prompt_input_variables
+                }
+            )
+
+            return prompt
     def get_tokenized_datapoints(
         self,
         selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,

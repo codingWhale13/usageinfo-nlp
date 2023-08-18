@@ -24,7 +24,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -52,7 +52,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -112,7 +112,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -140,7 +140,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -200,7 +200,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -228,7 +228,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Product title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                    "content": "Product title: {product_title} \nReview headline: {review_headline}\nReview body: {review_body}"
                 }
             ]
         },
@@ -256,7 +256,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\nProduct title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                    "content": "Here is another review:\nProduct title: {product_title} \nReview headline: {review_headline}\nReview body: {review_body}"
                 }
             ]
         },
@@ -284,7 +284,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\n{review['review_body']}"
+                    "content": "Here is another review:\n{review_body}"
                 }
             ]
         },
@@ -312,7 +312,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\nProduct title: {review['product_title']} \nReview headline: [review['review_headline']\nReview body: {review['review_body']}"
+                    "content": "Here is another review:\nProduct title: {product_title} \nReview headline: {review_headline}\nReview body: {review_body}"
                 }
             ]
         },
@@ -340,7 +340,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\n{review['review_body']}"
+                    "content": "Here is another review:\n{review_body}"
                 }
             ]
         },
@@ -368,7 +368,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\n{review['review_body']}"
+                    "content": "Here is another review:\n{review_body}"
                 }
             ]
         },
@@ -396,7 +396,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "Here is another review:\nProduct title: {review['product_title']}\nReview headline: {review['review_headline']}\nReview body: {review['review_body']}"
+                    "content": "Here is another review:\nProduct title: {product_title}\nReview headline: {review_headline}\nReview body: {review_body}"
                 }
             ]
         },
@@ -428,7 +428,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -448,7 +448,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -476,7 +476,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -512,7 +512,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -556,7 +556,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -608,7 +608,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -668,7 +668,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -736,7 +736,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -812,7 +812,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -896,7 +896,7 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         },
@@ -988,44 +988,179 @@
                 },
                 {
                     "role": "user",
-                    "content": "{review['review_body']}"
+                    "content": "{review_body}"
                 }
             ]
         }
     },
     "text": {
         "freddy_v1": {
-            "prompt": "This is a review for an E-Commerce product by a customer.\n{review['review_body']}\nSummarize the customer's most important use cases for the product in real life, as a list of short phrases separated by commas. Only include positive use cases that the customer describes, and exclude mentions of gifts, presents, characteristics, attributes, or product qualities. If no valid use cases are mentioned in the review, write \"No use cases\"."
+            "prompt": "This is a review for an E-Commerce product by a customer.\n{review_body}\nSummarize the customer's most important use cases for the product in real life, as a list of short phrases separated by commas. Only include positive use cases that the customer describes, and exclude mentions of gifts, presents, characteristics, attributes, or product qualities. If no valid use cases are mentioned in the review, write \"No use cases\"."
         },
         "freddy_v2": {
-            "prompt": "This is a review for an E-Commerce product by a customer.\n{review['review_body']}\n Summarize the customer's most important and practical use cases for the product in real life, as a list of short phrases separated by commas. Only include positive use cases that the customer describes, and exclude mentions of gifts, presents, characteristics, attributes, or product qualities. Also exclude any reference to the product being given as a gift. If no valid use cases are mentioned in the review, write \"No use cases.\"."
+            "prompt": "This is a review for an E-Commerce product by a customer.\n{review_body}\n Summarize the customer's most important and practical use cases for the product in real life, as a list of short phrases separated by commas. Only include positive use cases that the customer describes, and exclude mentions of gifts, presents, characteristics, attributes, or product qualities. Also exclude any reference to the product being given as a gift. If no valid use cases are mentioned in the review, write \"No use cases.\"."
         },
         "nils_v1": {
-            "prompt": "The following is a customer review for an e-commerce product. Tell me what the product can be used for according to the review author. If you find a single use case, only write that one. If you find multiple use cases, print them comma-separated. If you find no use cases, only output \"No use cases\". Negative use cases, attributes, target audiences, quality, gifts, shipping information etc. are NOT considered use cases. Here is the review: {review['review_body']}"
+            "prompt": "The following is a customer review for an e-commerce product. Tell me what the product can be used for according to the review author. If you find a single use case, only write that one. If you find multiple use cases, print them comma-separated. If you find no use cases, only output \"No use cases\". Negative use cases, attributes, target audiences, quality, gifts, shipping information etc. are NOT considered use cases. Here is the review: {review_body}"
         },
         "matthis_v1": {
-            "prompt": "Act as a Datalabeler, that is provided with the following review:\n{review['review_body']}\nYour job is to extract all usage options that are given in the review. You should only consider positive usage options that are mentioned in the review.\nA usage option is defined as: What can this product be used for? or What can this product be used as? Gift/gifting and product attributes are not usage options.\nPrint out the extracted usage options, as the shortest phrase possible, seperated by commas. If the review doesnt contain any positive usage options, print \"No use cases\"."
+            "prompt": "Act as a Datalabeler, that is provided with the following review:\n{review_body}\nYour job is to extract all usage options that are given in the review. You should only consider positive usage options that are mentioned in the review.\nA usage option is defined as: What can this product be used for? or What can this product be used as? Gift/gifting and product attributes are not usage options.\nPrint out the extracted usage options, as the shortest phrase possible, seperated by commas. If the review doesnt contain any positive usage options, print \"No use cases\"."
         },
         "leoh_v1": {
-            "prompt": "This is a review for an E-Commerce product by a customer:\n{review['review_body']}\nSummarize what real life usage options of the product are mentioned in the review. Write one usage option or a list of only the most important use cases described with as few words as possible as a comma separated list. Don't consider negative use cases, gifts, presents, characteristics, attributes or product qualities. Write \"No use cases\" if there are no valid use cases left:"
+            "prompt": "This is a review for an E-Commerce product by a customer:\n{review_body}\nSummarize what real life usage options of the product are mentioned in the review. Write one usage option or a list of only the most important use cases described with as few words as possible as a comma separated list. Don't consider negative use cases, gifts, presents, characteristics, attributes or product qualities. Write \"No use cases\" if there are no valid use cases left:"
         },
         "leoh_v2": {
-            "prompt": "This is a review for an E-Commerce product by a customer:\n{review['review_body']}\nExtract all posititve real life usage options of the product described by the customer. Disregard mentions of target audiences, characteristics, attributes or qualities of the product. Write one usage option or a list of only the most important use cases described with as few words as possible as a comma separated list. Write \"No use cases\" if there are no valid use cases left:"
+            "prompt": "This is a review for an E-Commerce product by a customer:\n{review_body}\nExtract all posititve real life usage options of the product described by the customer. Disregard mentions of target audiences, characteristics, attributes or qualities of the product. Write one usage option or a list of only the most important use cases described with as few words as possible as a comma separated list. Write \"No use cases\" if there are no valid use cases left:"
         },
         "matthis_v2": {
-            "prompt": "Act as a Datalabeler, that is provided with the following review:\n{review['review_body']}\nYour job is to extract all usage options that are given in the review. You are instructed with the following rules:\n- only consider positive usage options\n- only consider usage options that are mentioned in the review\n- anything related to gifting is not a usage option\n- product attributes are not usage options\n- target audience is not a usage option\n- formulate the usage options as the shortest phrase possible\nPrint out the extracted usage options seperated by commas. If the review doesnt contain any positive usage options, print \"No use cases\"."
+            "prompt": "Act as a Datalabeler, that is provided with the following review:\n{review_body}\nYour job is to extract all usage options that are given in the review. You are instructed with the following rules:\n- only consider positive usage options\n- only consider usage options that are mentioned in the review\n- anything related to gifting is not a usage option\n- product attributes are not usage options\n- target audience is not a usage option\n- formulate the usage options as the shortest phrase possible\nPrint out the extracted usage options seperated by commas. If the review doesnt contain any positive usage options, print \"No use cases\"."
         },
         "nils_v2": {
-            "prompt": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc. Here is the review:\n{review['review_body']}\n"
+            "prompt": "I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used / for\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \"No use cases\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc. Here is the review:\n{review_body}\n"
         },
         "avetis_v1": {
-            "prompt": "For a long time I have wanted to find out the use cases of the many products available on Amazon. Thus I decided to extract use cases based on the customer reviews posted online. According to my understanding use cases: \n - don't reference to similar products; \n - don't include the target audience; \n - and don't include the classification of a product as a gift. \n The use cases must also be the shortest phrase possible that includes the full usage option. I write down my use cases as a comma-seperated string. Whenever it does not contain any use cases I label it as \"No use cases.\". \n For example for the review, which was published under the title \"{review['review_headline']}\": \n {review['review_body']} \n, I came up with the following use cases:"
+            "prompt": "For a long time I have wanted to find out the use cases of the many products available on Amazon. Thus I decided to extract use cases based on the customer reviews posted online. According to my understanding use cases: \n - don't reference to similar products; \n - don't include the target audience; \n - and don't include the classification of a product as a gift. \n The use cases must also be the shortest phrase possible that includes the full usage option. I write down my use cases as a comma-seperated string. Whenever it does not contain any use cases I label it as \"No use cases.\". \n For example for the review, which was published under the title \"{review_headline}\": \n {review_body} \n, I came up with the following use cases:"
         },
         "avetis_v2": {
-            "prompt": "Today, products in (online) retail are predominantly structured via their category, price and brand. However, from a customer perspective, rather than knowing the appropriate category, they rather have a real-world task they would like to fulfill (e.g., travel) and it would be more desirable to search for the product using its intended usage. For example, a laptop may have uses that range from gaming to office work to school. Similarly, a pair of sports shoes may have different uses such as running, tennis, basketball, or soccer. Certain dresses could be used for formal occasions such as weddings, while others are more suitable for a casual lunch outing. \nThe use cases are extracted from E-commerce product reviews. The use cases are written down as a comma-seperated string. Whenever a review does not contain any use cases it is labeled with \"No use cases.\". \n For example the review, which was published under the title \"{review['review_headline']}\": \n {review['review_body']} \n, contains the following use cases:"
+            "prompt": "Today, products in (online) retail are predominantly structured via their category, price and brand. However, from a customer perspective, rather than knowing the appropriate category, they rather have a real-world task they would like to fulfill (e.g., travel) and it would be more desirable to search for the product using its intended usage. For example, a laptop may have uses that range from gaming to office work to school. Similarly, a pair of sports shoes may have different uses such as running, tennis, basketball, or soccer. Certain dresses could be used for formal occasions such as weddings, while others are more suitable for a casual lunch outing. \nThe use cases are extracted from E-commerce product reviews. The use cases are written down as a comma-seperated string. Whenever a review does not contain any use cases it is labeled with \"No use cases.\". \n For example the review, which was published under the title \"{review_headline}\": \n {review_body} \n, contains the following use cases:"
         },
         "with_examples_v1": {
-            "prompt": "\"I will give you multiple customer review for an e-commerce product. You should answer the question \\\"What can this product be used / for\\\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \\\"No use cases\\\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\\n\\nReview: \\\"I purchased this because I'm attending school in MN and it was going to be extremely cold - and it was! It did help me cope with the subzero temperatures and I'm grateful. However, I also looked forward to using it as a battery pack and I was rather disappointed. I was never able to get it to charge my phone. All the cords were connected and it seemed fine but my phone never got charged. Not even for a second. Also, even when I think I've charged it fully, the light on my device continues to flash orange. Perhaps I got a faulty one. Still, it's useful as a hand warmer - I just wish I got to use it as a battery pack as well.\\\"\\nUse cases: hand warmer\\n\\nReview: \\\"I didn't expect this to be a high quality dart board but I did expect it to work. No matter how hard or soft you throw a dart, when it hits the board it drags down at least 3 inches. This is a horrible product and it is not usable in the least bit. Don't waste your money. Spend an extra $10 and get a real magnetic dart board if you still want a cheap one.\\\"\\nUse cases: No use cases\\n\\nReview: \\\"I ordered these for our restaurant's floor drains after dealing with repeated clogs and an expensive bill to have a plumber snake out the pipes.  The baskets catch all the bits of food coming out of the sinks, without impeding the flow of water.  It was necessary to remove the dome strainer from the drain in order for the basket to sit low enough for the metal grate to sit on top.  The basket is sturdy and came in white.  My only complaint is the price for such a simple plastic item.\\\"\\nUse cases: restaurant's floor drains, catch bits of food coming out from sink\\n\\nReview: \\\"{review['review_body']}\\\"\\nUse cases:"
+            "prompt": "\"I will give you multiple customer review for an e-commerce product. You should answer the question \\\"What can this product be used / for\\\"? by only using information from the review author. In case the review author mentions multiples use cases, print them comma-separated. If the review author does not mention any use case, output \\\"No use cases\\\". Do not output negative use cases or further product information like product quality, attributes, target audiences, etc.\\n\\nReview: \\\"I purchased this because I'm attending school in MN and it was going to be extremely cold - and it was! It did help me cope with the subzero temperatures and I'm grateful. However, I also looked forward to using it as a battery pack and I was rather disappointed. I was never able to get it to charge my phone. All the cords were connected and it seemed fine but my phone never got charged. Not even for a second. Also, even when I think I've charged it fully, the light on my device continues to flash orange. Perhaps I got a faulty one. Still, it's useful as a hand warmer - I just wish I got to use it as a battery pack as well.\\\"\\nUse cases: hand warmer\\n\\nReview: \\\"I didn't expect this to be a high quality dart board but I did expect it to work. No matter how hard or soft you throw a dart, when it hits the board it drags down at least 3 inches. This is a horrible product and it is not usable in the least bit. Don't waste your money. Spend an extra $10 and get a real magnetic dart board if you still want a cheap one.\\\"\\nUse cases: No use cases\\n\\nReview: \\\"I ordered these for our restaurant's floor drains after dealing with repeated clogs and an expensive bill to have a plumber snake out the pipes.  The baskets catch all the bits of food coming out of the sinks, without impeding the flow of water.  It was necessary to remove the dome strainer from the drain in order for the basket to sit low enough for the metal grate to sit on top.  The basket is sturdy and came in white.  My only complaint is the price for such a simple plastic item.\\\"\\nUse cases: restaurant's floor drains, catch bits of food coming out from sink\\n\\nReview: \\\"{review_body}\\\"\\nUse cases:"
+        }
+    },
+    "llama2": {
+        "few_shot_llama2": {
+            "system_message": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.",
+            "messages": [
+                {
+                    "role": "human",
+                    "content": "Review body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer: home BBQs; smoke vegetables"
+                },
+                {
+                    "role": "human",
+                    "content": "Review body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer: No usage options"
+                },
+                {
+                    "role": "human",
+                    "content": "Review body: {review_body}"
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer:"
+                }
+            ],
+            "input_variables": [
+                "review_body"
+            ]
+        }
+    },
+    "chat-models": {
+        "few_shot_without_product_title_v1": {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "human",
+                    "content": "It arrived on time and has worked.  It is just that if the dog shakes well the sound also goes off."
+                },
+                {
+                    "role": "ai",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "human",
+                    "content": "Delicious; I put the jar in the freezer, and roast a cup at a time. Great to add to my quinoa recipes"
+                },
+                {
+                    "role": "ai",
+                    "content": "addition to quinoa recipes"
+                },
+                {
+                    "role": "human",
+                    "content": "Very nice using it for work."
+                },
+                {
+                    "role": "ai",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "human",
+                    "content": "Purchased several for an event and they are perfect."
+                },
+                {
+                    "role": "ai",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "human",
+                    "content": "Love love love them they offer such storage for lip sticks and concealers. And they make your make up counter look very well kept"
+                },
+                {
+                    "role": "ai",
+                    "content": "storage for lip sticks; storage for concealers; organize make up counter"
+                },
+                {
+                    "role": "human",
+                    "content": "Very pretty and feminine.  This blouse is made of sort of voile, so a camisole under it will be needed, but it is lovely by design and everything else.  Very nice!"
+                },
+                {
+                    "role": "ai",
+                    "content": "No usage options"
+                },
+                {
+                    "role": "human",
+                    "content": "{review_body}"
+                }
+            ],
+            "input_variables": [
+                "review_body"
+            ]
+        },
+        "few_shot_with_product_title_v1": {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, output \"No usage options\". Do not output negative usage options or further product information like product quality, attributes, target audiences, etc."
+                },
+                {
+                    "role": "human",
+                    "content": "Product title: Samurai-Plus DZ420 Grill #1 portable outdoor BBQ\nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big."
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer: home BBQs; smoke vegetables."
+                },
+                {
+                    "role": "human",
+                    "content": "Product title: My little Pony Diary (Original) with Glitter\nReview body: This was a perfect gift for my 10 year old daughter."
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer: No usage options."
+                },
+                {
+                    "role": "human",
+                    "content": "Product title: {product_title}\nReview body: {review_body}"
+                },
+                {
+                    "role": "ai",
+                    "content": "Answer:"
+                }
+            ],
+            "input_variables": [
+                "review_body",
+                "product_title"
+            ]
         }
     },
     "model-training": {
@@ -1046,6 +1181,13 @@
         },
         "vanilla_zero_shot": {
             "prompt": "You are a data labeler, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly with the list of usage options separated by a semicolon. If the review author does not mention any usage option, do not output anything. Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\n Product title: {product_title} \nReview body: {review_body}\n",
+            "input_variables": [
+                "product_title",
+                "review_body"
+            ]
+        },
+        "zero_shot_v2": {
+            "prompt": "You are an automated data labeling AI, tasked with extracting usage options from product reviews. I will give you a customer review for an e-commerce product. You should answer the question \"What can this product be used for?\" by only using information from the review author. Reply only and strictly only with the list of usage options separated by a semicolon. If the review author does not mention any usage option, say No usage options. Do not output negative usage options or further product information like product quality, attributes, target audiences, etc.\n\n \nProduct title: Samurai-Plus DZ420 Grill #1 portable outdoor BBQ\nReview body: This grill is perfect for home BBQs and was suprisingly also able to smoke vegetables. Apparently it can also be used for camping trips but I found it to be too big.\nhome BBQs; smoke vegetables\nProduct title: My little Pony Diary (Original) with Glitter\nReview body: This was a perfect gift for my 10 year old daughter.\n\nProduct title: {product_title}\nReview body: {review_body}\n",
             "input_variables": [
                 "product_title",
                 "review_body"

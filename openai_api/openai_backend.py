@@ -84,7 +84,7 @@ def get_chat_labels_from_openai(
 ):
     def helper(message, review):
         message = message.copy()
-        message["content"] = eval('f"""' + message["content"] + '"""')
+        message["content"] = review.evaluate_format_string(message["content"])
         return message
 
     messages = [helper(message, review) for message in messages]

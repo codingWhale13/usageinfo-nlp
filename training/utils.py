@@ -10,6 +10,8 @@ from transformers import (
     optimization,
     PegasusForConditionalGeneration,
     PegasusTokenizer,
+    AutoModelForCausalLM,
+    AutoTokenizer
 )
 import torch
 import dotenv
@@ -18,6 +20,8 @@ from typing import Tuple
 
 dotenv.load_dotenv()
 
+#Does this really work?
+os.environ['HF_HOME'] = os.getenv("HF_HOME", default="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/.huggingface_cache")
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 MAX_OUTPUT_LENGTH = 128
 
@@ -56,6 +60,30 @@ model_tuples = {
         PegasusForConditionalGeneration.from_pretrained("google/pegasus-xsum"),
         PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
         512,
+    ),
+     "meta-llama/Llama-2-7b-chat-hf": lambda: (
+        AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-2-7b-chat-hf",
+            device_map="auto",
+        ),
+        AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-chat-hf"),
+        4096,
+    ),
+     "meta-llama/Llama-2-13b-chat-hf": lambda: (
+        AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-2-13b-chat-hf",
+            device_map="auto",
+        ),
+        AutoTokenizer.from_pretrained("meta-llama/Llama-2-13b-chat-hf"),
+        4096,
+    ),
+     "meta-llama/Llama-2-70b-chat-hf": lambda: (
+        AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-2-70b-chat-hf",
+            device_map="auto",
+        ),
+        AutoTokenizer.from_pretrained("meta-llama/Llama-2-70b-chat-hf"),
+        4096,
     ),
 }
 
