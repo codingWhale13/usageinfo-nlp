@@ -8,7 +8,10 @@ from training.utils import get_config
 import torch
 import os
 from transformers import TextGenerationPipeline, pipeline
+from openai_api.openai_backend import format_usage_options
+from tqdm import tqdm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+os.environ['TRANSFORMERS_CACHE'] = os.getenv("TRANSFORMERS_CACHE", default="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/.huggingface_cache")
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
 
@@ -30,7 +33,6 @@ class HuggingFacePipelineGenerator:
         self,
         model_name,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
-        checkpoint: Optional[Union[int, str]] = None,
         prompt_id: str="original",
         is_llama2_chat_format: bool=False,
         pipeline_args: dict={}
@@ -45,18 +47,9 @@ class HuggingFacePipelineGenerator:
                 "text-generation",
                 model=self.model_name,
                 device_map="auto",
-                *pipeline_args
+                **pipeline_args
             )
 
-    def format_usage_options(self, text_completion: str) -> List[str]:
-        if text_completion.strip().lower().startswith("no usage options"):
-            return []
-        return [
-            usage_option.strip()
-            for usage_option in text_completion.split("; ")
-            if usage_option.strip()
-        ]
-    
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
     ) -> None:
@@ -80,21 +73,22 @@ class HuggingFacePipelineGenerator:
         sequences = self.pipeline(
             pipeline_input_generator, return_full_text=False, **self.generation_config
         )
-        for review, sequence in zip(reviews, sequences):
-            print("output:",sequence)
+        for review, sequence in tqdm(zip(reviews, sequences), total=len(reviews)):
+            
             if len(sequence) > 1:
                 raise ValueError("Generated more than one sequence. This is not handled in the code!")
             
             generated_text = sequence[0]["generated_text"]
-            usage_options = self.format_usage_options(generated_text)
+            usage_options, usage_options_metadata = format_usage_options(generated_text)
             review_id = review.review_id
             if label_id is not None:
                 reviews[review_id].add_label(
                     label_id=label_id,
                     usage_options=usage_options,
-                    metadata=label_metadata,
+                    metadata=label_metadata | usage_options_metadata,
                 )
             if verbose:
+                print("output:",sequence)
                 print(f"Review {review_id}")
                 print(f"Model input:\n{review.get_prompt(prompt_id=self.prompt_id)}")
                 print(f"Usage options: {usage_options}", end="\n\n")
