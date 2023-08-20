@@ -7,8 +7,7 @@ from helpers.review_set import ReviewSet
 from training.utils import get_config
 import torch
 import os
-from transformers import TextGenerationPipeline
-
+from transformers import TextGenerationPipeline, pipeline
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
@@ -26,41 +25,28 @@ RECOMMENDED_BATCH_SIZE = {
     "tiiuae/falcon-7b-instruct": 1
 }
 """
-class PipelineBasedGenerator:
+class HuggingFacePipelineGenerator:
     def __init__(
         self,
-        artifact_name,
+        model_name,
         generation_config: str = DEFAULT_GENERATION_CONFIG,
         checkpoint: Optional[Union[int, str]] = None,
-        prompt_id="original",
+        prompt_id: str="original",
+        is_llama2_chat_format: bool=False,
+        pipeline_args: dict={}
     ) -> None:
-        global device
-
-        if artifact_name in utils.model_tuples.keys():
-            self.prompt_id = prompt_id
-            self.model_artifact = artifact_name
-
-        else:
-            self.prompt_id = utils.load_config_from_artifact_name(artifact_name)[
-                "prompt_id"
-            ]
-            self.model_artifact = {"name": artifact_name, "checkpoint": checkpoint}
-
-        (
-            self.model,
-            self.tokenizer,
-            self.max_length,
-            self.model_name,
-        ) = utils.initialize_model_tuple(self.model_artifact)
-
-        self.model.to(device)
-        self.model.eval()
+        self.prompt_id = prompt_id
+        self.is_llama2_chat_format = is_llama2_chat_format
+        self.model_name = model_name
         self.generation_config = get_config(
             f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
         )
-
-        #batch_size = RECOMMENDED_BATCH_SIZE[artifact_name] if artifact_name in RECOMMENDED_BATCH_SIZE else DEFAULT_BATCH_SIZE
-        self.pipeline = TextGenerationPipeline(model=self.model, tokenizer=self.tokenizer, framework="pt")
+        self.pipeline = pipeline(
+                "text-generation",
+                model=self.model_name,
+                device_map="auto",
+                *pipeline_args
+            )
 
     def format_usage_options(self, text_completion: str) -> List[str]:
         if text_completion.strip().lower().startswith("no usage options"):
@@ -79,7 +65,7 @@ class PipelineBasedGenerator:
                 "Specify either a label_id to save the labels or set verbose to True. (Or both)"
             )
         
-        pipeline_input_generator = (review.get_prompt(self.prompt_id) for review in reviews)
+        pipeline_input_generator = (review.get_prompt(self.prompt_id, is_llama2_chat_format=self.is_llama2_chat_format) for review in reviews)
         label_metadata = {
             "generator": {
                 "model_name": self.model_name,
@@ -87,22 +73,12 @@ class PipelineBasedGenerator:
                 "prompt_id": self.prompt_id,
             }
         }
-        if self.model_name != self.model_artifact:
-            label_metadata["generator"].update(
-                {
-                    "artifact_name": self.model_artifact["name"],
-                    "checkpoint": self.model_artifact["checkpoint"]
-                    if self.model_artifact["checkpoint"] is not None
-                    else "last",
-                }
-            )
-
         if verbose:
             print(f"Generating label {label_id}...")
             print(f"Label Metadata: {label_metadata}", end="\n\n")
 
         sequences = self.pipeline(
-            pipeline_input_generator,return_full_text=False, **self.generation_config
+            pipeline_input_generator, return_full_text=False, **self.generation_config
         )
         for review, sequence in zip(reviews, sequences):
             print("output:",sequence)

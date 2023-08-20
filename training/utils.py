@@ -21,6 +21,7 @@ from typing import Tuple
 dotenv.load_dotenv()
 
 #Does this really work?
+os.environ['TRANSFORMERS_CACHE'] = os.getenv("TRANSFORMERS_CACHE", default="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/.huggingface_cache")
 os.environ['HF_HOME'] = os.getenv("HF_HOME", default="/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/.huggingface_cache")
 ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
 MAX_OUTPUT_LENGTH = 128
