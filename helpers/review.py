@@ -399,6 +399,22 @@ class Review:
         prompt_data = prompts[prompt_type][prompt_id] 
 
         if is_llama2_chat_format and prompt_type=="chat":
+            """
+            def get_llama_prompt(chat_history: list[tuple[str, str]]) -> str:
+                texts = [f'<s>[INST] <<SYS>>\n{chat_history[0]["content"]}\n<</SYS>>\n\n']
+                # The first user input is _not_ stripped
+                for message in chat_history:
+                    if message["role"] == "user":
+                        user_input = self.evaluate_format_string(message["content"])
+                        user_input = user_input.strip() 
+                        texts.append(f'{user_input} [/INST]')
+                    else:
+                        texts.append(f' {message["content"].strip()} </s><s>[INST] ')
+                #message = message.strip() if do_strip else message
+                return ''.join(texts)
+            
+            return get_llama_prompt(prompt_data["prompt"])
+            """
             #https://www.philschmid.de/sagemaker-llama-llm
             def build_llama2_prompt(messages):
                 startPrompt = "<s>[INST] "
@@ -406,11 +422,11 @@ class Review:
                 conversation = []
                 for index, message in enumerate(messages):
                     if message["role"] == "system" and index == 0:
-                        conversation.append(f"<<SYS>>\n{message['content']}\n<</SYS>>\n\n")
+                        conversation.append(f"<<SYS>>\n{message['content'].strip()}\n<</SYS>>\n\n")
                     elif message["role"] == "user":
                         conversation.append(message["content"].strip())
                     else:
-                        conversation.append(f" [/INST] {message['content'].strip()}</s><s>[INST] ")
+                        conversation.append(f" [/INST] {message['content'].strip()} </s><s>[INST] ")
 
                 return startPrompt + "".join(conversation) + endPrompt
 
