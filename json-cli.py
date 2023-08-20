@@ -668,14 +668,29 @@ def score(base_reviewset: ReviewSet, args: argparse.Namespace):
     scores = {}
     for label_id in label_ids:
         if args.metrics is None:
-            scores[label_id] = base_reviewset.get_agg_scores(
-                label_id,
-                *reference_label_ids,
-            )
+            result = {
+                "normal": base_reviewset.get_agg_scores(label_id, *reference_label_ids),
+                "harmonic": base_reviewset.get_harmonic_scores(
+                    label_id, *reference_label_ids
+                ),
+                "classification": base_reviewset.get_classification_scores(
+                    label_id, *reference_label_ids
+                ),
+            }
+            scores[label_id] = result
         else:
-            scores[label_id] = base_reviewset.get_agg_scores(
-                label_id, *reference_label_ids, list(args.metrics.split(","))
-            )
+            result = {
+                "normal": base_reviewset.get_agg_scores(
+                    label_id, *reference_label_ids, list(args.metrics.split(","))
+                ),
+                "harmonic": base_reviewset.get_harmonic_scores(
+                    label_id, *reference_label_ids, list(args.metrics.split(","))
+                ),
+                "classification": base_reviewset.get_classification_scores(
+                    label_id, *reference_label_ids
+                ),
+            }
+            scores[label_id] = result
 
     print(
         f"\nScores against the reference label (candidates): ",

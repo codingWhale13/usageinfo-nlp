@@ -4,6 +4,8 @@ from typing import Optional, Union
 import evaluate
 import pandas as pd
 
+from scipy.stats import beta
+
 from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
 from openai_api.openai_backend import (
@@ -186,6 +188,8 @@ def get_similarity(
                 1,
                 max(0, util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()),
             )
+            similarity = beta.cdf(similarity, 1.3492828476735637, 1.6475489724420649)
+            similarity = beta.cdf(similarity, 14.715846019280558, 3.3380276739903016)
         else:
             raise ValueError(f"distance metric {distance_metric} not supported")
         return similarity

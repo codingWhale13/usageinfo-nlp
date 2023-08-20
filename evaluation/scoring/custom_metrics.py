@@ -252,3 +252,162 @@ def custom_f1_score_ak(
         return 0
     else:
         return 2 * precision * recall / (precision + recall)
+
+
+from itertools import product
+from collections import defaultdict
+
+import numpy as np
+from scipy.spatial.distance import euclidean
+import pulp
+import gensim
+from sentence_transformers import SentenceTransformer, util
+from scipy.stats import beta
+
+
+def distance(
+    label_1: str,
+    label_2: str,
+    comparator: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
+    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
+):
+    return float(
+        1
+        - get_similarity(
+            label_1,
+            label_2,
+            comparator=comparator,
+            use_lowercase=use_lowercase,
+            openai_params=openai_params,
+            modification=modification,
+            distance_metric=distance_metric,
+        )
+    )
+
+
+def log_distance(
+    label_1: str,
+    label_2: str,
+    comparator: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
+    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
+):
+    sim = max(
+        0.000001,  # needed to ensure that log(0) is not called
+        get_similarity(
+            label_1,
+            label_2,
+            comparator=comparator,
+            use_lowercase=use_lowercase,
+            openai_params=openai_params,
+            modification=modification,
+            distance_metric=distance_metric,
+        ),
+    )
+
+    return -np.log(sim)
+
+
+def labels_to_fracdict(
+    labels,
+    comparator: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
+    distance_metric: str = "cosine_relu",
+):
+    labels = list(set(labels))
+    if len(labels) == 1:
+        return {labels[0]: 1.0}
+    tokendict = defaultdict(lambda: 0)
+    for label_1 in labels:
+        for label_2 in labels:
+            tokendict[label_1] += distance(
+                label_1,
+                label_2,
+                comparator=comparator,
+                use_lowercase=use_lowercase,
+                openai_params=openai_params,
+                modification=modification,
+                distance_metric=distance_metric,
+            )
+    totaldist = sum(tokendict.values())
+    return {token: float(dist) / float(totaldist) for token, dist in tokendict.items()}
+
+
+def word_movers_similarity(
+    predictions: list[str],
+    references: list[str],
+    comparator: str = "all-mpnet-base-v2",
+    use_lowercase: bool = True,
+    openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
+    modification: Optional[str] = None,  # options: "stem" or "lemmatize"
+    distance_metric: str = "cosine_relu",
+):
+    if len(predictions) == 0 or len(references) == 0:
+        if len(predictions) == 0 and len(references) == 0:
+            return 1.0
+        else:
+            return 0.0
+
+    all_tokens = list(set(predictions + references))
+
+    first_sent_buckets = labels_to_fracdict(
+        predictions,
+        comparator=comparator,
+        use_lowercase=use_lowercase,
+        openai_params=openai_params,
+        modification=modification,
+        distance_metric=distance_metric,
+    )
+    second_sent_buckets = labels_to_fracdict(
+        references,
+        comparator=comparator,
+        use_lowercase=use_lowercase,
+        openai_params=openai_params,
+        modification=modification,
+        distance_metric=distance_metric,
+    )
+
+    T = pulp.LpVariable.dicts(
+        "T_matrix", list(product(all_tokens, all_tokens)), lowBound=0
+    )
+
+    prob = pulp.LpProblem("WMD", sense=pulp.LpMinimize)
+    prob += pulp.lpSum(
+        [
+            T[token1, token2]
+            * log_distance(
+                token1,
+                token2,
+                comparator=comparator,
+                use_lowercase=use_lowercase,
+                openai_params=openai_params,
+                modification=modification,
+                distance_metric=distance_metric,
+            )
+            for token1, token2 in product(all_tokens, all_tokens)
+        ]
+    )
+    for token2 in second_sent_buckets:
+        prob += (
+            pulp.lpSum([T[token1, token2] for token1 in first_sent_buckets])
+            == second_sent_buckets[token2]
+        )
+    for token1 in first_sent_buckets:
+        prob += (
+            pulp.lpSum([T[token1, token2] for token2 in second_sent_buckets])
+            == first_sent_buckets[token1]
+        )
+
+    # supress prob solve output
+    prob.solve(pulp.COIN_CMD(msg=0))
+
+    dist = pulp.value(prob.objective) if pulp.value(prob.objective) else 0.0
+
+    return np.exp(-1 * dist)

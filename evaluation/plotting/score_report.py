@@ -52,7 +52,10 @@ def get_scored_reviews_dataframe(
         reference_labels = []
         no_usage_options_ok, usage_options_ok = False, False
         for reference_label_id in reference_label_ids:
-            reference_label = review.get_label_for_id(reference_label_id)
+            if issubclass(type(reference_label_id), ls.AbstractLabelSelectionStrategy):
+                reference_label = review.get_label_from_strategy(reference_label_id)
+            else:
+                reference_label = review.get_label_for_id(reference_label_id)
             if reference_label:
                 reference_labels.append(reference_label["usageOptions"])
                 if len(reference_label["usageOptions"]) > 0:
@@ -60,6 +63,8 @@ def get_scored_reviews_dataframe(
                 else:
                     no_usage_options_ok = True
 
+        if issubclass(type(label_id), ls.AbstractLabelSelectionStrategy):
+            label_id = label_id.retrieve_label_id(review)
         prediction_has_usage_options = (
             len(review.get_label_for_id(label_id)["usageOptions"]) > 0
         )

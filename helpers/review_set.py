@@ -323,17 +323,78 @@ class ReviewSet:
 
         EvaluationCache.get().save_to_disk()  # save newly calculated scores to disk
 
+    def get_harmonic_scores(
+        self,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
+        metric_ids: Union[set, list] = DEFAULT_METRICS,
+    ):
+        scores = [
+            review.get_scores(
+                label_id, *reference_label_candidates, metric_ids=metric_ids
+            )
+            for review in self
+        ]
+
+        scores = list(filter(lambda x: x is not None, scores))
+
+        score_dict = {
+            metric_id: {"positives": [], "negatives": [], "true_positives": []}
+            for metric_id in metric_ids
+        }
+
+        for score in scores:
+            for metric in metric_ids:
+                # score[metric] is a tuple (score, prediction_is_positive_usage, reference_is_positive_usage)
+                if score[metric][2] == True:
+                    score_dict[metric]["positives"].append(score[metric][0])
+                    if score[metric][1] == True:
+                        score_dict[metric]["true_positives"].append(score[metric][0])
+                else:
+                    score_dict[metric]["negatives"].append(score[metric][0])
+
+        harmonic_scores = {}
+
+        for metric in metric_ids:
+            mean_positives = (
+                mean(score_dict[metric]["positives"])
+                if len(score_dict[metric]["positives"]) > 0
+                else 1
+            )
+            mean_true_positives = (
+                mean(score_dict[metric]["true_positives"])
+                if len(score_dict[metric]["true_positives"]) > 0
+                else 1
+            )
+            mean_negatives = (
+                mean(score_dict[metric]["negatives"])
+                if len(score_dict[metric]["negatives"]) > 0
+                else 1
+            )
+            harmonic_scores[metric] = {
+                "harmonic": 2
+                * (mean_positives * mean_negatives)
+                / (mean_positives + mean_negatives),
+                "mean_positives": mean_positives,
+                "mean_true_positives": mean_true_positives,
+                "mean_negatives": mean_negatives,
+            }
+
+        return harmonic_scores
+
     def get_agg_scores(
         self,
         label_id: Union[str, ls.LabelSelectionStrategyInterface],
         *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
         metric_ids: Union[set, list] = DEFAULT_METRICS,
     ) -> dict[dict[str, float]]:
+
         aggregations = {
             "mean": mean,
             "variance": variance,
             "quantiles (n=4)": quantiles,
         }
+
         scores = [
             review.get_scores(
                 label_id, *reference_label_candidates, metric_ids=metric_ids
@@ -348,10 +409,45 @@ class ReviewSet:
         agg_scores = {"num_reviews": len(scores)}
         for metric_id in metric_ids:
             agg_scores[metric_id] = {
-                agg_name: agg_func([score[metric_id] for score in scores])
+                agg_name: agg_func([score[metric_id][0] for score in scores])
                 for agg_name, agg_func in aggregations.items()
             }
+
         return agg_scores
+
+    def get_classification_scores(
+        self,
+        label_id: Union[str, ls.LabelSelectionStrategyInterface],
+        *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
+    ) -> dict[dict[str, float]]:
+
+        from evaluation.plotting.score_report import get_scored_reviews_dataframe
+
+        reviews_df = get_scored_reviews_dataframe(
+            label_id, self, *reference_label_candidates
+        )
+
+        TP = len(reviews_df[reviews_df["usage_class"] == "TP"])
+        FP = len(reviews_df[reviews_df["usage_class"] == "FP"])
+        TN = len(reviews_df[reviews_df["usage_class"] == "TN"])
+        FN = len(reviews_df[reviews_df["usage_class"] == "FN"])
+
+        classification_score = {
+            "accuracy": (TP + TN) / (TP + TN + FN + FP),
+            "recall": TP / (TP + FN) if (TP + FN) > 0 else 0.0,
+            "precision": TP / (TP + FP) if (TP + FP) > 0 else 0.0,
+            "sensitivity": TN / (TN + FP) if (TN + FP) > 0 else 0.0,
+            "specificity": TN / (TN + FP) if (TN + FP) > 0 else 0.0,
+            "f1": (2 * TP) / (2 * TP + FP + FN) if (2 * TP + FP + FN) > 0 else 0.0,
+        }
+
+        classification_score["count"] = {"TP": TP, "FP": FP, "TN": TN, "FN": FN}
+
+        classification_score["balanced_accuracy"] = (
+            classification_score["sensitivity"] + classification_score["specificity"]
+        ) / 2
+
+        return classification_score
 
     def test(
         self,
@@ -359,7 +455,7 @@ class ReviewSet:
         label_id_2: Union[str, ls.LabelSelectionStrategyInterface],
         *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
         tests: list[str] = ["ttest"],
-        alternatives: list[str] = ["two-sided"],
+        alternatives: list[str] = ["greater"],
         metric_ids: Iterable[str] = DEFAULT_METRICS,
         confidence_level: float = 0.95,  # only used for bootstrap
     ):
@@ -388,8 +484,8 @@ class ReviewSet:
                 continue
 
             for metric_id in metric_ids:
-                scores[metric_id][label_id_1].append(score_1[metric_id])
-                scores[metric_id][label_id_2].append(score_2[metric_id])
+                scores[metric_id][label_id_1].append(score_1[metric_id][0])
+                scores[metric_id][label_id_2].append(score_2[metric_id][0])
 
         test_results = {}
 

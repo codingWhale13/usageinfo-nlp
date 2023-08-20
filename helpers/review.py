@@ -232,6 +232,27 @@ class Review:
         pprint(self.get_label_for_id("bp-chat_gpt_correction"))
         return True
 
+    def get_label_type(
+        self, label_selection_strategy: LabelSelectionStrategyInterface
+    ) -> str:
+        labels = self.get_labels_from_strategy(label_selection_strategy)
+        label_type = None
+        for label in labels:
+            if label_type == "both":
+                return "both"
+            else:
+                if len(label["usageOptions"]) == 0:
+                    if label_type == "usage":
+                        label_type = "both"
+                    else:
+                        label_type = "no_usage"
+                elif len(label["usageOptions"]) > 0:
+                    if label_type == "no_usage":
+                        label_type = "both"
+                    else:
+                        label_type = "usage"
+        return label_type
+
     def label_has_usage_options(
         self, label_selection_strategy: LabelSelectionStrategyInterface
     ) -> bool:
@@ -448,9 +469,10 @@ class Review:
         label_id: str,
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
-    ) -> None:
-        """score specified metrics if not done already"""
-        scores = self.get_label_for_id(label_id)["scores"]  # use reference from here on
+    ):
+        from evaluation.scoring.metrics import SingleReviewMetrics
+
+        scores = self.get_label_for_id(label_id)["scores"]
 
         if reference_label_id not in scores:
             scores[reference_label_id] = {}
@@ -462,12 +484,14 @@ class Review:
             # calculate missing metrics
             from evaluation.scoring.metrics import SingleReviewMetrics
 
-            new_metrics = SingleReviewMetrics.from_labels(
+            result = SingleReviewMetrics.from_labels(
                 self.get_labels(), label_id, reference_label_id
-            ).calculate(missing_metric_ids)
+            ).calculate(missing_metric_ids, include_pos_neg_info=True)
 
-            for metric_id, metric_value in new_metrics.items():
-                scores[reference_label_id][metric_id] = metric_value
+            for metric_id, metric_tuple in result.items():
+                scores[reference_label_id][metric_id] = metric_tuple
+
+        return copy(scores[reference_label_id])
 
     def get_scores(
         self,
@@ -495,22 +519,21 @@ class Review:
         if label_id not in self.get_label_ids() or not reference_label_candidates:
             return None
 
+        reference_scores = {}
         for reference_label_id in reference_label_candidates:
-            self.score(label_id, reference_label_id, metric_ids)
-
-        scores = self.get_label_for_id(label_id)["scores"]
-
-        return {
-            m_id: max(
-                [
-                    score[m_id]
-                    for score in [
-                        scores[ref_id] for ref_id in reference_label_candidates
-                    ]
-                ]
+            reference_scores[reference_label_id] = self.score(
+                label_id, reference_label_id, metric_ids
             )
-            for m_id in metric_ids
-        }
+
+        max_score = {m: (-1, None, None) for m in metric_ids}
+        for m_id in metric_ids:
+            for ref_id in reference_label_candidates:
+                # reference_scores[ref_id][m_id] is a tuple (score, prediction_is_positive_usage, reference_is_positive_usage)
+                score = reference_scores[ref_id][m_id][0]
+                if score >= max_score[m_id][0]:
+                    max_score[m_id] = reference_scores[ref_id][m_id]
+
+        return max_score
 
     def merge_labels(
         self, other_review: "Review", inplace: bool = False

@@ -1,5 +1,6 @@
 import math
 from statistics import mean
+from typing import Union
 
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.core import get_most_similar, get_similarity
@@ -10,6 +11,7 @@ from evaluation.scoring.custom_metrics import (
     custom_precision_ak,
     custom_recall,
     custom_recall_ak,
+    word_movers_similarity,
 )
 from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebleu_score
 
@@ -50,6 +52,7 @@ CUSTOM_METRIC_FUNCTIONS = {
     "custom_mean_f1": (custom_f1_score, {"agg": mean, **KWARGS_MPNET_V1}),
     "custom_weighted_mean_precision": (custom_precision_ak, KWARGS_MPNET_V1),
     "custom_weighted_mean_recall": (custom_recall_ak, KWARGS_MPNET_V1),
+    "word_movers_similarity": (word_movers_similarity, KWARGS_MPNET_V1),
     "custom_weighted_mean_f1": (custom_f1_score_ak, KWARGS_MPNET_V1),
     "custom_weighted_mean_f1_stem": (
         custom_f1_score_ak,
@@ -93,9 +96,8 @@ class SingleReviewMetrics:
         )
 
     def calculate(
-        self,
-        metric_ids=DEFAULT_METRICS,
-    ) -> dict[str, float]:
+        self, metric_ids=DEFAULT_METRICS, include_pos_neg_info=False
+    ) -> Union[dict[str, float], dict[str, tuple[float, str]]]:
         scores = {}
 
         for metric_id in metric_ids:
@@ -115,7 +117,14 @@ class SingleReviewMetrics:
                 except ZeroDivisionError:
                     metric_result = math.nan
 
-            scores[metric_id] = metric_result
+            if include_pos_neg_info:
+                scores[metric_id] = (
+                    metric_result,
+                    True if len(self.predictions) > 0 else False,
+                    True if len(self.references) > 0 else False,
+                )
+            else:
+                scores[metric_id] = metric_result
 
         return scores
 
