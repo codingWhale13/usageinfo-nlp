@@ -111,7 +111,7 @@ def get_similarity(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
+    similarity_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
 ) -> float:
     global st_eval, spacy_eval, bleu_eval, sacrebleu_eval, rouge_eval
 
@@ -174,16 +174,16 @@ def get_similarity(
         reference_tokens = get_embedding(label_2, comparator)
         from sentence_transformers import util
 
-        if distance_metric == "euclidean":
+        if similarity_metric == "euclidean":
             from numpy import linalg
 
             # normalize to unit vectors
             prediction_tokens = prediction_tokens / linalg.norm(prediction_tokens)
             reference_tokens = reference_tokens / linalg.norm(reference_tokens)
             similarity = 1 - (linalg.norm(prediction_tokens - reference_tokens) / 2.0)
-        elif distance_metric == "cosine":
+        elif similarity_metric == "cosine":
             similarity = util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()
-        elif distance_metric == "cosine_relu":
+        elif similarity_metric == "cosine_relu":
             similarity = min(
                 1,
                 max(0, util.cos_sim(prediction_tokens, reference_tokens)[0][0].item()),
@@ -191,7 +191,7 @@ def get_similarity(
             similarity = beta.cdf(similarity, 1.3492828476735637, 1.6475489724420649)
             similarity = beta.cdf(similarity, 14.715846019280558, 3.3380276739903016)
         else:
-            raise ValueError(f"distance metric {distance_metric} not supported")
+            raise ValueError(f"similarity metric {similarity_metric} not supported")
         return similarity
     elif comparator == "bleu":
         if bleu_eval is None:
@@ -223,7 +223,7 @@ def get_most_similar(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
     threshold_word_sim: float = 0,
 ) -> tuple[float, str]:
     """For a single `label`, find the most similar match from `options`.
@@ -240,7 +240,7 @@ def get_most_similar(
             use_lowercase=use_lowercase,
             openai_params=openai_params,
             modification=modification,
-            distance_metric=distance_metric,
+            similarity_metric=similarity_metric,
         )
         if similarity >= max(result[0], threshold_word_sim):
             result = (similarity, option)

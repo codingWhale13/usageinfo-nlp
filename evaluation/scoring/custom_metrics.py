@@ -20,7 +20,7 @@ def custom_precision(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     if len(predictions) == 0:
         return int(len(references) == 0)
@@ -34,7 +34,7 @@ def custom_precision(
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )[0]
             for prediction in predictions
         ]
@@ -49,7 +49,7 @@ def custom_recall(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     if len(references) == 0:
         return int(len(predictions) == 0)
@@ -63,7 +63,7 @@ def custom_recall(
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )[0]
             for reference in references
         ]
@@ -78,7 +78,7 @@ def custom_f1_score(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     precision = custom_precision(
         predictions=predictions,
@@ -88,7 +88,7 @@ def custom_f1_score(
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
     recall = custom_recall(
         predictions=predictions,
@@ -98,7 +98,7 @@ def custom_f1_score(
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
 
     if precision == recall == 0:
@@ -117,7 +117,7 @@ def custom_precision_ak(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     if len(predictions) == 0:
         return int(len(references) == 0)
@@ -131,7 +131,7 @@ def custom_precision_ak(
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )[0]
             for prediction in predictions
         ]
@@ -149,7 +149,7 @@ def custom_precision_ak(
                         use_lowercase=use_lowercase,
                         openai_params=openai_params,
                         modification=modification,
-                        distance_metric=distance_metric,
+                        similarity_metric=similarity_metric,
                     )
                     for prediction_2 in predictions
                 ]
@@ -172,7 +172,7 @@ def custom_recall_ak(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     if len(references) == 0:
         return int(len(predictions) == 0)
@@ -186,7 +186,7 @@ def custom_recall_ak(
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )[0]
             for reference in references
         ]
@@ -204,7 +204,7 @@ def custom_recall_ak(
                         use_lowercase=use_lowercase,
                         openai_params=openai_params,
                         modification=modification,
-                        distance_metric=distance_metric,
+                        similarity_metric=similarity_metric,
                     )
                     for reference_2 in references
                 ]
@@ -227,7 +227,7 @@ def custom_f1_score_ak(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ) -> float:
     precision = custom_precision_ak(
         predictions=predictions,
@@ -236,7 +236,7 @@ def custom_f1_score_ak(
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
     recall = custom_recall_ak(
         predictions=predictions,
@@ -245,7 +245,7 @@ def custom_f1_score_ak(
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
 
     if precision == recall == 0:
@@ -272,7 +272,7 @@ def distance(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
+    similarity_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
 ):
     return float(
         1
@@ -283,7 +283,7 @@ def distance(
             use_lowercase=use_lowercase,
             openai_params=openai_params,
             modification=modification,
-            distance_metric=distance_metric,
+            similarity_metric=similarity_metric,
         )
     )
 
@@ -295,8 +295,10 @@ def log_distance(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
+    similarity_metric: str = "cosine_relu",  # alternative: "euclidean", "cosine"
 ):
+    if label_1 == label_2:
+        return 0.0
     sim = max(
         0.000001,  # needed to ensure that log(0) is not called
         get_similarity(
@@ -306,11 +308,11 @@ def log_distance(
             use_lowercase=use_lowercase,
             openai_params=openai_params,
             modification=modification,
-            distance_metric=distance_metric,
+            similarity_metric=similarity_metric,
         ),
     )
 
-    return -np.log(sim)
+    return -np.log(sim) if sim < 1 else 0.0
 
 
 def labels_to_fracdict(
@@ -319,7 +321,7 @@ def labels_to_fracdict(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ):
     labels = list(set(labels))
     if len(labels) == 1:
@@ -334,10 +336,19 @@ def labels_to_fracdict(
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )
     totaldist = sum(tokendict.values())
     return {token: float(dist) / float(totaldist) for token, dist in tokendict.items()}
+
+
+import re
+
+
+def replace_symbols_with_spaces(input_string):
+    # Use a regular expression to match non-alphanumeric characters except '&', and replace them with a space
+    cleaned_string = re.sub(r"[^a-zA-Z0-9+&]", " ", input_string)
+    return cleaned_string
 
 
 def word_movers_similarity(
@@ -347,7 +358,7 @@ def word_movers_similarity(
     use_lowercase: bool = True,
     openai_params: dict = DEFAULT_OPENAI_SIM_PARAMS,  # only needed for comparator "openai"
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
-    distance_metric: str = "cosine_relu",
+    similarity_metric: str = "cosine_relu",
 ):
     if len(predictions) == 0 or len(references) == 0:
         if len(predictions) == 0 and len(references) == 0:
@@ -355,58 +366,63 @@ def word_movers_similarity(
         else:
             return 0.0
 
-    all_tokens = list(set(predictions + references))
+    predictions = [
+        replace_symbols_with_spaces(prediction) for prediction in predictions
+    ]
+    references = [replace_symbols_with_spaces(reference) for reference in references]
 
-    first_sent_buckets = labels_to_fracdict(
+    all_labels = list(set(predictions + references))
+
+    pred_labels_buckets = labels_to_fracdict(
         predictions,
         comparator=comparator,
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
-    second_sent_buckets = labels_to_fracdict(
+    ref_labels_buckets = labels_to_fracdict(
         references,
         comparator=comparator,
         use_lowercase=use_lowercase,
         openai_params=openai_params,
         modification=modification,
-        distance_metric=distance_metric,
+        similarity_metric=similarity_metric,
     )
 
     T = pulp.LpVariable.dicts(
-        "T_matrix", list(product(all_tokens, all_tokens)), lowBound=0
+        "T_matrix", list(product(all_labels, all_labels)), lowBound=0
     )
-
+    solver = pulp.COIN_CMD(msg=0)
     prob = pulp.LpProblem("WMD", sense=pulp.LpMinimize)
     prob += pulp.lpSum(
         [
-            T[token1, token2]
+            T[label_1, label_2]
             * log_distance(
-                token1,
-                token2,
+                label_1,
+                label_2,
                 comparator=comparator,
                 use_lowercase=use_lowercase,
                 openai_params=openai_params,
                 modification=modification,
-                distance_metric=distance_metric,
+                similarity_metric=similarity_metric,
             )
-            for token1, token2 in product(all_tokens, all_tokens)
+            for label_1, label_2 in product(all_labels, all_labels)
         ]
     )
-    for token2 in second_sent_buckets:
+    for token2 in ref_labels_buckets:
         prob += (
-            pulp.lpSum([T[token1, token2] for token1 in first_sent_buckets])
-            == second_sent_buckets[token2]
+            pulp.lpSum([T[token1, token2] for token1 in pred_labels_buckets])
+            == ref_labels_buckets[token2]
         )
-    for token1 in first_sent_buckets:
+    for token1 in pred_labels_buckets:
         prob += (
-            pulp.lpSum([T[token1, token2] for token2 in second_sent_buckets])
-            == first_sent_buckets[token1]
+            pulp.lpSum([T[token1, token2] for token2 in ref_labels_buckets])
+            == pred_labels_buckets[token1]
         )
 
     # supress prob solve output
-    prob.solve(pulp.COIN_CMD(msg=0))
+    prob.solve(solver)
 
     dist = pulp.value(prob.objective) if pulp.value(prob.objective) else 0.0
 

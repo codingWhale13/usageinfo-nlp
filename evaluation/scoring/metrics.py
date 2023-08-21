@@ -20,7 +20,7 @@ from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebl
 KWARGS_MPNET_V1 = {
     "use_lowercase": True,
     "comparator": "all-mpnet-base-v2",
-    "distance_metric": "cosine_relu",
+    "similarity_metric": "cosine_relu",
 }
 KWARGS_OPENAI_V1 = {
     "use_lowercase": True,
