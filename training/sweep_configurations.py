@@ -11,11 +11,7 @@ sweep_configurations = {
                 "mu": math.log(1e-4),
                 "sigma": (abs(math.log(1e-4) - math.log(3e-4))) ** 0.5,
             },
-            "lr_scheduler.warm_up_factor": {
-                "distribution": "normal",
-                "mu": 2e-3,
-                "sigma": 7e-4**0.5,
-            },
+            "lr_scheduler.warm_up_factor": {"value": 1e-2},
             "accumulate_grad_batches": {
                 "distribution": "q_normal",
                 "mu": 16,

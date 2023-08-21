@@ -168,7 +168,7 @@ def train(is_sweep=False, run_name=None):
         if not test_run
         else [early_stopping_callback],
         logger=logger if not test_run else None,
-        accumulate_grad_batches=config["accumulate_grad_batches"],
+        accumulate_grad_batches=max(1, config["accumulate_grad_batches"]),
     )
 
     model = ReviewModel(
