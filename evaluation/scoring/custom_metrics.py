@@ -9,7 +9,11 @@ from openai_api.openai_backend import DEFAULT_OPENAI_SIM_PARAMS
 
 
 def remove_duplicates(l: list, use_lowercase: bool = True) -> list:
-    return list(set([item.lower() for item in l])) if use_lowercase else list(set(l))
+    return (
+        list(set([" ".join(item.lower().strip().split()) for item in l]))
+        if use_lowercase
+        else list(set(l))
+    )
 
 
 def custom_precision(
@@ -323,7 +327,7 @@ def labels_to_fracdict(
     modification: Optional[str] = None,  # options: "stem" or "lemmatize"
     similarity_metric: str = "cosine_relu",
 ):
-    labels = list(set(labels))
+    labels = remove_duplicates(labels, use_lowercase)
     if len(labels) == 1:
         return {labels[0]: 1.0}
     tokendict = defaultdict(lambda: 0)
@@ -370,6 +374,9 @@ def word_movers_similarity(
         replace_symbols_with_spaces(prediction) for prediction in predictions
     ]
     references = [replace_symbols_with_spaces(reference) for reference in references]
+
+    predictions = remove_duplicates(predictions, use_lowercase)
+    references = remove_duplicates(references, use_lowercase)
 
     all_labels = list(set(predictions + references))
 
