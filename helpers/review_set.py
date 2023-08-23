@@ -18,7 +18,7 @@ from evaluation.scoring.evaluation_cache import EvaluationCache
 from helpers.review import Review
 from helpers.worker import Worker
 import data_augmentation.core as da_core
-from evaluation.scoring.h_tests import h_test
+from evaluation.scoring.h_tests import h_test, permutation_harmonic
 from helpers.label_selection import DatasetSelectionStrategy
 
 
@@ -484,21 +484,40 @@ class ReviewSet:
                 continue
 
             for metric_id in metric_ids:
-                scores[metric_id][label_id_1].append(score_1[metric_id][0])
-                scores[metric_id][label_id_2].append(score_2[metric_id][0])
+                scores[metric_id][label_id_1].append(score_1[metric_id])
+                scores[metric_id][label_id_2].append(score_2[metric_id])
 
         test_results = {}
 
         for test in tests:
             for metric_id in metric_ids:
                 for alternative in alternatives:
-                    test_results[(test, metric_id, alternative)] = h_test(
-                        test,
-                        np.array(scores[metric_id][label_id_1]),
-                        np.array(scores[metric_id][label_id_2]),
-                        alternative=alternative,
-                        confidence_level=confidence_level,
-                    )
+                    if test == "permutation_harmonic":
+                        test_results[
+                            (test, metric_id, alternative)
+                        ] = permutation_harmonic(
+                            scores[metric_id][label_id_1],
+                            scores[metric_id][label_id_2],
+                            alternative,
+                        )
+                    else:
+                        test_results[(test, metric_id, alternative)] = h_test(
+                            test,
+                            np.array(
+                                [
+                                    score_tuple[0]
+                                    for score_tuple in scores[metric_id][label_id_1]
+                                ]
+                            ),
+                            np.array(
+                                [
+                                    score_tuple[0]
+                                    for score_tuple in scores[metric_id][label_id_2]
+                                ]
+                            ),
+                            alternative=alternative,
+                            confidence_level=confidence_level,
+                        )
 
         EvaluationCache.get().save_to_disk()
 

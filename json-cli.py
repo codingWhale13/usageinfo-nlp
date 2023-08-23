@@ -59,7 +59,7 @@ def parse_args():
         "--type",
         "-t",
         type=str,
-        default="ttest",
+        default="permutation_harmonic",
         metavar="type",
         help="Type of test to perform. Currently supported: ttest, wilcoxon, bootstrap, permutation or all. Can be comma separated to perform multiple tests. Default is ttest",
     )

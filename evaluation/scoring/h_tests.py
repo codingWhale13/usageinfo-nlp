@@ -65,6 +65,63 @@ def permutation(
         return None
 
 
+def _statistic_harmonic(x: np.ndarray, y: np.ndarray):
+    x = x.transpose()
+    y = y.transpose()
+
+    positives_x = x[x[:, 2] == 1, 0]
+    negatives_x = x[x[:, 2] == 0, 0]
+    positives_y = y[y[:, 2] == 1, 0]
+    negatives_y = y[y[:, 2] == 0, 0]
+
+    positive_score_x = np.mean(positives_x) if len(positives_x) > 0 else 1
+    negative_score_x = np.mean(negatives_x) if len(negatives_x) > 0 else 1
+    positive_score_y = np.mean(positives_y) if len(positives_y) > 0 else 1
+    negative_score_y = np.mean(negatives_y) if len(negatives_y) > 0 else 1
+
+    harmonic_mean_x = (
+        2 * positive_score_x * negative_score_x / (positive_score_x + negative_score_x)
+    )
+    harmonic_mean_y = (
+        2 * positive_score_y * negative_score_y / (positive_score_y + negative_score_y)
+    )
+
+    return harmonic_mean_x - harmonic_mean_y
+
+
+def statistic_harmonic(x: np.ndarray, y: np.ndarray, axis):
+    if x.shape != y.shape:
+        raise ValueError("x and y must have the same shape")
+
+    return (
+        np.array([_statistic_harmonic(x[i], y[i]) for i in range(len(x))])
+        if len(x.shape) > 2
+        else _statistic_harmonic(x, y)
+    )
+
+
+def permutation_harmonic(
+    scores_1,
+    scores_2,
+    alternative: str = "two-sided",
+):
+    scores_1 = np.array(
+        [np.array([score[0], int(score[1]), int(score[2])]) for score in scores_1]
+    )
+    scores_2 = np.array(
+        [np.array([score[0], int(score[1]), int(score[2])]) for score in scores_2]
+    )
+    return stats.permutation_test(
+        (scores_1, scores_2),
+        statistic_harmonic,
+        alternative=alternative,
+        permutation_type="samples",
+        vectorized=True,
+        axis=0,
+        n_resamples=10000,
+    )
+
+
 def h_test(
     test_type: str = "ttest",
     scores_1: np.array = None,
