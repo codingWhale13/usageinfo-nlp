@@ -52,7 +52,7 @@ class SustainabilityLogger:
     def __init__(
         self, description: Optional[str] = None, log_file: Optional[str] = None
     ):
-        
+
         if log_file is not None and not log_file.endswith(".json"):
             log_file += ".json"
 
@@ -84,8 +84,10 @@ class SustainabilityLogger:
 
         self.codecarbon_tracker.stop()
 
-        #https://github.com/mlco2/codecarbon/blob/master/codecarbon/output.py#L27
-        codecarbon_results_ordered_dict = self.codecarbon_tracker._prepare_emissions_data().values
+        # https://github.com/mlco2/codecarbon/blob/master/codecarbon/output.py#L27
+        codecarbon_results_ordered_dict = (
+            self.codecarbon_tracker._prepare_emissions_data().values
+        )
         codecarbon_results_dict = dict(codecarbon_results_ordered_dict)
 
         results = {
@@ -101,4 +103,4 @@ class SustainabilityLogger:
 
         if self.log_file is not None:
             with open(self.log_file, "w") as f:
-               json.dump(results, f, indent=4)
+                json.dump(results, f, indent=4)
