@@ -5,6 +5,7 @@ from typing import Optional
 
 import codecarbon
 import wandb
+import json
 
 MEASUREMENT_INTERVAL = 5  # in seconds
 experiment_running = False
@@ -46,11 +47,15 @@ def compute_kWh(power_samples):
 
 
 class SustainabilityLogger:
-    """This class tracks emissions and power consumption using CodeCarbon nvidia-smi."""
+    """This class tracks emissions and power consumption using CodeCarbon nvidia-smi. Add log_file to log data in json file"""
 
     def __init__(
         self, description: Optional[str] = None, log_file: Optional[str] = None
     ):
+
+        if log_file is not None and not log_file.endswith(".json"):
+            log_file += ".json"
+
         self.description = description
         self.log_file = log_file
         self.power_measurements = []
@@ -77,12 +82,19 @@ class SustainabilityLogger:
         if self.description is not None:
             prefix += f" ({self.description})"
 
+        self.codecarbon_tracker.stop()
+
+        # https://github.com/mlco2/codecarbon/blob/master/codecarbon/output.py#L27
+        codecarbon_results_ordered_dict = (
+            self.codecarbon_tracker._prepare_emissions_data().values
+        )
+        codecarbon_results_dict = dict(codecarbon_results_ordered_dict)
+
         results = {
-            f"{prefix}/CodeCarbon CO2_emissions(kg)": self.codecarbon_tracker.stop(),
             f"{prefix}/NVIDIA power_consumption(kWh)": compute_kWh(
                 self.power_measurements
             ),
-        }
+        } | codecarbon_results_dict
 
         self.power_thread.join()
 
@@ -91,4 +103,4 @@ class SustainabilityLogger:
 
         if self.log_file is not None:
             with open(self.log_file, "w") as f:
-                f.write("\n".join(f"{name}: {v}" for name, v in results.items()))
+                json.dump(results, f, indent=4)
