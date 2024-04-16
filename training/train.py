@@ -197,6 +197,7 @@ def train(is_sweep=False, run_name=None):
             trainer.test()
 
         wandb.log({"best_val_loss": checkpoint_callback.best_model_score})
+        wandb.log({"FLOPs": model.total_flops})
 
         try:
             label_id = f"model-{wandb.run.name}-auto"
@@ -220,6 +221,12 @@ def train(is_sweep=False, run_name=None):
     else:
         trainer.fit(model)
         trainer.test()
+        print(
+            "----------------------------------",
+            "Run completed!",
+            f"Total number of FLOPs: {model.total_flops}",
+            sep="\n",
+        )
 
 
 if __name__ == "__main__":

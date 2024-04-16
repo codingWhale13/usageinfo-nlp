@@ -1,5 +1,6 @@
 import torch
 from lightning import pytorch as pl
+from torch.utils.flop_counter import FlopCounterMode
 from typing import Optional
 import numpy as np
 import random
@@ -59,6 +60,7 @@ class ReviewModel(pl.LightningModule):
             "model_max_length": max_length,
             "for_training": True,
         }
+        self.total_flops = 0
 
         self._initialize_datasets()
 
@@ -137,9 +139,11 @@ class ReviewModel(pl.LightningModule):
 
         self.log(
             "epoch_end_lr",
-            self.hyperparameters["lr"]
-            if not hasattr(self, "lr_scheduler")
-            else self.lr_scheduler.get_last_lr()[0],
+            (
+                self.hyperparameters["lr"]
+                if not hasattr(self, "lr_scheduler")
+                else self.lr_scheduler.get_last_lr()[0]
+            ),
             on_epoch=True,
             logger=True,
             sync_dist=True,
@@ -195,6 +199,17 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
         )
         return outputs.loss
+
+    def on_fit_start(self):
+        self.flop_counter = FlopCounterMode(self.model, display=False)
+        self.flop_counter.__enter__()
+        print("Flop counter started (model fitting)")
+
+    def on_fit_end(self):
+        self.flop_counter.__exit__(None, None, None)
+        fit_flops = self.flop_counter.get_total_flops()
+        self.total_flops += fit_flops
+        print("Flop counter ended (model fitting). FLOPs:", fit_flops)
 
     def configure_optimizers(self):
         optimizer = self.optimizer(self.parameters(), **self.optimizer_args)

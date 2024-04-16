@@ -1,12 +1,12 @@
 import torch
+from torch.utils.flop_counter import FlopCounterMode
+import os
 from typing import List, Optional
 from typing import Union
 
 from training import utils
 from helpers.review_set import ReviewSet
 from training.utils import get_config
-import torch
-import os
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -69,19 +69,32 @@ class Generator:
         attention_mask = batch["input"]["attention_mask"].to(device)
         model_inputs = self.tokenizer.batch_decode(input_ids, skip_special_tokens=True)
 
-        with torch.no_grad():
+        flop_counter = FlopCounterMode(self.model, display=False)
+        with flop_counter, torch.no_grad():
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 **self.generation_config,
             )
 
+        # Get number of genereated tokens (start to EOS token)
+        eos_indices = torch.nonzero(
+            outputs == self.tokenizer.eos_token_id, as_tuple=True
+        )[1]
+        num_tokens = torch.sum(
+            eos_indices
+        ).item()  # first token is always padding => index of EOS equals num tokens
+
         predictions = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         predictions = [
             self.format_usage_options(usage_options) for usage_options in predictions
         ]
 
-        return zip(review_ids, model_inputs, predictions)
+        return (
+            zip(review_ids, model_inputs, predictions),
+            num_tokens,
+            flop_counter.get_total_flops(),
+        )
 
     def generate_label(
         self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
@@ -121,8 +134,18 @@ class Generator:
             print(f"Generating label {label_id}...")
             print(f"Label Metadata: {label_metadata}", end="\n\n")
 
+        total_tokens = 0
+        total_flops = 0
+
         for batch in dataloader:
-            usage_options_batch = self.generate_usage_options(batch)
+            (
+                usage_options_batch,
+                num_tokens_batch,
+                flops_batch,
+            ) = self.generate_usage_options(batch)
+            total_tokens += num_tokens_batch
+            total_flops += flops_batch
+
             for review_id, model_input, usage_options in usage_options_batch:
                 if label_id is not None:
                     reviews[review_id].add_label(
@@ -134,3 +157,12 @@ class Generator:
                     print(f"Review {review_id}")
                     print(f"Model input:\n{model_input}")
                     print(f"Usage options:\n\t{usage_options}", end="\n\n")
+
+        if verbose:
+            print(
+                "----------------------------------",
+                f"Total tokens generated: {total_tokens}",
+                f"Total FLOPs: {total_flops}",
+                sep="\n",
+            )
+        return total_tokens, total_flops
