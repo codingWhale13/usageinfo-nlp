@@ -187,6 +187,7 @@ def train(is_sweep=False, run_name=None):
         gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
         active_data_module=active_learning_module,
         prompt_id=config["prompt_id"],
+        measure_flops=config.get("measure_flops", False),
     )
 
     # %% Training and testing

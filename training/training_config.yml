@@ -38,6 +38,7 @@ lr_scheduler:
   mode: "triangular2" # Alternativ is 'triangular'
   # InverseSquareRootLR
   warm_up_factor: 0.002 #
+measure_flops: False
 model_name: "flan-t5-base"
 multiple_usage_options_strategy: "default"
 optimizer: #Set all parameters you do not want to null
