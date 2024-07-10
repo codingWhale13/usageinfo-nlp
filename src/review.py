@@ -13,11 +13,11 @@ from pathlib import Path
 
 import dateutil.parser
 
-import helpers.label_selection as ls
-from evaluation.scoring import DEFAULT_METRICS
+import src.helpers.label_selection as ls
+from src.evaluation.scoring import DEFAULT_METRICS
 
 if TYPE_CHECKING:
-    from helpers.label_selection import LabelSelectionStrategyInterface
+    from src.helpers.label_selection import LabelSelectionStrategyInterface
 
 
 class Review:

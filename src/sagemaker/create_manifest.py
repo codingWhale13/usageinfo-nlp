@@ -4,7 +4,7 @@ import argparse
 import math
 import json
 import random
-from helpers.review_set import ReviewSet
+from src.review_set import ReviewSet
 from itertools import zip_longest
 
 

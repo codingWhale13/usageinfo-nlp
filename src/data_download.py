@@ -50,8 +50,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Download and preprocess the Amazon reviews dataset."
     )
-    parser.add_argument("--data_path", type=str, help="Path to the raw data files.")
-    parser.add_argument("--out_path", type=str, help="Path to save the processed data.")
+    parser.add_argument("data_path", type=str, help="Path to the raw data files.")
+    parser.add_argument("out_path", type=str, help="Path to save the processed data.")
     parser.add_argument(
         "--num_proc", type=int, default=8, help="Number of processes to use."
     )

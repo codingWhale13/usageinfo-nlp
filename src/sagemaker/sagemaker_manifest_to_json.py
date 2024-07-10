@@ -5,7 +5,7 @@ import os
 import json
 from pathlib import Path
 from typing import Union
-from sagemaker.manifest_to_json_backend import extract_json_from_manifest
+from src.sagemaker.manifest_to_json_backend import extract_json_from_manifest
 
 
 def get_run_name_from_manifest_file(manifest_file_path):

@@ -12,13 +12,13 @@ from typing import Callable, ItemsView, Iterable, Iterator, Optional, Union
 from numpy import mean, var
 import numpy as np
 import pandas as pd
-import helpers.label_selection as ls
-from evaluation.scoring import DEFAULT_METRICS
-from evaluation.scoring.evaluation_cache import EvaluationCache
-from review import Review
-from helpers.worker import Worker
-from evaluation.scoring.h_tests import h_test, permutation_harmonic
-from helpers.label_selection import DatasetSelectionStrategy
+import src.helpers.label_selection as ls
+from src.evaluation.scoring import DEFAULT_METRICS
+from src.evaluation.scoring.evaluation_cache import EvaluationCache
+from src.review import Review
+from src.helpers.worker import Worker
+from src.evaluation.scoring.h_tests import h_test, permutation_harmonic
+from src.helpers.label_selection import DatasetSelectionStrategy
 
 
 class ReviewSet:
