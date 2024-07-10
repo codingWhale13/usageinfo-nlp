@@ -587,7 +587,7 @@ class Review:
         if not set(self.review_attributes).issubset(set(data_keys_set)):
             raise ValueError(
                 f"{error_msg_prefix} wrong attribute names\n"
-                f"got: {data_keys_set}\nexpected: {self.review_attributes}"
+                f"got: {sorted(data_keys_set)}\nexpected: {sorted(self.review_attributes)}"
             )
 
         labels = self.get_labels()

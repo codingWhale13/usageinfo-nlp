@@ -15,9 +15,8 @@ import pandas as pd
 import helpers.label_selection as ls
 from evaluation.scoring import DEFAULT_METRICS
 from evaluation.scoring.evaluation_cache import EvaluationCache
-from helpers.review import Review
+from review import Review
 from helpers.worker import Worker
-import data_augmentation.core as da_core
 from evaluation.scoring.h_tests import h_test, permutation_harmonic
 from helpers.label_selection import DatasetSelectionStrategy
 
