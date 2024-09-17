@@ -37,6 +37,7 @@ class ReviewModel(pl.LightningModule):
         lr_scheduler_args: dict,
         gradual_unfreezing_mode: Optional[str],
         prompt_id: str,
+        measure_flops: bool = False,
     ):
         super(ReviewModel, self).__init__()
         self.model = model
@@ -61,6 +62,7 @@ class ReviewModel(pl.LightningModule):
             "for_training": True,
         }
         self.total_flops = 0
+        self.measure_flops = measure_flops
 
         self._initialize_datasets()
 
@@ -201,15 +203,17 @@ class ReviewModel(pl.LightningModule):
         return outputs.loss
 
     def on_fit_start(self):
-        self.flop_counter = FlopCounterMode(self.model, display=False)
-        self.flop_counter.__enter__()
-        print("Flop counter started (model fitting)")
+        if self.measure_flops:
+            self.flop_counter = FlopCounterMode(self.model, display=False)
+            self.flop_counter.__enter__()
+            print("Flop counter started (model fitting)")
 
     def on_fit_end(self):
-        self.flop_counter.__exit__(None, None, None)
-        fit_flops = self.flop_counter.get_total_flops()
-        self.total_flops += fit_flops
-        print("Flop counter ended (model fitting). FLOPs:", fit_flops)
+        if self.measure_flops:
+            self.flop_counter.__exit__(None, None, None)
+            fit_flops = self.flop_counter.get_total_flops()
+            self.total_flops += fit_flops
+            print("Flop counter ended (model fitting). FLOPs:", fit_flops)
 
     def configure_optimizers(self):
         optimizer = self.optimizer(self.parameters(), **self.optimizer_args)
