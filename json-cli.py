@@ -5,7 +5,7 @@ import time
 import pprint
 import fnmatch
 
-from helpers.review_set import ReviewSet
+from src.review_set import ReviewSet
 
 dash = "-" * 80
 
@@ -259,7 +259,7 @@ def parse_args():
         "--prompt_id",
         "-p",
         type=str,
-        default="original",
+        default="training",
         help="prompt_id to use for annotation, when specifying a model. This is not used when using a wandb-run, then the same prompt_id is used as for training.",
     )
 
@@ -328,6 +328,25 @@ def parse_args():
         default=f"{os.path.dirname(os.path.realpath(__file__))}/score_reports",
         metavar="filepath",
         help="Location where the report will create a new folder named with the label_id and the current unix timestamp (default is [repo]/score_reports/). In the timestamp folder, all report files will be saved.",
+    )
+
+    merge_label_parser = subparsers.add_parser(
+        "merge_labels",
+        help="Merge labels of label files into the base reviewset",
+    )
+
+    merge_label_parser.add_argument(
+        "base_file",
+        type=str,
+        help="Filepath of the base reviewset that you want to use",
+    )
+
+    merge_label_parser.add_argument(
+        "merge_files",
+        type=str,
+        nargs="+",
+        metavar="merge_file",
+        help="Label file(s) to merge into the base file",
     )
 
     return parser.parse_args(), parser.format_help()
@@ -399,7 +418,7 @@ def stats(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from helpers.label_selection import LabelIDSelectionStrategy
+    from src.helpers.label_selection import LabelIDSelectionStrategy
 
     print(f"\n\nMerging {len(args.merge_files)} file(s) into base file")
     for counter, reviewset_file in enumerate(args.merge_files):
@@ -468,9 +487,32 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
         base_reviewset.save()
         print(f"\n\t{bcolors.GREEN}Merged!{bcolors.ENDC}")
 
+def merge_labels(base_reviewset: ReviewSet, args: argparse.Namespace):
+    """
+    Merges labels of label files into the base reviewset. Note this can overwrite labels in the base reviewset, if they have the same name.
+    """
+    import json
+
+    print(f"\n\nMerging {len(args.merge_files)} label file(s) into base file")
+
+    for counter, reviewset_file in enumerate(args.merge_files):
+        with open(reviewset_file, "r") as f:
+            data = json.load(f)
+
+        reviews = data["reviews"]
+
+        for review_id, review in reviews.items():
+            if base_reviewset.get_review(review_id) is not None:
+                base_reviewset.get_review(review_id).add_label_from_label_file(review["labels"], review_id)
+
+    print(f"\n{bcolors.GREEN}Merged!{bcolors.ENDC} New labels in reviewset:")
+    print_stats(base_reviewset)
+
+    base_reviewset.save()
+
 
 def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from helpers.label_selection import LabelIDSelectionStrategy
+    from src.helpers.label_selection import LabelIDSelectionStrategy
 
     try:
         extract_label_ids = filter_invalid_label_ids(
@@ -601,8 +643,8 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from training.generator import Generator, DEFAULT_GENERATION_CONFIG
-    from helpers.sustainability_logger import SustainabilityLogger
+    from src.training.generator import Generator, DEFAULT_GENERATION_CONFIG
+    from src.helpers.sustainability_logger import SustainabilityLogger
 
     label_id = None
     if args.last_part_of_label_id is not None:
