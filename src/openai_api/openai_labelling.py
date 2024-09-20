@@ -6,15 +6,15 @@ import os
 
 import dotenv
 
-from helpers.review_set import ReviewSet
-from helpers.worker import Worker
-from openai_api.openai_backend import CHAT_MODELS, MODEL_NAME_MAPPING, generate_label
+from src.review_set import ReviewSet
+from src.helpers.worker import Worker
+from src.openai_api.openai_backend import CHAT_MODELS, MODEL_NAME_MAPPING, generate_label
 
 dotenv.load_dotenv()
 
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
-DEFAULT_TEMPERATURE = 0.5
+DEFAULT_TEMPERATURE = 0.2
 DEFAULT_LOG_PROBS = 5
 DEFAULT_SAVE_PERCENTAGE = 5
 DEFAULT_WORKERS = 4
@@ -40,7 +40,7 @@ def parse_args():
     arg_parser.add_argument(
         "--prompt-id",
         "-p",
-        default="leoh_v1",
+        default="2_shot",
         help="Prompt to use for openai labelling",
     )
     arg_parser.add_argument(

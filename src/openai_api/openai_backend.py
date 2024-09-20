@@ -8,7 +8,7 @@ import dotenv
 dotenv.load_dotenv()
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
-openai_org_id = os.getenv("OPENAI_ORG_ID", "org-wud6DQs34D79lUPQBuJnHo4f")
+openai_org_id = os.getenv("OPENAI_ORG_ID")
 
 OPENAI_MAX_RETRIES = 10
 NO_USAGE_OPTION_STR = "No usage options"

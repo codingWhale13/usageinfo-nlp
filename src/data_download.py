@@ -2,7 +2,6 @@
     Load data from the raw data files and preprocess it.
 """
 
-import os
 from pathlib import Path
 from typing import Union
 

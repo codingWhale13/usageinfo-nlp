@@ -535,6 +535,17 @@ class Review:
 
         return max_score
 
+    def add_label_from_label_file(
+            self, label: dict, review_id: str
+    ) -> None:
+        assert self.review_id == review_id, f"review_id '{review_id}' does not match review_id '{self.review_id}'"
+        existing_labels = self.get_labels()
+
+        for label_id, other_label in label.items():
+            existing_labels[label_id] = other_label
+
+        self.data["labels"] = existing_labels
+
     def merge_labels(
         self, other_review: "Review", inplace: bool = False
     ) -> Optional["Review"]:
