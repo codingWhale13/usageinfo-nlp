@@ -4,9 +4,9 @@ import os
 from typing import List, Optional
 from typing import Union
 
-from training import utils
-from helpers.review_set import ReviewSet
-from training.utils import get_config
+from src.training import utils
+from src.review_set import ReviewSet
+from src.training.utils import get_config
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

@@ -4,8 +4,8 @@ import pandas as pd
 from typing import Optional, Iterable, Union
 from pathlib import Path
 
-from helpers.review_set import ReviewSet
-import helpers.label_selection as ls
+from src.review_set import ReviewSet
+import src.helpers.label_selection as ls
 
 
 WORD_COUNT_CATEGORIES = {

@@ -6,7 +6,7 @@ from typing import Union
 from pathlib import Path
 import sys, os
 
-from helpers.review import Review
+from src.review import Review
 
 
 REVIEW_FIELDS_OTHER_THAN_LABELS = Review.review_attributes.union(
@@ -22,7 +22,7 @@ def v0_to_v1(
     """Upgrades a JSON file in "v0" format (pre March 2023) to our more consistent v1 format
 
     Args:
-    `label_id`: unique id for where the labels comes from, like "golden_v2" or "davinci_freddy_v1"
+    `label_id`: unique id for where the labels comes from
     `source` can be either "labellingTool" or "openAI" and will be used as key for metadata
     """
 

@@ -210,6 +210,13 @@ def parse_args():
         help="Seed to use for sampling (default is None)",
     )
 
+    sample_parser.add_argument(
+        "--delete",
+        "-d",
+        action="store_true",
+        help="Delete the sampled reviews from the base reviewset",
+    )
+
     annotate_parser = subparsers.add_parser(
         "annotate",
         help="Annotate the base reviewset with a trained model artifact",
@@ -347,6 +354,12 @@ def parse_args():
         nargs="+",
         metavar="merge_file",
         help="Label file(s) to merge into the base file",
+    )
+
+    merge_label_parser.add_argument(
+        "out_file",
+        type=str,
+        help="Filepath to save the merged labels to",
     )
 
     return parser.parse_args(), parser.format_help()
@@ -490,25 +503,30 @@ def merge(base_reviewset: ReviewSet, args: argparse.Namespace):
 def merge_labels(base_reviewset: ReviewSet, args: argparse.Namespace):
     """
     Merges labels of label files into the base reviewset. Note this can overwrite labels in the base reviewset, if they have the same name.
+    Deletes reviews from the base reviewset if they are not present in the label files. Saves to the out_file.
     """
     import json
 
-    print(f"\n\nMerging {len(args.merge_files)} label file(s) into base file")
+    print(f"\n\nMerging {len(args.merge_files)} label file(s) into base file and saving to {args.out_file}")
 
-    for counter, reviewset_file in enumerate(args.merge_files):
-        with open(reviewset_file, "r") as f:
+    for labelset_file in args.merge_files:
+        with open(labelset_file, "r") as f:
             data = json.load(f)
 
-        reviews = data["reviews"]
+        labels = data["reviews"]
 
-        for review_id, review in reviews.items():
-            if base_reviewset.get_review(review_id) is not None:
-                base_reviewset.get_review(review_id).add_label_from_label_file(review["labels"], review_id)
+        review_ids = set(base_reviewset.reviews.keys())
+
+        for review_id in review_ids:
+            if review_id in labels.keys():
+                base_reviewset.get_review(review_id).add_label_from_label_file(labels[review_id]["labels"], review_id)
+            else:
+                base_reviewset.drop_review(base_reviewset.get_review(review_id))
 
     print(f"\n{bcolors.GREEN}Merged!{bcolors.ENDC} New labels in reviewset:")
     print_stats(base_reviewset)
 
-    base_reviewset.save()
+    base_reviewset.save(args.out_file)
 
 
 def extract(base_reviewset: ReviewSet, args: argparse.Namespace):
@@ -636,6 +654,14 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
         if not file_path_okay(args.output):
             return
 
+        if args.delete:
+            save_path = base_reviewset.save_path
+            base_reviewset = base_reviewset.set_minus(cut_reviewset)
+            base_reviewset.save(save_path)
+            print(
+                f"\nSuccessfully deleted {bcolors.BLUE}{args.n}{bcolors.ENDC} sampled reviews from the base reviewset"
+            )
+            print_stats(base_reviewset)
         cut_reviewset.save(args.output)
         print(
             f"\nSuccessfully saved {bcolors.BLUE}{args.n}{bcolors.ENDC} sampled reviews them to {bcolors.BLUE}{args.output}{bcolors.ENDC}"
@@ -644,7 +670,6 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
     from src.training.generator import Generator, DEFAULT_GENERATION_CONFIG
-    from src.helpers.sustainability_logger import SustainabilityLogger
 
     label_id = None
     if args.last_part_of_label_id is not None:
@@ -656,18 +681,17 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    with SustainabilityLogger(log_file=args.log_file):
-        generator = Generator(
-            args.artifact_name,
-            args.generation_config or DEFAULT_GENERATION_CONFIG,
-            int(args.checkpoint)
-            if (args.checkpoint is not None and args.checkpoint.isdigit())
-            else args.checkpoint,
-            prompt_id=args.prompt_id,
-        )
+    generator = Generator(
+        args.artifact_name,
+        args.generation_config or DEFAULT_GENERATION_CONFIG,
+        int(args.checkpoint)
+        if (args.checkpoint is not None and args.checkpoint.isdigit())
+        else args.checkpoint,
+        prompt_id=args.prompt_id,
+    )
 
-        verbose = not args.quiet
-        generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)
+    verbose = not args.quiet
+    generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)
 
     if label_id:
         base_reviewset.save()

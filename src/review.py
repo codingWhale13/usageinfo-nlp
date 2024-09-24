@@ -307,7 +307,7 @@ class Review:
         is_input: bool,
         max_length: int = float("inf"),
     ) -> Optional[dict]:
-        from training.utils import MAX_OUTPUT_LENGTH
+        from src.training.utils import MAX_OUTPUT_LENGTH
 
         max_length = (
             min(MAX_OUTPUT_LENGTH, max_length)
@@ -377,16 +377,16 @@ class Review:
         else:
             raise ValueError(f"strategy '{strategy}' not supported")
 
-    def get_prompt(self, prompt_id="avetis_v1") -> str:
-        from langchain import PromptTemplate
+    def get_prompt(self, prompt_id="training") -> str:
+        from langchain_core.prompts import PromptTemplate
 
-        path = Path(__file__).parent.parent / "openai_api/prompts.json"
+        path = Path(__file__).parent / "openai_api/prompts.json"
 
         with open(path) as f:
             prompts = json.load(f)
 
-        prompt_text = prompts["model-training"][prompt_id]["prompt"]
-        prompt_input_variables = prompts["model-training"][prompt_id]["input_variables"]
+        prompt_text = prompts[prompt_id]["prompt"]
+        prompt_input_variables = prompts[prompt_id]["input_variables"]
 
         prompt = PromptTemplate(
             template=prompt_text,
@@ -408,7 +408,7 @@ class Review:
         self,
         selection_strategy: Optional[ls.LabelSelectionStrategyInterface] = None,
         multiple_usage_options_strategy: Optional[str] = None,
-        prompt_id: str = "avetis_v1",
+        prompt_id: str = "training",
         **tokenization_kwargs,
     ) -> Iterable[dict]:
         def format_dict(model_input, output, review_id, source_id) -> dict:

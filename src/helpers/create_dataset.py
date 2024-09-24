@@ -5,10 +5,10 @@ import yaml
 import glob
 import dotenv
 
-from review_set import ReviewSet
-import helpers.label_selection as ls
+from src.review_set import ReviewSet
+import src.helpers.label_selection as ls
 
-DEFAULT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/datasets"
+DEFAULT_PATH = ""
 
 dotenv.load_dotenv()
 DATASETS_DIR = os.getenv("DATASETS", default=DEFAULT_PATH)
@@ -24,7 +24,7 @@ def arg_parse() -> tuple[argparse.Namespace, str]:
     parser.add_argument(
         "label_ids",
         type=str,
-        help="Comma-separated list of label ids to be used for creating the dataset (e.g. 'golden_v2,gpt-3.5-turbo-leoh_v1')\nWildcards '*' and '?' are allowed",
+        help="Comma-separated list of label ids to be used for creating the dataset (e.g. 'Vendor_A,expert_5')\nWildcards '*' and '?' are allowed",
     )
     parser.add_argument(
         "files",

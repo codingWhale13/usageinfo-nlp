@@ -1,6 +1,6 @@
 import os
 from copy import deepcopy
-from helpers.review_set import ReviewSet
+from src.review_set import ReviewSet
 
 # This script takes a JSON file with many labels and splits it into one file per label.
 

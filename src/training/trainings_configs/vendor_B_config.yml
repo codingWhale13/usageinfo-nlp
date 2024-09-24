@@ -1,0 +1,70 @@
+accumulate_grad_batches: 10
+active_layers:
+  decoder: "-12:" # use python slice syntax (e.g. ':0' for no layers and ':' for all)
+  encoder: "-12:"
+  lm_head: True
+artifact:
+  checkpoint:
+  name: 
+batch_size: 16
+cluster:
+  devices: 1 #Number of gpus per node
+  num_nodes: 1 #Number of nodes
+dataset:
+  test_set:
+    name:
+  training_set:
+    dataloader_setup_seed: 42
+    drop_out: 0.0 # fraction of data to drop from training set (validation set stays untouched)
+    name: "paper-vendor_B-train"
+    outlier_removal:
+      percentage: 0.0 # fraction of data to remove from training set (validation set stays untouched), use only when drop_out is 0.0
+      distance_threshold: 0.53 # distance threshold for outlier removal, default is 0.53
+    stratified_drop_out: True # stratification based on if the review has usage options or not
+    usage_split: # 0.5
+    validation_split: 0.1
+  validation_set:
+    name: "paper-vendor_B-val" # if you choose a specific validation set, the validation split will be ignored
+epochs:
+gradual_unfreezing_mode: "" # "module speed" for each module (seperated by comma) with module=[decoder, encoder], speed int NOT 0
+lr_scheduler:
+  name: "InverseSquareRootLR" # Supports OneCycleLR, CyclicLR, InverseSquareRootLR and AdaFactor; use ConstantLR for a simple flat LR
+  # CyclicLR
+  step_size_up: 200
+  mode: "triangular2" # Alternativ is 'triangular'
+  # InverseSquareRootLR
+  warm_up_factor: 0.01
+model_name: "flan-t5-base"
+multiple_usage_options_strategy: "default"
+optimizer: #Set all parameters you do not want to null
+  lr: 0.00020252028121918743
+  name: "AdaFactor"
+  # AdamW/SGD
+  weight_decay: 0.01
+  # AdamW
+  amsgrad: False
+  # SGD
+  momentum: 0.9
+  nesterov: True
+  # Adafactor
+  warmup_init: False
+  relative_step: False
+  scale_parameter: False
+prompt_id: "training"
+seed: 42 # can be left empty
+test_run: False
+files_to_generate_on: # Give the absolute path
+  -
+
+# Options for 'multiple_usage_options_strategy':
+# - “default” -> as usual, a datapoint is created that contains all usage options in the given order
+# - “flat” -> one datapoint for each usage option
+# - “shuffle” -> as with “default”, one datapoint, but in random order
+# - “shuffle-n” -> n random datapoints, each with different random permutations
+# - “shuffle-all” -> all permutations as separate datapoints
+
+# Further examples for 'active_layers' syntax:
+#   - ':0' -> activate none
+#   - ':' -> activate all ('0:') also works
+#   - '-5:' -> activate last five
+#   - ':3' -> activate first three

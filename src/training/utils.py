@@ -5,11 +5,7 @@ import yaml
 from transformers import (
     T5Tokenizer,
     T5ForConditionalGeneration,
-    BartTokenizer,
-    BartForConditionalGeneration,
     optimization,
-    PegasusForConditionalGeneration,
-    PegasusTokenizer,
 )
 import torch
 import dotenv
@@ -18,45 +14,15 @@ from typing import Tuple
 
 dotenv.load_dotenv()
 
-ARTIFACT_PATH = "/hpi/fs00/share/fg-demelo/bsc2022-usageinfo/training_artifacts/"
+ARTIFACT_PATH = "" # Specify your default artifact path here
 MAX_OUTPUT_LENGTH = 128
 
 model_tuples = {
-    "t5-small": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-small"),
-        T5Tokenizer.from_pretrained("t5-small", model_max_length=512),
-        512,
-    ),
-    "t5-base": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-base"),
-        T5Tokenizer.from_pretrained("t5-base", model_max_length=512),
-        512,
-    ),
-    "t5-large": lambda: (
-        T5ForConditionalGeneration.from_pretrained("t5-large"),
-        T5Tokenizer.from_pretrained("t5-large", model_max_length=512),
-        512,
-    ),
-    "bart-base": lambda: (
-        BartForConditionalGeneration.from_pretrained("facebook/bart-base"),
-        BartTokenizer.from_pretrained("facebook/bart-base", model_max_length=1024),
-        1024,
-    ),
-    "t5-v1_1": lambda: (
-        T5ForConditionalGeneration.from_pretrained("google/t5-v1_1-base"),
-        T5Tokenizer.from_pretrained("google/t5-v1_1-base", model_max_length=512),
-        512,
-    ),
     "flan-t5-base": lambda: (
         T5ForConditionalGeneration.from_pretrained("google/flan-t5-base"),
         T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
         512,
-    ),
-    "pegasus": lambda: (
-        PegasusForConditionalGeneration.from_pretrained("google/pegasus-xsum"),
-        PegasusTokenizer.from_pretrained("google/pegasus-xsum", model_max_length=512),
-        512,
-    ),
+    )
 }
 
 optimizers = {

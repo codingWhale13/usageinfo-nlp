@@ -722,8 +722,7 @@ class ReviewSet:
         for_training: bool,
         selection_strategy: ls.LabelSelectionStrategyInterface = None,
         multiple_usage_options_strategy: Optional[str] = None,
-        augmentation_set: Optional[str] = None,
-        prompt_id: str = "avetis_v1",
+        prompt_id: str = "training",
         drop_out: float = 0.0,
         stratified_drop_out: bool = False,
         seed: int = None,
@@ -745,20 +744,7 @@ class ReviewSet:
         if seed is not None:
             rng.seed(seed)
 
-        # Unpack all normal reviews and their augmentations into single ReviewSet
-        all_reviews = (
-            ReviewSet.from_reviews(
-                *self,
-                *itertools.chain(
-                    *(
-                        review.get_augmentations(selection_strategy, augmentation_set)
-                        for review in self
-                    )  # unpack interable with lists of augmented reviews
-                ),
-            )
-            if augmentation_set is not None and selection_strategy is not None
-            else copy(self)
-        )
+        all_reviews = copy(self)
         for review in copy(all_reviews):
             review.tokenized_datapoints = list(
                 review.get_tokenized_datapoints(
@@ -796,7 +782,6 @@ class ReviewSet:
             {
                 "selection_strategy": selection_strategy,
                 "num_reviews": len(self),
-                "num_augmented_reviews": len(all_reviews) - len(self),
                 "num_invalid_reviews": len(all_reviews)
                 - len(
                     valid_reviews

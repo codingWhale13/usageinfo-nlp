@@ -10,7 +10,7 @@ import html
 from datasets import load_dataset, Dataset
 import argparse
 
-from review_set import ReviewSet
+from src.review_set import ReviewSet
 
 
 GOOD_TO_LABEL_CATEGORIES = [

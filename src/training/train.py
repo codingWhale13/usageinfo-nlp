@@ -11,11 +11,9 @@ from pprint import pprint
 from datetime import datetime
 
 from model import ReviewModel
-from helpers.sustainability_logger import SustainabilityLogger
 from generator import DEFAULT_GENERATION_CONFIG, Generator
-from active_learning.helpers import load_active_data_module
 import utils
-from helpers.review_set import ReviewSet
+from src.review_set import ReviewSet
 
 
 def get_cli_args():
@@ -83,6 +81,7 @@ def update_config_values(base_config, update_values, delimiter="."):
     return base_config | update_values
 
 
+
 def train(is_sweep=False, run_name=None):
     torch.set_float32_matmul_precision("medium")
     warnings.filterwarnings(
@@ -97,6 +96,7 @@ def train(is_sweep=False, run_name=None):
     config = update_config_values(config, cli_args_config)
 
     if is_sweep or not config["test_run"]:
+        wandb.init()
         logger = pl.loggers.WandbLogger(
             project="rlp-t2t",
             entity="bsc2022-usageinfo",
@@ -122,14 +122,9 @@ def train(is_sweep=False, run_name=None):
         else config["model_name"]
     )
 
-    active_learning_params = config["active_learning"].get("parameters", {}) or {}
 
     cluster_config = config["cluster"]
     test_run = config["test_run"]
-    active_learning_module = load_active_data_module(
-        config["active_learning"]["module"],
-        active_learning_params,
-    )
     files_to_generate_on = list(
         filter(
             lambda file: file is not None and os.path.exists(str(file)),
@@ -185,16 +180,13 @@ def train(is_sweep=False, run_name=None):
         trainer=trainer,
         multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
         gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
-        active_data_module=active_learning_module,
         prompt_id=config["prompt_id"],
     )
 
     # %% Training and testing
     if not test_run:
-        with SustainabilityLogger(description="training"):
-            trainer.fit(model)
-        with SustainabilityLogger(description="testing"):
-            trainer.test()
+        trainer.fit(model)
+        trainer.test(model)
 
         wandb.log({"best_val_loss": checkpoint_callback.best_model_score})
         wandb.log({"FLOPs": model.total_flops})

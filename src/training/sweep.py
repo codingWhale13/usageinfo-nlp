@@ -2,8 +2,8 @@
 import sys
 import wandb
 
-from training.train import train
-from training.sweep_configurations import sweep_configurations
+from src.training.train import train
+from src.training.sweep_configurations import sweep_configurations
 
 if len(sys.argv) < 2:
     print("Usage: python sweep.py sweep_name")

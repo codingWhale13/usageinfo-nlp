@@ -5,7 +5,7 @@ from typing import Optional, Union
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from helpers.review import Review
+    from src.review import Review
 
 
 class LabelSelectionStrategyInterface(ABC):

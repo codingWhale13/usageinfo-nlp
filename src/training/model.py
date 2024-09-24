@@ -6,13 +6,12 @@ import numpy as np
 import random
 import warnings
 
-import training.utils as utils
-from helpers.review_set import ReviewSet
-from helpers.label_selection import (
+import src.training.utils as utils
+from src.review_set import ReviewSet
+from src.helpers.label_selection import (
     DatasetSelectionStrategy,
     LabelSelectionStrategyInterface,
 )
-from active_learning.module import ActiveDataModule
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 
@@ -32,7 +31,6 @@ class ReviewModel(pl.LightningModule):
         dataset_config: dict,
         trainer: pl.Trainer,
         multiple_usage_options_strategy: str,
-        active_data_module: ActiveDataModule,
         optimizer_args: dict,
         lr_scheduler_args: dict,
         gradual_unfreezing_mode: Optional[str],
@@ -53,8 +51,9 @@ class ReviewModel(pl.LightningModule):
         self.lr_scheduler_args = lr_scheduler_args
         self.prompt_id = prompt_id
         self.gradual_unfreezing_mode = gradual_unfreezing_mode
-        self.active_data_module = active_data_module
         self.validation_loss = []
+        self.validation_step_outputs = []
+        self.training_step_outputs = []
         self.tokenization_args = {
             "tokenizer": tokenizer,
             "model_max_length": max_length,
@@ -63,8 +62,6 @@ class ReviewModel(pl.LightningModule):
         self.total_flops = 0
 
         self._initialize_datasets()
-
-        self.active_data_module.setup(self)
 
         # Skip freezing if a fake test model is loaded
         if self.model is not None:
@@ -101,7 +98,6 @@ class ReviewModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         outputs = self._step(batch)
-        self.active_data_module.process_step(batch_idx, batch, outputs)
         self.log(
             "train_loss",
             outputs.loss,
@@ -115,18 +111,18 @@ class ReviewModel(pl.LightningModule):
             self.log(
                 "lr", self.lr_scheduler.get_last_lr()[0], on_step=True, logger=True
             )
-        return outputs.loss
+        loss = outputs.loss
+        loss.requires_grad = True
+        self.training_step_outputs.append(loss)
+        return loss
 
-    def on_train_epoch_end(self):
-        print("Self: on_train_epoch_end")
-        self.active_data_module.on_train_epoch_end()
-
-    def training_epoch_end(self, outputs):
+    def on_training_epoch_end(self):
         print("Self: training_epoch_end")
         """Logs the average training loss over the epoch"""
         avg_loss = torch.stack(
-            [x["loss"] * self.trainer.accumulate_grad_batches for x in outputs]
+            [x["loss"] * self.trainer.accumulate_grad_batches for x in self.training_step_outputs]
         ).mean()
+        self.training_step_outputs.clear()
         self.log(
             "epoch_train_loss",
             avg_loss,
@@ -160,9 +156,6 @@ class ReviewModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         outputs = self._step(batch)
-        self.active_data_module.process_step(
-            batch_idx, batch, outputs, mode="validation"
-        )
         self.log(
             "val_loss",
             outputs.loss,
@@ -172,11 +165,13 @@ class ReviewModel(pl.LightningModule):
             sync_dist=True,
             batch_size=self.hyperparameters["batch_size"],
         )
+        self.validation_step_outputs.append(outputs.loss)
         return outputs.loss
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self):
         """Logs the average validation loss over the epoch"""
-        avg_loss = torch.stack(outputs).mean()
+        avg_loss = torch.stack(self.validation_step_outputs).mean()
+        self.validation_step_outputs.clear()  # See https://github.com/Lightning-AI/pytorch-lightning/pull/16520
         self.log(
             "epoch_val_loss",
             avg_loss,
@@ -288,7 +283,6 @@ class ReviewModel(pl.LightningModule):
         training_set_config = self.dataset_config["training_set"]
         dataloader, metadata = self.train_reviews.get_dataloader(
             selection_strategy=self.train_reviews_strategy,
-            augmentation_set=training_set_config["augmentation_set"],
             drop_out=training_set_config["drop_out"],
             stratified_drop_out=training_set_config["stratified_drop_out"],
             rng=random.Random(training_set_config["dataloader_setup_seed"]),
