@@ -25,38 +25,25 @@ python src/data_download.py <data-path> data/reviews.json
 
 ```bash
 conda env create -f environment.yml
-conda activate bp
+conda activate paper
 ```
 
 4. Annotation
-For annotation you have 4 options:
-Use our labels (recommended): 
+For annotation we have provided our labels:
 
 ```bash
 python json-cli.py merge_labels data/reviews.json prompt_evaluation_set_labels.json data/prompt_evaluation_reviews.json
 python json-cli.py merge_labels data/reviews.json training_set_labels.json data/training_reviews.json
 python json-cli.py merge_labels data/reviews.json evaluation_set_labels.json data/evaluation_reviews.json
 ```
-<details> <summary>Other label approaches</summary>
-Label by hand
-
-Label using the aws vendors:
-```bash
-python src/sagemaker/create_manifest.py data/reviews.json data/reviews.manifest
-```
-Label this file using the vendors
-```bash
-python src/sagemaker/sagemaker_manifest_to_json.py data/reviews.manifest
-```
-
-Label using the OpenAI API:
+To label using the OpenAI API use the following commands:
 ```bash
 python src/openai_api/openai_labelling.py data/reviews.json
 python src/openai_api/openai_labelling.py data/reviews.json -p 6_shot
 python src/openai_api/openai_labelling.py data/reviews.json -p COT_2_shot
 python src/openai_api/openai_labelling.py data/reviews.json -p COT_6_shot
 ```
-</details>
+The prompts can be found in src/openai_api/prompts.json
 
 5. Dataset creation
 Create for each label source a training and validation dataset. If you have our label names you can use create_dataset.sh to create all necessary datasets 
@@ -67,7 +54,36 @@ python src/helpers/create_dataset.py datasets/dataset_name label_ids_to_use data
 6. Training
 Use the configs provided in src/training/trainings_configs to train the models
 ```bash
-python src/htraining/train.py --config <config_path>
+python src/training/train.py --config <config_path>
+```
+
+7. Annotation
+To annotate specify the file, the model artifact and a label id you want to use:
+```bash
+python json-cli.py score <file> <model_checkpoint_name> <suffix_label_id>
+```
+
+To reproduce Table 2 and 3 specify flan-t5-base and llama2-70B rather than a model artifact and use -p to specify the prompt_id.
+
+8. Scoring
+To score we have provided a own conda enviroment:
+```bash
+conda env create -f src/evaluation/environment.yml
+conda activate evaluation
+```
+To score:
+```bash
+python json-cli.py score <file> <reference_label_id> <label_id>
+```
+You can use wildcards to specify labels and can get an overview of all labels using:
+```bash
+python json-cli.py stats <file>
+```
+
+9. Test
+Use the evaluation enviroment as above. To test you have to have scored the labels you want to test:
+```bash
+python json-cli.py test <file> <reference_label_id> <label_id_1> <label_id_2>
 ```
 
 ## Cite this work

@@ -4,7 +4,7 @@ import base64
 import io
 import warnings
 
-from evaluation.plotting.score_report import sort_df
+from src.evaluation.plotting.score_report import sort_df
 
 warnings.filterwarnings("ignore", "dropping on a non-lexsorted multi-index")
 

@@ -2,8 +2,8 @@ from statistics import mean
 
 import numpy as np
 
-from evaluation.scoring.core import *
-from openai_api.openai_backend import DEFAULT_OPENAI_SIM_PARAMS
+from src.evaluation.scoring.core import *
+from src.openai_api.openai_backend import DEFAULT_OPENAI_SIM_PARAMS
 
 # NOTE: All metrics defined in this file have the same signature. This is required by `Metrics`.
 
@@ -262,11 +262,7 @@ from itertools import product
 from collections import defaultdict
 
 import numpy as np
-from scipy.spatial.distance import euclidean
 import pulp
-import gensim
-from sentence_transformers import SentenceTransformer, util
-from scipy.stats import beta
 
 
 def distance(

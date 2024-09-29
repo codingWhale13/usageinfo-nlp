@@ -3,8 +3,8 @@ import argparse
 import json
 from pathlib import Path
 
-from evaluation.scoring.core import gpt_predictions_to_labels_from_file
-from evaluation.scoring.metrics import Metrics
+from src.evaluation.scoring.core import gpt_predictions_to_labels_from_file
+from src.evaluation.scoring.metrics import Metrics
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

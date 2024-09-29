@@ -111,7 +111,7 @@ class ReviewSet:
             print(
                 f"Auto-upgrading your json review set to version {cls.latest_version} for usage (current version: {data.get('version')})...\nThis will not override your file unless you save this reviewset!"
             )
-            from helpers.upgrade_json_files import upgrade_to_latest_version
+            from src.helpers.upgrade_json_files import upgrade_to_latest_version
 
             data = upgrade_to_latest_version(data)
 
@@ -420,7 +420,7 @@ class ReviewSet:
         *reference_label_candidates: Union[str, ls.LabelSelectionStrategyInterface],
     ) -> dict[dict[str, float]]:
 
-        from evaluation.plotting.score_report import get_scored_reviews_dataframe
+        from src.evaluation.plotting.score_report import get_scored_reviews_dataframe
 
         reviews_df = get_scored_reviews_dataframe(
             label_id, self, *reference_label_candidates
@@ -528,8 +528,8 @@ class ReviewSet:
         label_id: Union[str, ls.LabelSelectionStrategyInterface],
         *reference_label_ids: Union[str, ls.LabelSelectionStrategyInterface],
     ):
-        from evaluation.plotting.score_report import get_score_report
-        from evaluation.plotting.save_report import save_report
+        from src.evaluation.plotting.score_report import get_score_report
+        from src.evaluation.plotting.save_report import save_report
 
         save_report(*get_score_report(self, folder, label_id, *reference_label_ids))
 

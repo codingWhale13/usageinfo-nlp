@@ -6,9 +6,9 @@ import pandas as pd
 
 from scipy.stats import beta
 
-from evaluation.scoring.evaluation_cache import EvaluationCache
-from helpers.extract_reviews import extract_reviews_with_usage_options_from_json
-from openai_api.openai_backend import (
+from src.evaluation.scoring.evaluation_cache import EvaluationCache
+from src.helpers.extract_reviews import extract_reviews_with_usage_options_from_json
+from src.openai_api.openai_backend import (
     DEFAULT_OPENAI_SIM_PARAMS,
     get_phrase_similiarity_from_openai,
 )

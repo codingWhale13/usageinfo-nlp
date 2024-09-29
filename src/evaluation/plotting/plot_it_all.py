@@ -8,7 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from statistics import mean
 
-from evaluation.plotting.plot_custom_metrics import plot_f1
+from src.evaluation.plotting.plot_custom_metrics import plot_f1
 
 
 def bar_plot(score_values, save_path, relevant_label_ids="[ALL]"):

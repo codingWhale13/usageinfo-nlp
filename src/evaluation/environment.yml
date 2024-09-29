@@ -1,4 +1,4 @@
-name: bp-rlp-evaluation
+name: evaluation
 channels:
   - conda-forge
   - defaults

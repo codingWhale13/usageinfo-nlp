@@ -1,4 +1,4 @@
-from openai_api.openai_pre_annotion import pre_label_with_logprobs
+from src.openai_api.openai_pre_annotion import pre_label_with_logprobs
 import json
 from collections import Counter
 import math

@@ -2,9 +2,9 @@ import math
 from statistics import mean
 from typing import Union
 
-from evaluation.scoring import DEFAULT_METRICS
-from evaluation.scoring.core import get_most_similar, get_similarity
-from evaluation.scoring.custom_metrics import (
+from src.evaluation.scoring import DEFAULT_METRICS
+from src.evaluation.scoring.core import get_most_similar, get_similarity
+from src.evaluation.scoring.custom_metrics import (
     custom_f1_score,
     custom_f1_score_ak,
     custom_precision,
@@ -13,7 +13,7 @@ from evaluation.scoring.custom_metrics import (
     custom_recall_ak,
     word_movers_similarity,
 )
-from evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebleu_score
+from src.evaluation.scoring.standard_metrics import bleu_score, rouge_score, sacrebleu_score
 
 # NOTE: Do not change these values. They are directly linked with specific metric names
 # If you want to use other parameters, add new metric configurations in CUSTOM_METRIC_FUNCTIONS

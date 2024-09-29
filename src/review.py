@@ -470,7 +470,7 @@ class Review:
         reference_label_id: str,
         metric_ids: Iterable[str] = DEFAULT_METRICS,
     ):
-        from evaluation.scoring.metrics import SingleReviewMetrics
+        from src.evaluation.scoring.metrics import SingleReviewMetrics
 
         scores = self.get_label_for_id(label_id)["scores"]
 
@@ -482,7 +482,7 @@ class Review:
 
         if len(missing_metric_ids) > 0:
             # calculate missing metrics
-            from evaluation.scoring.metrics import SingleReviewMetrics
+            from src.evaluation.scoring.metrics import SingleReviewMetrics
 
             result = SingleReviewMetrics.from_labels(
                 self.get_labels(), label_id, reference_label_id
