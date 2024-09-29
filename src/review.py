@@ -377,13 +377,42 @@ class Review:
         else:
             raise ValueError(f"strategy '{strategy}' not supported")
 
-    def get_prompt(self, prompt_id="training") -> str:
+    def evaluate_format_string(self, f_string :str):
+        if f_string == "{review['review_body']}":
+            return self["review_body"]
+        return f_string
+
+    def get_prompt(self, prompt_id="training", is_llama2_chat_format=False) -> str:
         from langchain_core.prompts import PromptTemplate
 
         path = Path(__file__).parent / "openai_api/prompts.json"
 
         with open(path) as f:
             prompts = json.load(f)
+
+        if is_llama2_chat_format:
+            prompt_data = prompts[prompt_id]
+
+            #https://www.philschmid.de/sagemaker-llama-llm
+            def build_llama2_prompt(messages):
+                startPrompt = "<s>[INST] "
+                endPrompt = " [/INST]"
+                conversation = []
+                for index, message in enumerate(messages):
+                    if message["role"] == "system" and index == 0:
+                        conversation.append(f"<<SYS>>\n{message['content'].strip()}\n<</SYS>>\n\n")
+                    elif message["role"] == "user":
+                        conversation.append(message["content"].strip())
+                    else:
+                        conversation.append(f" [/INST] {message['content'].strip()} </s><s>[INST] ")
+
+                return startPrompt + "".join(conversation) + endPrompt
+
+            for message in prompt_data["prompt"]:
+                message["content"] = self.evaluate_format_string(message["content"])
+
+            return build_llama2_prompt(prompt_data["prompt"])
+
 
         prompt_text = prompts[prompt_id]["prompt"]
         prompt_input_variables = prompts[prompt_id]["input_variables"]

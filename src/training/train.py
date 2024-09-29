@@ -181,6 +181,7 @@ def train(is_sweep=False, run_name=None):
         multiple_usage_options_strategy=config["multiple_usage_options_strategy"],
         gradual_unfreezing_mode=config["gradual_unfreezing_mode"],
         prompt_id=config["prompt_id"],
+        measure_flops=config.get("measure_flops", False),
     )
 
     # %% Training and testing

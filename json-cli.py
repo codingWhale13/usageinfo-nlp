@@ -669,7 +669,7 @@ def sample(base_reviewset: ReviewSet, args: argparse.Namespace):
 
 
 def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
-    from src.training.generator import Generator, DEFAULT_GENERATION_CONFIG
+    from src.training.generator import Generator, DEFAULT_GENERATION_CONFIG, HuggingFacePipelineGenerator
 
     label_id = None
     if args.last_part_of_label_id is not None:
@@ -681,14 +681,22 @@ def annotate(base_reviewset: ReviewSet, args: argparse.Namespace):
         )
         return
 
-    generator = Generator(
-        args.artifact_name,
-        args.generation_config or DEFAULT_GENERATION_CONFIG,
-        int(args.checkpoint)
-        if (args.checkpoint is not None and args.checkpoint.isdigit())
-        else args.checkpoint,
-        prompt_id=args.prompt_id,
-    )
+    if args.artifact_name == "Llama-2-70b":
+        generator = HuggingFacePipelineGenerator(
+            args.artifact_name,
+            args.generation_config or DEFAULT_GENERATION_CONFIG,
+            args.prompt_id,
+            is_llama2_chat_format=True,
+        )
+    else:
+        generator = Generator(
+            args.artifact_name,
+            args.generation_config or DEFAULT_GENERATION_CONFIG,
+            int(args.checkpoint)
+            if (args.checkpoint is not None and args.checkpoint.isdigit())
+            else args.checkpoint,
+            prompt_id=args.prompt_id,
+        )
 
     verbose = not args.quiet
     generator.generate_label(base_reviewset, label_id=label_id, verbose=verbose)

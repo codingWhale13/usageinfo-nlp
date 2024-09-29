@@ -63,7 +63,7 @@ To annotate specify the file, the model artifact and a label id you want to use:
 python json-cli.py score <file> <model_checkpoint_name> <suffix_label_id>
 ```
 
-To reproduce Table 2 and 3 specify flan-t5-base and llama2-70B rather than a model artifact and use -p to specify the prompt_id.
+To reproduce Table 2 and 3 specify flan-t5-base and Llama-2-70b rather than a model artifact and use -p to specify the prompt_id.
 
 8. Scoring
 To score we have provided a own conda enviroment:

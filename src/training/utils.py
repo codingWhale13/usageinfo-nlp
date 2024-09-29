@@ -6,6 +6,9 @@ from transformers import (
     T5Tokenizer,
     T5ForConditionalGeneration,
     optimization,
+    AutoModelForCausalLM,
+    AutoTokenizer
+
 )
 import torch
 import dotenv
@@ -22,7 +25,16 @@ model_tuples = {
         T5ForConditionalGeneration.from_pretrained("google/flan-t5-base"),
         T5Tokenizer.from_pretrained("google/flan-t5-base", model_max_length=512),
         512,
-    )
+    ),
+    "Llama-2-70b": lambda: (
+        AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-2-70b-chat-hf",
+            device_map="auto",
+        ),
+        AutoTokenizer.from_pretrained("meta-llama/Llama-2-70b-chat-hf"),
+        4096,
+    ),
+
 }
 
 optimizers = {

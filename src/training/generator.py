@@ -8,6 +8,10 @@ from src.training import utils
 from src.review_set import ReviewSet
 from src.training.utils import get_config
 
+from transformers import pipeline
+from src.openai_api.openai_backend import format_usage_options
+from tqdm import tqdm
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 DEFAULT_GENERATION_CONFIG = "diverse_beam_search"
@@ -18,6 +22,70 @@ GENERATION_CONFIGS = [
         os.path.dirname(os.path.realpath(__file__)) + "/generation_configs/"
     )
 ]
+
+class HuggingFacePipelineGenerator:
+    def __init__(
+        self,
+        model_name,
+        generation_config: str = DEFAULT_GENERATION_CONFIG,
+        prompt_id: str="original",
+        is_llama2_chat_format: bool=False,
+        pipeline_args: dict={}
+    ) -> None:
+        self.prompt_id = prompt_id
+        self.is_llama2_chat_format = is_llama2_chat_format
+        self.model_name = "meta-llama/Llama-2-70b-chat-hf" if is_llama2_chat_format else model_name
+        self.generation_config = get_config(
+            f"{os.path.dirname(os.path.realpath(__file__))}/generation_configs/{generation_config}.yml"
+        )
+        self.pipeline = pipeline(
+                "text-generation",
+                model=self.model_name,
+                **pipeline_args
+            )
+
+    def generate_label(
+        self, reviews: ReviewSet, label_id: str = None, verbose: bool = False
+    ) -> None:
+        if not label_id and not verbose:
+            raise ValueError(
+                "Specify either a label_id to save the labels or set verbose to True. (Or both)"
+            )
+        
+        pipeline_input_generator = (review.get_prompt(self.prompt_id, is_llama2_chat_format=self.is_llama2_chat_format) for review in reviews)
+        label_metadata = {
+            "generator": {
+                "model_name": self.model_name,
+                "generation_config": self.generation_config,
+                "prompt_id": self.prompt_id,
+            }
+        }
+        if verbose:
+            print(f"Generating label {label_id}...")
+            print(f"Label Metadata: {label_metadata}", end="\n\n")
+
+        sequences = self.pipeline(
+            pipeline_input_generator, return_full_text=False, **self.generation_config
+        )
+        for review, sequence in tqdm(zip(reviews, sequences), total=len(reviews)):
+            
+            if len(sequence) > 1:
+                raise ValueError("Generated more than one sequence. This is not handled in the code!")
+            
+            generated_text = sequence[0]["generated_text"]
+            usage_options, usage_options_metadata = format_usage_options(generated_text)
+            review_id = review.review_id
+            if label_id is not None:
+                reviews[review_id].add_label(
+                    label_id=label_id,
+                    usage_options=usage_options,
+                    metadata=label_metadata | usage_options_metadata,
+                )
+            if verbose:
+                print("output:",sequence)
+                print(f"Review {review_id}")
+                print(f"Model input:\n{review.get_prompt(prompt_id=self.prompt_id, is_llama2_chat_format=self.is_llama2_chat_format)}")
+                print(f"Usage options: {usage_options}", end="\n\n")
 
 
 class Generator:
